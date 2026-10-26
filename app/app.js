@@ -492,7 +492,7 @@ function profileView() {
       <label class="field">Phone<input name="phone" type="tel" value="${esc(p.phone)}" placeholder="+1 555 123 4567"></label>
       <button class="btn primary" type="submit">Save changes</button></form>
     <form class="box" data-form="notify"><h3>Notifications</h3>${sw('sms', 'Text messages', 'when something needs you; reply STOP to stop')}${sw('welcome', 'Welcome emails')}${sw('approvals', 'Approval alerts')}${sw('errors', 'Error alerts')}${sw('milestones', 'Milestone emails')}${sw('briefing', 'Daily briefing emails')}<button class="btn small" type="submit">Save preferences</button></form>
-    <div class="box"><h3>Account</h3><div class="btns"><button type="button" class="btn small" data-action="sign-out">Sign out</button><button type="button" class="btn small danger" data-action="delete-account">Delete account</button></div><p class="small muted">Deleting the account removes everything this demo keeps in your browser.</p></div>
+    <div class="box"><h3>Account</h3><div class="btns"><button type="button" class="btn small" data-action="sign-out">Sign out</button><button type="button" class="btn small danger" data-action="delete-account">Delete account</button></div><p class="small muted">Deleting the account removes it and every business it holds, for good.</p></div>
   </div>`;
 }
 
@@ -734,11 +734,14 @@ document.addEventListener('submit', async e => {
       toast('Profile saved');
       return reload();
     }
-    case 'notify':
-      await api('PATCH', '/me', { notify: Object.fromEntries(Object.keys(state.profile.notify ?? {}).map(k => [k, !!f[k]])) });
-      state.profile.notify = { ...state.profile.notify, ...Object.fromEntries(Object.keys(state.profile.notify ?? {}).map(k => [k, !!f[k]])) };
+    case 'notify': {
+      const keys = ['sms', 'welcome', 'approvals', 'errors', 'milestones', 'briefing'];
+      const notify = Object.fromEntries(keys.map(k => [k, !!f[k]]));
+      await api('PATCH', '/me', { notify });
+      state.profile.notify = notify;
       toast('Preferences saved');
       return;
+    }
   }
 });
 

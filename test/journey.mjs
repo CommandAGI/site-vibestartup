@@ -73,6 +73,14 @@ async function run(browser, width) {
   await browser.waitFor('[...document.querySelectorAll(".approval")].some(e => /Approved/i.test(e.innerText))', 20000);
   check(/Site is live/i.test(await browser.text('.chat')), `${label}: the milestone card says the site is live`);
 
+  // 4b. The co-founder's memory as files, and the launch-week dashboard.
+  await browser.click('a[href="#tab=files"]');
+  await browser.waitFor('[...document.querySelectorAll(".file-row")].some(e => /SOUL[.]md/.test(e.innerText))', 20000);
+  const files = await browser.text('#main');
+  for (const name of ['BUSINESS.md', 'MEMORY.md', 'PLAYBOOK.md']) check(files.includes(name), `${label}: the Files tab holds ${name}`);
+  await browser.click('a[href="#tab=dashboard"]');
+  await browser.waitFor('/Day [0-9]+(:| of 7)|Launch week is complete/.test(document.querySelector("#main")?.innerText ?? "")', 15000);
+
   // 5. A product, then a test buy through the sandbox checkout.
   await browser.click('a[href="#tab=products"]');
   await browser.waitFor('!!document.querySelector("#add-product")');

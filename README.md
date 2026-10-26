@@ -47,6 +47,15 @@ The journey needs Chrome (`CHROME_PATH`, default `chromium-browser`). A local ru
 `OPENROUTER_API_KEY`, or from this host's secrets file with `VIBESTARTUP_USE_LOCAL_SECRETS=1`; `--no-chat` skips the
 model calls.
 
+## addresses and locales
+
+| address | locale | what it serves |
+|---|---|---|
+| vibestartup.commandagi.app | en | the app, on CommandAGI's site hosting (production) |
+| vibestartup.pro (primary) | en | the app, once its DNS record is in place |
+| vibestartup.us | en-US | the same app; a country-code domain is the same site in its locale |
+| `/es/`, `/zh/` | es, zh-Hans | the landing and the account forms, from static pages per locale; the footer's A/文 picker opens them |
+
 ## deploying
 
 ```
