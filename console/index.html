@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Console demo | VibeStartup</title>
+<meta name="description" content="The VibeStartup console as a demo: a sample business and a scripted co-founder, in your browser only.">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="console.css">
+<link rel="icon" href="../mark.svg" type="image/svg+xml">
+</head>
+<body class="console">
+<a class="skip" href="#app">Skip to the console</a>
+<p class="demo-banner" role="note"><strong>Demo:</strong> a sample business; the co-founder is a script; nothing leaves this browser.</p>
+<div id="app"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="search-dialog" aria-labelledby="search-title">
+  <form method="dialog" id="search-form">
+    <h2 id="search-title" class="sr">Search</h2>
+    <label class="field"><span class="sr">Go to</span><input id="search-input" type="search" placeholder="Go to a tab or page…" autocomplete="off"></label>
+    <ul id="search-results" class="search-results"></ul>
+  </form>
+</dialog>
+
+<dialog id="share-dialog" aria-labelledby="share-title">
+  <form method="dialog">
+    <h2 id="share-title">Share and earn</h2>
+    <p class="muted">Give a friend a discount on their first month; get credits when they subscribe. The amounts are set at launch.</p>
+    <label class="field">Your invite link<input id="share-link" readonly></label>
+    <div class="btns"><button type="button" class="btn" data-action="copy-share">Copy</button><a class="btn" id="share-mail" href="#">Email</a><a class="btn" id="share-sms" href="#">Text</a></div>
+    <p class="muted small" id="share-earned"></p>
+    <div class="btns end"><button class="btn primary" value="close">Close</button></div>
+  </form>
+</dialog>
+
+<dialog id="checkout-dialog" aria-labelledby="checkout-title">
+  <form method="dialog" id="checkout-form">
+    <p class="sandbox">Test mode · no card is charged</p>
+    <h2 id="checkout-title">Pay <span id="checkout-biz"></span></h2>
+    <p class="checkout-line"><span id="checkout-product"></span><strong id="checkout-amount"></strong></p>
+    <p class="hint">Test card: <code>4242 4242 4242 4242</code>, any future date, any three digits.</p>
+    <label class="field">Email<input name="email" type="email" autocomplete="off" required placeholder="buyer@example.com"></label>
+    <label class="field">Card number<input name="card" inputmode="numeric" autocomplete="off" required placeholder="1234 1234 1234 1234"></label>
+    <div class="row2">
+      <label class="field">Expiry<input name="exp" autocomplete="off" required placeholder="MM / YY"></label>
+      <label class="field">CVC<input name="cvc" autocomplete="off" required placeholder="123"></label>
+    </div>
+    <p class="error" id="checkout-error" role="alert"></p>
+    <div class="btns end"><button class="btn" value="cancel" formnovalidate>Cancel</button><button class="btn primary" value="pay" id="checkout-pay">Pay</button></div>
+  </form>
+</dialog>
+
+<dialog id="store-dialog" aria-labelledby="store-title" class="wide">
+  <form method="dialog">
+    <div id="store-body"></div>
+    <div class="btns end"><button class="btn" value="close">Close the store</button></div>
+  </form>
+</dialog>
+
+<dialog id="confirm-dialog" aria-labelledby="confirm-title">
+  <form method="dialog" id="confirm-form">
+    <h2 id="confirm-title"></h2>
+    <p id="confirm-text"></p>
+    <label class="field hidden" id="confirm-type-wrap"><span id="confirm-type-label"></span><input id="confirm-type" autocomplete="off"></label>
+    <div class="btns end"><button class="btn" value="cancel" formnovalidate>Cancel</button><button class="btn danger" value="ok" id="confirm-ok"></button></div>
+  </form>
+</dialog>
+
+<dialog id="preview-dialog" aria-labelledby="preview-title" class="wide">
+  <form method="dialog">
+    <div class="preview-head"><h2 id="preview-title"></h2><span class="muted small" id="preview-meta"></span></div>
+    <div id="preview-body"></div>
+    <div class="btns end"><button type="button" class="btn" data-action="copy-preview">Copy content</button><button class="btn primary" value="close">Close</button></div>
+  </form>
+</dialog>
+
+<script type="module" src="console.js"></script>
+</body>
+</html>

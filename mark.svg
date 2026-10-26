@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="VibeStartup">
+  <rect x="2" y="2" width="60" height="60" rx="12" fill="#c2410c"/>
+  <path d="M15 21 L26 45 L37 21" fill="none" stroke="#fffaf2" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M43 39 L49 21" fill="none" stroke="#fffaf2" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="41" cy="46" r="3.6" fill="#fffaf2"/>
+</svg>
