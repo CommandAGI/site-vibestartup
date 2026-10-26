@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<title>Your businesses | VibeStartup</title>
+<meta name="description" content="Every business you run with VibeStartup, and a new one from an idea.">
+<link rel="stylesheet" href="../style.css">
+<link rel="icon" href="../mark.svg" type="image/svg+xml">
+</head>
+<body>
+<a class="skip" href="#main">Skip to the content</a>
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="/"><img src="../mark.svg" alt="" width="32" height="32">VibeStartup</a>
+    <nav class="site-nav" aria-label="Account">
+      <span id="who" class="muted small"></span>
+      <button type="button" class="linkish" id="signout">Sign out</button>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <section class="section">
+    <p class="eyebrow">Your account</p>
+    <h1>Your businesses</h1>
+    <p class="lede">One account, many startups. Each one has its own co-founder, its own launch week and its own files.</p>
+    <div id="list" class="cards" aria-live="polite"></div>
+  </section>
+
+  <section class="section" aria-labelledby="new">
+    <h2 id="new">Start another business</h2>
+    <p class="sub">Say the idea in a sentence. Your co-founder takes it from there and asks you before anything big.</p>
+    <form class="card" id="create">
+      <label class="field">Your idea<textarea name="idea" rows="3" required placeholder="A camera-enabled desk lamp that lets an assistant see your notebook"></textarea></label>
+      <label class="field">Business name<input name="name" id="biz-name" placeholder="Suggested from your idea"><small>You can change it later.</small></label>
+      <label class="field">Co-founder's name<input name="cofounder" value="Juno" required></label>
+      <p class="error" role="alert" data-error></p>
+      <button class="btn primary" type="submit">Create the business</button>
+    </form>
+  </section>
+
+  <section class="section" aria-labelledby="account">
+    <h2 id="account">Account</h2>
+    <p class="sub" id="account-email"></p>
+    <button type="button" class="btn danger" id="delete-account">Delete my account</button>
+    <p class="small muted">This removes your account and every business it holds, with its records and files.</p>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap"><span>VibeStartup &middot; vibestartup.pro</span><span><a href="/">Home</a></span></div>
+</footer>
+<script type="module" src="startups.js"></script>
+</body>
+</html>

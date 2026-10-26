@@ -1,1 +1,9 @@
-{"v": 1, "slug": "vibestartup", "description": "VibeStartup, a company of CommandAGI that starts vibestartups: real small businesses made and run with an AI co-founder. The console demo runs on a sample business in the visitor's browser.", "status": "active", "resources": [], "domains": []}
+{
+  "v": 1,
+  "slug": "vibestartup",
+  "description": "VibeStartup, the startup factory: sign up, describe an idea, and an AI co-founder builds and runs a real small business with you. Many people, many startups each.",
+  "status": "active",
+  "productionBranch": "main",
+  "resources": [],
+  "domains": []
+}

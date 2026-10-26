@@ -1,9 +1,7 @@
-// The VibeStartup console as a demo: one sample business in this browser's localStorage, a scripted co-founder, and
-// every tab of the founder's console working on that state. Nothing is fetched or sent (the page's policy is
-// connect-src 'none'); a secret's value and a card number are never kept.
-import * as S from './sample.js';
-
-const KEY = 'vibestartup-demo';
+// VibeStartup's console: one business, its co-founder and every tab, for the founder who signed in.
+// Everything shown is the app's own state, read from /api/startups/<id> and changed through the app's routes
+// (app.mjs); this browser keeps nothing. The co-founder is a model the server calls, so a reply that did not come
+// from a model says so.
 const TABS = [
   ['chat', 'Chat'], ['dashboard', 'Dashboard'], ['analytics', 'Analytics'], ['tasks', 'Tasks'], ['email', 'Email'],
   ['products', 'Products'], ['orders', 'Orders'], ['customers', 'Customers'], ['ads', 'Ads'], ['studio', 'Studio'],
@@ -13,17 +11,15 @@ const TABS = [
 const PAGES = [['billing', 'Billing'], ['profile', 'Profile'], ['secrets', 'Environment secrets']];
 const EVERY = ['Daily', 'Every 30 minutes', 'Hourly', 'Every 6 hours', 'Every 12 hours', 'Weekly', 'Custom'];
 
-const fresh = () => ({ profile: { name: '', email: '', phone: '', notify: { sms: false, welcome: true, approvals: true, errors: true, milestones: true, briefing: true } }, biz: null });
-let state = load();
-const ui = { studio: 'make', format: 'offer', look: 'Up to you', count: 3, refs: [], made: [], mailFolder: 'all', mailThread: null, mailSearch: '', fileSearch: '', open: {}, routineEdit: null, dayOpen: null, socialView: 'calendar', draftFrom: null, notes: {}, secretShow: false, secretEdit: '' };
-
-function load() {
-  try { return JSON.parse(localStorage.getItem(KEY)) ?? fresh(); } catch { return fresh(); }
-}
-function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* the demo still runs without storage */ } }
+const STARTUP_ID = new URLSearchParams(location.search).get('s');
+/** The console's own vocabulary, as the app sends it (one copy of it, on the server). */
+const S = { money: n => `$${(Math.round(n * 100) / 100).toFixed(2)}`, svgData: svg => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}` };
+let META = {};
+let state = { profile: null, biz: null };
+let startups = [];
+const ui = { studio: 'make', format: 'offer', look: 'Up to you', count: 3, refs: [], made: [], mailFolder: 'all', mailThread: null, mailSearch: '', fileSearch: '', open: {}, routineEdit: null, dayOpen: null, socialView: 'calendar', draftFrom: null, notes: {}, secretShow: false, secretEdit: '', newProduct: false, recurring: false, checkout: null, fromStore: false, preview: null };
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const uid = () => Math.random().toString(36).slice(2, 10);
 const now = () => Date.now();
 const time = at => new Date(at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 const day = at => new Date(at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -47,189 +43,43 @@ function toast(text) {
   toastTimer = setTimeout(() => t.classList.remove('on'), 2600);
 }
 
-// ---------- the business's records ----------
+// ---------- the app's routes ----------
 
-function log(text) { state.biz.activity.unshift({ at: now(), text }); }
-function event(text) { state.biz.events.unshift({ at: now(), text }); }
-function say(text, extra = {}) { state.biz.messages.push({ id: uid(), from: 'cofounder', kind: 'text', text, at: now(), sample: true, ...extra }); }
-
-/** Spend credits for work. Out of credits, the co-founder stops and says so. */
-function charge(credits, what) {
-  const b = state.biz;
-  if (b.credits < credits) {
-    b.messages.push({ id: uid(), from: 'system', kind: 'text', text: `Out of free credits: "${what}" needs ${credits}. In the live app you subscribe to keep your co-founder working.`, at: now() });
-    toast('Out of free credits');
-    return false;
-  }
-  b.credits -= credits;
-  b.billed.unshift({ id: uid(), at: now(), what, credits, disputed: false });
-  return true;
+async function api(method, path, body) {
+  const r = await fetch(`/api${path}`, {
+    method,
+    credentials: 'same-origin',
+    headers: body !== undefined ? { 'content-type': 'application/json' } : {},
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (r.status === 401) { location.href = `/?next=${encodeURIComponent(location.pathname + location.search)}`; throw new Error('Signed out'); }
+  if (!r.ok) throw new Error(data.error ?? `The app answered ${r.status}`);
+  return data;
 }
 
-function propose(title, reasoning, effect, cost = 2) {
-  const b = state.biz;
-  const task = { id: uid(), title, reasoning, effect, cost, status: 'approval', at: now() };
-  b.tasks.push(task);
-  b.messages.push({ id: uid(), from: 'cofounder', kind: 'approval', task: task.id, at: now(), sample: true });
-  log(`Proposed: ${title}`);
-  if (b.autopilot) approve(task.id, 'autopilot');
-  return task;
-}
-
-function approve(id, via = 'chat') {
-  const b = state.biz, task = b.tasks.find(t => t.id === id);
-  if (!task || task.status !== 'approval') return;
-  if (!charge(task.cost, task.title)) return;
-  task.status = 'done';
-  task.doneAt = now();
-  task.via = via;
-  log(`Approved (${via}): ${task.title}`);
-  const e = task.effect;
-  if (e === 'site') {
-    b.siteLive = true;
-    b.counters.pages += 1; b.counters.deploys += 1;
-    b.messages.push({ id: uid(), from: 'cofounder', kind: 'milestone', title: 'Site is live', text: `${b.slug}.vibestartup.pro is deployed. Build, checks and the live link passed.`, at: now() });
-    event('Storefront deployed');
-  } else if (e === 'brand') {
-    b.brandReady = true;
-    b.counters.deploys += 1;
-    b.creatives.push({ id: uid(), name: 'brand-kit.svg', svg: S.brandKitImage(b), at: now(), kind: 'brand' });
-    b.creatives.push({ id: uid(), name: 'logo-light.svg', svg: S.logoImage(b, false), at: now(), kind: 'logo' });
-    b.creatives.push({ id: uid(), name: 'logo-dark.svg', svg: S.logoImage(b, true), at: now(), kind: 'logo' });
-    say(`Your brand kit is ready, with a light and a dark logo. The storefront now uses it.`, { kind: 'image', image: b.creatives.at(-3).id });
-  } else if (e === 'day') {
-    say(`Done: ${task.title}. Day ${b.day} of launch week is complete.`);
-    advanceDay();
-  } else if (e === 'campaign') {
-    b.campaigns.push({ id: uid(), name: 'First outbound', at: now(), steps: [['Day 0', 'A short introduction and the one offer'], ['Day 3', 'A follow-up with one useful detail'], ['Day 7', 'A last, friendly note']] });
-    say(`The outbound campaign is built: three steps over a week, for ${plural(b.leads.length, 'lead')}. Nothing is sent in the demo.`);
-  } else if (e === 'formation') {
-    b.formation = { at: now() };
-    say(`I prepared the formation papers as drafts for you to read. Filing and its fees are your call.`);
-  } else {
-    say(`Approved: ${task.title}. I am on it.`);
-  }
-  if (b.day === 1) checkDayOne();
-}
-
-function reject(id) {
-  const task = state.biz.tasks.find(t => t.id === id);
-  if (!task || task.status !== 'approval') return;
-  task.status = 'rejected';
-  log(`Rejected: ${task.title}`);
-  say(`Understood, I will not do "${task.title}". Tell me what you would rather do.`);
-}
-
-function checkDayOne() {
-  const b = state.biz;
-  if (b.day === 1 && b.siteLive && b.products.some(p => p.status === 'active')) {
-    b.messages.push({ id: uid(), from: 'cofounder', kind: 'milestone', title: 'Day 1 done', text: 'The site is live and the first offer is active.', at: now() });
-    advanceDay();
+/** One change to this business: the server applies it, saves it, and answers the whole console as it now stands. */
+async function op(path, body = {}) {
+  try {
+    const r = await api('POST', `/startups/${encodeURIComponent(STARTUP_ID)}${path}`, body);
+    if (r.startup) { state.biz = r.startup; render(); }
+    return r;
+  } catch (e) {
+    toast(e.message);
+    throw e;
   }
 }
-
-function advanceDay() {
-  const b = state.biz;
-  if (b.day >= 7) { b.day = 8; say('Launch week is complete. The debrief is in MEMORY.md.'); return; }
-  b.day += 1;
-  const step = S.LAUNCH_WEEK[b.day - 1];
-  log(`Launch week: day ${b.day}, ${step.title}`);
-  propose(step.task, step.about, 'day');
+async function reload() {
+  const r = await api('GET', `/startups/${encodeURIComponent(STARTUP_ID)}`);
+  state.biz = r.startup;
 }
 
-function metrics() {
-  const b = state.biz;
-  const total = b.orders.reduce((s, o) => s + o.amount, 0);
-  const fees = b.orders.reduce((s, o) => s + o.amount * 0.029 + 0.3, 0);
-  const net = Math.max(0, total - fees);
-  const real = b.orders.filter(o => !o.test);
-  return { total, net, payouts: 0, profits: net - (b.ads.spent ?? 0), balance: net, real: real.length, realRevenue: real.reduce((s, o) => s + o.amount, 0), tests: b.orders.length - real.length };
-}
 
-function runBriefing(routine) {
-  const b = state.biz;
-  if (!charge(1, `Run routine: ${routine.name}`)) return;
-  const m = metrics(), pending = b.tasks.filter(t => t.status === 'approval');
-  const active = b.products.filter(p => p.status === 'active');
-  const tiles = [
-    ['Store visitors', b.visits, 'all time'], ['Carts', b.carts, 'started'], ['Orders', b.orders.length, m.tests ? `${m.tests} test` : 'none yet'],
-    ['Revenue', S.money(m.total), m.tests ? 'includes test sales' : 'all time'], ['Active products', active.length, `${b.products.length - active.length} other`], ['Pending approvals', pending.length, 'waiting on you'],
-  ];
-  const highlights = [
-    b.siteLive ? `The storefront is live at ${b.slug}.vibestartup.pro.` : 'The storefront is not live yet; its task waits on your approval.',
-    `${plural(b.visits, 'visit')} and ${plural(b.carts, 'cart')} so far. A cart without a sale is normal drop-off, not a broken checkout.`,
-    m.real ? `${plural(m.real, 'real sale')} for ${S.money(m.realRevenue)}.` : 'No real sales yet. Test sales are never counted as real.',
-  ];
-  const plan = pending.length ? pending.map(t => `Decide: ${t.title}.`) : [`Launch week day ${Math.min(b.day, 7)}: ${S.LAUNCH_WEEK[Math.min(b.day, 7) - 1].title}.`];
-  b.messages.push({ id: uid(), from: 'cofounder', kind: 'briefing', at: now(), data: { date: longDay(now()), tiles, highlights, plan }, sample: true });
-  b.emails.unshift({ id: uid(), folder: 'sent', from: `team@${b.slug}.vibestartup.pro`, to: state.profile.email || 'you (owner)', subject: `${b.name}: daily briefing, ${longDay(now())}${pending.length ? ` · ${plural(pending.length, 'approval')} waiting` : ''}`, body: `${tiles.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\nHighlights\n${highlights.map(h => `- ${h}`).join('\n')}\n\nToday's plan\n${plan.map(p => `- ${p}`).join('\n')}\n\n${b.cofounder}`, at: now(), read: false, by: 'co-founder', approval: pending[0]?.id ?? null });
-  b.counters.emails += 1;
-  routine.lastRun = now();
-  routine.lastResult = `Sent the ${longDay(now())} briefing in chat and by email: ${plural(b.visits, 'visit')}, ${plural(b.orders.length, 'order')}, ${plural(pending.length, 'pending approval')}.`;
-  log(`Routine ran: ${routine.name}`);
-}
+/** No business here: the business list is where a founder makes one or opens one. */
+const noBusiness = () => `<main class="start" id="main-start"><p class="eyebrow">VibeStartup console</p><h1>Choose a business</h1><p class="muted">Open one from your list, or start a new one from an idea.</p><a class="btn primary" href="/startups/">My startups</a></main>`;
 
-function createBiz({ idea, name, cofounder }) {
-  const slug = S.slugify(name);
-  state.biz = {
-    name, slug, idea, cofounder, createdAt: now(), autopilot: false, briefing: 'Daily digest', domain: '', domainPending: false, day: 1,
-    siteLive: false, brandReady: false, credits: S.FREE_CREDITS, brand: S.brandFor(name), creativeBudget: null, formation: null,
-    messages: [], tasks: [], routines: [], emails: [], products: [], orders: [], customers: [], visits: 0, carts: 0, checkouts: 0,
-    events: [], creatives: [], leads: [], campaigns: [], posts: [], secrets: [], members: [], activity: [], billed: [], notes: [], uploads: [],
-    ads: { daily: 7, days: 14, checked: null, spent: 0, history: [{ at: now(), what: 'First campaign launch proposed' }] },
-    social: { personal: false, asked: [] }, counters: { pages: 0, emails: 0, deploys: 0 }, refreshedAt: now(),
-  };
-  const b = state.biz;
-  log('Business created');
-  say(`Hi, I'm ${cofounder}, your co-founder on ${name}. The idea: ${idea}`);
-  say(`I build and run the site, the checkout and the business inbox at team@${slug}.vibestartup.pro. Big decisions come to you for approval; you can turn on autopilot in Settings.\n\nDay 1 is the site and a first offer. I proposed two tasks below. Add your first product in Products when you are ready.`);
-  propose('Build and launch the storefront', `A storefront at ${slug}.vibestartup.pro is the first thing a customer sees and the place every ad and post points to. It is the smallest step that lets anyone buy.`, 'site');
-  propose('Design the brand kit', 'Colours, type, a logo in light and dark, and a voice. Every image, email and page after this uses it, so it comes first.', 'brand');
-  b.emails.push({ id: uid(), folder: 'inbox', from: 'hello@vibestartup.pro', to: `team@${slug}.vibestartup.pro`, subject: `Your business inbox is ready`, body: `This is ${name}'s inbox. Customers write here; ${cofounder} drafts and answers, and you stay in control of every send.`, at: now(), read: false, by: 'VibeStartup' });
-  const routine = { id: uid(), name: 'Daily briefing', instructions: 'Compile the numbers, the activity and the priorities. Send them as a briefing card in chat and by email.', schedule: 'every day at 9am', every: 'Daily', status: 'active', by: 'Your co-founder' };
-  b.routines.push(routine);
-  runBriefing(routine);
-}
-
-function addProduct(f) {
-  const b = state.biz;
-  const p = { id: uid(), name: f.name.trim(), desc: f.desc.trim(), price: Math.max(0, Number(f.price) || 0), billing: f.billing, interval: f.interval, type: f.type.trim() || 'digital', status: f.status, at: now() };
-  b.products.push(p);
-  log(`Product added: ${p.name} (${p.status})`);
-  if (p.status === 'active') checkDayOne();
-}
-
-function buy(productId, email) {
-  const b = state.biz, p = b.products.find(x => x.id === productId);
-  if (!ui.fromStore) { b.visits += 1; b.carts += 1; }
-  ui.fromStore = false;
-  b.checkouts += 1;
-  const order = { id: uid(), productId, name: p.name, amount: p.price, test: true, at: now(), email, delivery: /digital|download|ebook|course/i.test(p.type) ? 'Delivered: download sent' : 'Waiting on you: deliver it' };
-  b.orders.unshift(order);
-  let c = b.customers.find(x => x.email === email);
-  if (!c) { c = { email, first: now(), orders: 0, spent: 0, test: true }; b.customers.push(c); }
-  c.orders += 1; c.spent += p.price;
-  event(`Test sale: ${p.name}, ${S.money(p.price)}`);
-  log(`Test buy: ${p.name}`);
-  b.emails.unshift({ id: uid(), folder: 'inbox', from: email, to: `team@${b.slug}.vibestartup.pro`, subject: `Order received (test): ${p.name}`, body: `A test order for ${p.name}, ${S.money(p.price)}.\nDelivery: ${order.delivery}.`, at: now(), read: false, by: 'checkout' });
-  b.messages.push({ id: uid(), from: 'cofounder', kind: 'milestone', title: 'Checkout works', text: `A test buy of ${p.name} went through, ${S.money(p.price)}. It is marked as a test and never counted as a real sale.`, at: now() });
-}
-
-// ---------- views ----------
-
-function startView() {
-  return `<main class="start" id="main-start">
-    <p class="eyebrow">VibeStartup console</p>
-    <h1>Start a vibestartup</h1>
-    <p class="muted">Say the idea in a sentence. Your co-founder takes it from there, and asks you before anything big.</p>
-    <form class="panel" data-form="start" id="start-form">
-      <label class="field">Your idea<textarea name="idea" id="idea" rows="3" required placeholder="A camera-enabled desk lamp that lets an assistant see your notebook"></textarea></label>
-      <label class="field">Business name<input name="name" id="biz-name" required placeholder="Suggested from your idea"><small>You can change it later.</small></label>
-      <label class="field">Co-founder's name<input name="cofounder" id="cofounder" required value="Juno"></label>
-      <div class="btns"><button class="btn primary" type="submit" id="create">Create the business</button><a class="btn" href="../index.html">Back to the site</a></div>
-    </form>
-  </main>`;
-}
+/** What the numbers are, as the app computed them on the last read: this page does no money math of its own. */
+const metrics = () => state.biz.metrics ?? { total: 0, net: 0, payouts: 0, profits: 0, balance: 0, real: 0, realRevenue: 0, tests: 0 };
 
 function side(tab) {
   const b = state.biz, waiting = b.tasks.filter(t => t.status === 'approval').length, logo = b.creatives.find(c => c.kind === 'logo');
@@ -241,7 +91,7 @@ function side(tab) {
     <div class="side-foot">
       <div class="meter"><span id="credits">${b.credits} of ${S.FREE_CREDITS} free credits left</span><div class="bar"><i style="width:${Math.round(100 * b.credits / S.FREE_CREDITS)}%"></i></div><a href="#tab=billing">Plans</a></div>
       <button type="button" class="btn small" data-action="share" id="share-btn">Share &amp; earn</button>
-      <div class="user"><a href="#tab=profile">Profile</a><a href="#tab=billing">Billing</a></div>
+      <div class="user"><a href="/startups/">My startups</a><a href="#tab=profile">Profile</a><a href="#tab=billing">Billing</a></div>
     </div>
   </aside>`;
 }
@@ -365,7 +215,13 @@ function tasksView() {
     ${group('Done', b.tasks.filter(t => t.status === 'done').reverse())}
     ${group('Rejected', b.tasks.filter(t => t.status === 'rejected'))}
     <div class="box" id="routines"><div class="box-head"><h3>Recurring</h3><span class="pill">${routines.length}</span></div>
-      <ul class="list">${routines.map(r => `<li><button type="button" class="linkish grow" data-action="routine" data-id="${r.id}" style="text-align:left">${esc(r.name)}</button><span class="pill ${r.status === 'active' ? 'ok' : 'warn'}">${r.status === 'active' ? 'Active' : 'Paused'}</span><span class="small muted">${esc(r.schedule)}</span>${ui.open['r' + r.id] ? routineDetail(r) : ''}</li>`).join('') || '<li class="muted">No routines.</li>'}</ul></div>
+      <ul class="list">${routines.map(r => `<li><button type="button" class="linkish grow" data-action="routine" data-id="${r.id}" style="text-align:left">${esc(r.name)}</button><span class="pill ${r.status === 'active' ? 'ok' : 'warn'}">${r.status === 'active' ? 'Active' : 'Paused'}</span><span class="small muted">${esc(r.schedule)}</span>${ui.open['r' + r.id] ? routineDetail(r) : ''}</li>`).join('') || '<li class="muted">No routines.</li>'}</ul>
+      ${ui.newRoutine ? `<form class="panel" data-form="routine-new" id="routine-new" style="width:100%">
+        <label class="field">Name<input name="name" required placeholder="e.g. Weekly review"></label>
+        <label class="field">What your co-founder should do each run<textarea name="instructions" rows="3" placeholder="Summarise the week: numbers, what shipped, what waits on me"></textarea></label>
+        <div class="row2"><label class="field">Schedule in words<input name="schedule" value="every Monday at 9am"></label>
+        <label class="field">Runs every<select name="every">${EVERY.map(e => `<option ${e === 'Weekly' ? 'selected' : ''}>${e}</option>`).join('')}</select></label></div>
+        <div class="btns"><button class="btn primary" type="submit">Create routine</button><button type="button" class="btn" data-action="new-routine">Cancel</button></div></form>` : `<div class="btns"><button type="button" class="btn small" data-action="new-routine" id="add-routine">+ New routine</button></div>`}</div>
   </div>`;
 }
 
@@ -548,7 +404,7 @@ function socialView() {
 
 function allFiles() {
   const b = state.biz;
-  return S.memoryFiles(b, state.profile).concat(b.uploads.map(u => ({ ...u, group: 'Other', about: 'Uploaded' }))).concat(b.creatives.map(c => ({ name: c.name, group: 'Creative assets', about: 'Image', svg: c.svg })));
+  return (b.files ?? []).concat(b.creatives.map(c => ({ name: c.name, group: 'Creative assets', about: 'Image', svg: c.svg })));
 }
 
 function filesView() {
@@ -597,15 +453,15 @@ function settingsView() {
 
 function secretsView() {
   const b = state.biz;
-  return `<p><a href="#tab=settings">Back to settings</a></p>${head('Environment secrets', 'Provider keys and credentials for your storefront. A value is encrypted, given to your storefront\'s server at the next deploy, and never shown again, so you never paste a key into chat.')}
+  return `<p><a href="#tab=settings">Back to settings</a></p>${head('Environment secrets', 'Provider keys for your storefront. The app keeps the name and a one-way digest, never the value: a key goes to your storefront\'s runtime when that provider is connected, so you never paste one into chat.')}
   <div class="grid two">
     <form class="box" data-form="secret" id="secret-form"><h3>${ui.secretEdit ? `Replace ${esc(ui.secretEdit)}` : 'Add a secret'}</h3>
-      <p class="small muted">In this demo the value is dropped as soon as you save: only the name is kept.</p>
+      <p class="small muted">The value is dropped as soon as you save: the app keeps the name and a one-way digest, and never shows the value again.</p>
       <label class="field">Name<input name="name" id="secret-name" required pattern="[A-Z][A-Z0-9_]*" placeholder="PROVIDER_API_KEY" value="${esc(ui.secretEdit)}"><small>The environment variable your code reads: capitals, digits and underscores.</small></label>
       <label class="field">Value<span class="inline"><input name="value" id="secret-value" type="${ui.secretShow ? 'text' : 'password'}" required placeholder="Paste the key" autocomplete="off"><button type="button" class="btn small" data-action="secret-show">${ui.secretShow ? 'Hide' : 'Show'}</button></span></label>
       <fieldset class="field" style="border:0;padding:0"><legend>Give it to</legend><label class="check"><input type="checkbox" name="server" checked> Storefront server</label><label class="check"><input type="checkbox" name="jobs"> Background jobs</label></fieldset>
       <button class="btn primary" type="submit" id="save-secret">Save</button></form>
-    <div class="box" id="secrets"><h3>Your secrets</h3>${b.secrets.length ? `<ul class="list">${b.secrets.map(s => `<li><span class="grow"><code>${esc(s.name)}</code> <span class="pill ok">Set</span><br><span class="small muted">•••• · ${s.targets.join(', ')} · ${day(s.at)}</span></span><span class="btns"><button type="button" class="btn small" data-action="secret-replace" data-id="${esc(s.name)}">Replace</button><button type="button" class="btn small danger" data-action="secret-delete" data-id="${esc(s.name)}">Delete</button></span></li>`).join('')}</ul>` : '<p class="muted">No secrets yet. Add a key and your storefront\'s server code can read it after the next deploy.</p>'}</div>
+    <div class="box" id="secrets"><h3>Your secrets</h3>${b.secrets.length ? `<ul class="list">${b.secrets.map(s => `<li><span class="grow"><code>${esc(s.name)}</code> <span class="pill ok">Set</span><br><span class="small muted">value not kept · digest ${esc(s.digest ?? '')} · ${day(s.at)}</span></span><span class="btns"><button type="button" class="btn small" data-action="secret-replace" data-id="${esc(s.name)}">Replace</button><button type="button" class="btn small danger" data-action="secret-delete" data-id="${esc(s.name)}">Delete</button></span></li>`).join('')}</ul>` : '<p class="muted">No secrets yet. Add a key and your storefront\'s server code can read it after the next deploy.</p>'}</div>
   </div>`;
 }
 
@@ -646,7 +502,7 @@ function render() {
   const app = $('#app');
   const typed = $('#composer')?.value;
   const active = document.activeElement, id = active?.id, sel = active && 'selectionStart' in active ? [active.selectionStart, active.selectionEnd] : null;
-  if (!state.biz) { app.innerHTML = startView(); }
+  if (!state.biz) { app.innerHTML = noBusiness(); }
   else {
     const r = route();
     if (r.draft && ui.draftFrom === location.hash) r.draft = null;
@@ -658,7 +514,7 @@ function render() {
   if (id) { const el = document.getElementById(id); if (el && el !== document.body) { el.focus({ preventScroll: true }); if (sel && 'setSelectionRange' in el) try { el.setSelectionRange(...sel); } catch { /* not a text field */ } } }
 }
 
-function commit() { save(); render(); }
+function commit() { render(); }
 
 // ---------- dialogs ----------
 
@@ -676,9 +532,7 @@ function openCheckout(id) {
 
 function openStore() {
   const b = state.biz, br = b.brand;
-  b.visits += 1;
-  event('A visit to the storefront');
-  save();
+  void op('/visit');
   $('#store-body').innerHTML = `<div class="store"><header style="background:${br.ground};color:${br.ink}"><span class="label" style="color:${br.ink}">${esc(b.slug)}.vibestartup.pro</span><h3 id="store-title" style="color:${br.ink}">${esc(b.name)}</h3><p>${esc(b.idea)}</p></header>
     <div class="items">${b.products.filter(p => p.status === 'active').map(p => `<div class="item"><b>${esc(p.name)}</b><p class="small muted">${esc(p.desc)}</p><p>${S.money(p.price)}${p.billing === 'recurring' ? ` / ${p.interval}` : ''}</p><button type="button" class="btn small primary" data-action="store-buy" data-id="${p.id}">Buy</button></div>`).join('') || '<p class="muted">Nothing for sale yet.</p>'}</div>
     <footer>Made with VibeStartup</footer></div>`;
@@ -703,7 +557,7 @@ function confirmDialog({ title, text, ok, typed }) {
 
 function openPreview(name) {
   const b = state.biz;
-  const f = name === 'TERMS.md' ? { name, body: S.termsDraft(b), about: 'Draft' } : name === 'PRIVACY.md' ? { name, body: S.privacyDraft(b), about: 'Draft' } : allFiles().find(x => x.name === name);
+  const f = allFiles().find(x => x.name === name);
   if (!f) return;
   ui.preview = f;
   $('#preview-title').textContent = f.name;
@@ -751,17 +605,18 @@ document.addEventListener('click', async e => {
   if (!el) return;
   const a = el.dataset.action, id = el.dataset.id, b = state.biz;
   switch (a) {
-    case 'approve': approve(id, el.dataset.via ?? 'chat'); return commit();
-    case 'reject': reject(id); return commit();
+    case 'approve': return op('/approve', { taskId: id, via: el.dataset.via ?? 'chat' });
+    case 'reject': return op('/reject', { taskId: id });
     case 'reasoning': ui.open[id] = !ui.open[id]; return render();
     case 'open-task': ui.open['t' + id] = !ui.open['t' + id]; return render();
     case 'day': ui.dayOpen = ui.dayOpen === Number(el.dataset.n) ? null : Number(el.dataset.n); if (route().tab !== 'dashboard') location.hash = '#tab=dashboard'; return render();
     case 'routine': ui.open['r' + id] = !ui.open['r' + id]; ui.routineEdit = null; return render();
     case 'routine-edit': ui.routineEdit = id || null; return render();
-    case 'routine-run': runBriefing(b.routines.find(r => r.id === id)); return commit();
-    case 'routine-pause': { const r = b.routines.find(x => x.id === id); r.status = r.status === 'active' ? 'paused' : 'active'; log(`Routine ${r.status === 'active' ? 'resumed' : 'paused'}: ${r.name}`); return commit(); }
-    case 'routine-cancel': { const r = b.routines.find(x => x.id === id); if (await confirmDialog({ title: `Cancel "${r.name}"?`, text: 'It stops running. You can ask your co-founder for a new routine later.', ok: 'Cancel routine' })) { r.status = 'cancelled'; log(`Routine cancelled: ${r.name}`); } return commit(); }
-    case 'refresh': b.refreshedAt = now(); toast('Updated'); return commit();
+    case 'new-routine': ui.newRoutine = !ui.newRoutine; return render();
+    case 'routine-run': return op('/routine/run', { id });
+    case 'routine-pause': { const r = b.routines.find(x => x.id === id); return op('/routine/status', { id, status: r.status === 'active' ? 'paused' : 'active' }); }
+    case 'routine-cancel': { const r = b.routines.find(x => x.id === id); if (await confirmDialog({ title: `Cancel "${r.name}"?`, text: 'It stops running. You can ask your co-founder for a new routine later.', ok: 'Cancel routine' })) await op('/routine/status', { id, status: 'cancelled' }); return render(); }
+    case 'refresh': await reload(); toast('Updated'); return render();
     case 'share-store': return copy(`https://${b.slug}.vibestartup.pro`);
     case 'share': return openShare();
     case 'copy-share': return copy($('#share-link').value);
@@ -770,126 +625,125 @@ document.addEventListener('click', async e => {
     case 'search': return openSearch();
     case 'search-go': $('#search-dialog').close(); return;
     case 'folder': ui.mailFolder = id; ui.mailThread = null; return render();
-    case 'thread': ui.mailThread = id || null; if (id) { b.emails.find(x => x.id === id).read = true; save(); } return render();
+    case 'thread': ui.mailThread = id || null; return render();
     case 'new-product': ui.newProduct = !ui.newProduct; ui.recurring = false; return render();
-    case 'product-status': { const p = b.products.find(x => x.id === id); p.status = el.dataset.to; log(`Product ${p.status === 'active' ? 'activated' : 'archived'}: ${p.name}`); if (p.status === 'active') checkDayOne(); return commit(); }
+    case 'product-status': return op('/product/status', { id, to: el.dataset.to });
     case 'test-buy': ui.fromStore = false; return openCheckout(id);
     case 'store': return openStore();
-    case 'store-buy': b.carts += 1; event('A cart was started'); ui.fromStore = true; save(); $('#store-dialog').close(); return openCheckout(id);
-    case 'recheck': { const blockers = readiness().filter(r => !r[1]); b.ads.checked = now(); b.ads.history.push({ at: now(), what: `Plan rechecked: ${plural(blockers.length, 'blocker')}` }); log('Ads plan rechecked'); toast(blockers.length ? `Plan rechecked: ${plural(blockers.length, 'blocker')} remain` : 'Plan rechecked: ready'); return commit(); }
+    case 'store-buy': ui.fromStore = true; $('#store-dialog').close(); return openCheckout(id);
+    case 'recheck': { const blockers = readiness().filter(r => !r[1]); await op('/ads', { recheck: true }); toast(blockers.length ? `Plan rechecked: ${plural(blockers.length, 'blocker')} remain` : 'Plan rechecked: ready'); return; }
     case 'studio': ui.studio = id; return render();
     case 'format': ui.format = id; return render();
     case 'look': ui.look = id; return render();
     case 'count': ui.count = Number(id); return render();
-    case 'campaign': propose('Build an outbound campaign', 'A three-step sequence over a week to the leads you upload: an introduction, one useful follow-up and a last note. Every step is shown before anything is sent.', 'campaign'); location.hash = '#tab=chat'; return commit();
-    case 'formation': propose('Prepare a company formation', 'Draft formation papers for a company that owns this business, for you to read. Filing and its fees are your decision.', 'formation'); return commit();
-    case 'connect': if (!b.social.asked.includes(id)) b.social.asked.push(id); toast('Connecting happens in the live app, through the platform\'s own login'); return commit();
+    case 'campaign': await op('/propose', { title: 'Build an outbound campaign', reasoning: 'A three-step sequence over a week to the leads you upload: an introduction, one useful follow-up and a last note. Every step is shown before anything is sent.', effect: 'campaign' }); location.hash = '#tab=chat'; return render();
+    case 'formation': return op('/propose', { title: 'Prepare a company formation', reasoning: 'Draft formation papers for a company that owns this business, for you to read. Filing and its fees are your decision.', effect: 'formation' });
+    case 'connect': await op('/provider', { kind: 'social' }); toast('Publishing needs your own login on each platform: connect your provider when you are ready'); return;
     case 'social-view': ui.socialView = id; return render();
     case 'preview': return openPreview(id);
     case 'secret-show': { const v = $('#secret-value').value; ui.secretShow = !ui.secretShow; render(); $('#secret-value').value = v; return; }
     case 'secret-replace': ui.secretEdit = id; return render();
-    case 'secret-delete': b.secrets = b.secrets.filter(s => s.name !== id); log(`Secret deleted: ${id}`); return commit();
-    case 'resend': { const m = b.members.find(x => x.email === id); m.resent = true; toast(`Invite re-sent to ${id} (not delivered in the demo)`); return commit(); }
-    case 'revoke': b.members = b.members.filter(x => x.email !== id); log(`Invite revoked: ${id}`); return commit();
-    case 'dispute': { const w = b.billed.find(x => x.id === id); w.disputed = true; b.credits = Math.min(S.FREE_CREDITS, b.credits + w.credits); log(`Disputed: ${w.what}; ${plural(w.credits, 'credit')} back`); return commit(); }
-    case 'delete-biz': if (await confirmDialog({ title: `Delete ${b.name}?`, text: 'Its storefront, records and files are removed for good.', ok: 'Delete business', typed: b.name })) { state.biz = null; location.hash = ''; toast('The business is deleted'); } return commit();
-    case 'sign-out': toast('Signed out of the demo'); return;
-    case 'delete-account': if (await confirmDialog({ title: 'Delete your account?', text: 'Everything the demo keeps in this browser is removed.', ok: 'Delete account' })) { try { localStorage.removeItem(KEY); } catch { /* nothing kept */ } state = fresh(); location.hash = ''; } return render();
+    case 'secret-delete': return op('/secret', { name: id, remove: true });
+    case 'resend': toast(`Invite saved for ${id}. Sending needs your email provider: connect it when you are ready`); return;
+    case 'revoke': return op('/member', { email: id, revoke: true });
+    case 'dispute': return op('/dispute', { id });
+    case 'delete-biz': if (await confirmDialog({ title: `Delete ${b.name}?`, text: 'Its storefront, records and files are removed for good.', ok: 'Delete business', typed: b.name })) { await api('DELETE', `/startups/${encodeURIComponent(STARTUP_ID)}`); location.href = '/startups/'; } return;
+    case 'sign-out': await api('POST', '/signout'); location.href = '/'; return;
+    case 'delete-account': if (await confirmDialog({ title: 'Delete your account?', text: 'Your account and every business it holds are removed for good.', ok: 'Delete account' })) { await api('DELETE', '/me'); location.href = '/'; } return;
   }
 });
 
-document.addEventListener('submit', e => {
+document.addEventListener('submit', async e => {
   const form = e.target, kind = form.dataset.form;
   if (form.id === 'checkout-form') return checkoutSubmit(e);
   if (!kind) return;
   e.preventDefault();
   const f = Object.fromEntries(new FormData(form)), b = state.biz;
   switch (kind) {
-    case 'start':
-      createBiz({ idea: f.idea.trim(), name: f.name.trim(), cofounder: f.cofounder.trim() || 'Juno' });
-      location.hash = '#tab=chat';
-      return commit();
     case 'chat': {
       const text = (f.text ?? '').trim();
       if (!text) return;
       form.elements.text.value = '';
-      b.messages.push({ id: uid(), from: 'you', text, at: now() });
-      if (charge(1, 'Run co-founder session')) { say(S.replyTo(text, b)); b.notes.push(`Owner said: ${text.slice(0, 120)}`); }
-      log('Message to the co-founder');
       if (location.hash.includes('draft=')) location.hash = '#tab=chat';
-      return commit();
+      const button = form.querySelector('button[type=submit]');
+      button.disabled = true;
+      form.classList.add('waiting');
+      try { await op('/chat', { text }); }
+      finally { button.disabled = false; form.classList.remove('waiting'); }
+      return;
     }
     case 'routine': {
-      const r = b.routines.find(x => x.id === form.dataset.id);
-      Object.assign(r, { name: f.name.trim(), instructions: f.instructions.trim(), schedule: f.schedule.trim(), every: f.every });
+      await op('/routine/edit', { id: form.dataset.id, name: (f.name ?? '').trim(), instructions: (f.instructions ?? '').trim(), schedule: (f.schedule ?? '').trim(), every: f.every });
       ui.routineEdit = null;
-      log(`Routine edited: ${r.name}`);
       toast('Saved');
-      return commit();
+      return;
     }
     case 'reply': {
-      const t = b.emails.find(x => x.id === form.dataset.id), text = (f.text ?? '').trim();
+      const text = (f.text ?? '').trim();
       if (!text) return;
-      b.emails.unshift({ id: uid(), folder: 'sent', from: `team@${b.slug}.vibestartup.pro`, to: t.from, subject: `Re: ${t.subject}`, body: `${text}\n\n(Demo: not delivered.)`, at: now(), read: true, by: 'you' });
-      log(`Email reply: ${t.subject}`);
-      toast('Reply saved in Sent (not delivered in the demo)');
-      return commit();
+      await op('/reply', { id: form.dataset.id, text });
+      toast('Reply saved in Sent as a draft: connect your email provider to send');
+      return;
     }
     case 'product':
-      addProduct({ ...f, interval: f.interval ?? 'month' });
+      await op('/product', { name: f.name, desc: f.desc, price: f.price, billing: f.billing, interval: f.interval ?? 'month', type: f.type, status: f.status });
       ui.newProduct = false;
-      return commit();
+      return;
     case 'ads':
-      b.ads.daily = Math.max(1, Number(f.daily) || 1);
-      b.ads.days = Number(f.days);
-      b.ads.history.push({ at: now(), what: `Budget set: ${S.money(b.ads.daily)} a day for ${b.ads.days} days` });
-      log('Ads budget set');
-      return commit();
+      await op('/ads', { daily: Number(f.daily) || 1, days: Number(f.days) || 14 });
+      toast('Budget saved');
+      return;
+    case 'routine-new': {
+      if (!(f.name ?? '').trim()) return;
+      await op('/routine', { name: f.name, instructions: f.instructions, schedule: f.schedule, every: f.every });
+      ui.newRoutine = false;
+      toast('Routine created');
+      return;
+    }
     case 'make': return make(f);
     case 'budget':
-      b.creativeBudget = Math.max(0, Number(f.budget) || 0) || null;
-      log(`Creative budget: ${b.creativeBudget ?? 'none'}`);
-      return commit();
+      await op('/settings', { creativeBudget: Number(f.budget) || 0 });
+      return;
     case 'post':
-      b.posts.push({ id: uid(), text: f.text.trim(), date: f.date, status: b.social.personal ? 'Ready: texted to you to post' : 'Draft: connect an account to publish' });
-      log('Post scheduled');
-      return commit();
+      await op('/post', { text: f.text, date: f.date });
+      toast('Post drafted');
+      return;
     case 'domain':
-      b.domain = (f.domain ?? '').trim().toLowerCase();
-      log(`Custom domain: ${b.domain || 'removed'}`);
-      return commit();
+      await op('/settings', { domain: (f.domain ?? '').trim() });
+      toast(f.domain?.trim() ? 'Saved: the DNS record is yours to add. This app does not move DNS' : 'Domain removed');
+      return;
     case 'invite': {
-      const email = f.email.trim().toLowerCase();
-      if (b.members.some(m => m.email === email) || b.members.length >= S.SEATS) { toast('Already invited, or no seat left'); return; }
-      b.members.push({ email, role: f.role, at: now() });
-      log(`Invited ${email} as ${f.role}`);
-      toast(`Invite saved for ${email} (not sent in the demo)`);
-      return commit();
+      try { await op('/member', { email: (f.email ?? '').trim(), role: f.role }); toast(`Invite saved for ${(f.email ?? '').trim()}. Sending needs your email provider`); }
+      catch { /* already invited, or no seat left (the message is shown) */ }
+      return;
     }
     case 'secret': {
-      const name = f.name.trim();
-      // The value is read from the form and dropped here: it never reaches state, storage or the page again.
-      const targets = [f.server && 'storefront server', f.jobs && 'background jobs'].filter(Boolean);
-      b.secrets = b.secrets.filter(s => s.name !== name).concat({ name, targets: targets.length ? targets : ['storefront server'], at: now() });
-      form.reset();
-      ui.secretEdit = '';
-      ui.secretShow = false;
-      log(`Secret set: ${name}`);
-      toast(`${name} saved; the value is not kept`);
-      return commit();
+      // The value goes straight to the app and is never kept: only its name and a one-way digest come back.
+      try {
+        await op('/secret', { name: (f.name ?? '').trim(), value: f.value ?? '' });
+        form.reset();
+        ui.secretEdit = '';
+        ui.secretShow = false;
+        toast(`${(f.name ?? '').trim()} saved; the value is not kept`);
+      } catch { /* the message is shown */ }
+      return;
     }
-    case 'profile':
-      Object.assign(state.profile, { name: f.name.trim(), email: f.email.trim(), phone: f.phone.trim() });
+    case 'profile': {
+      const r = await api('PATCH', '/me', { name: (f.name ?? '').trim(), phone: (f.phone ?? '').trim() });
+      state.profile = { ...state.profile, ...r.user };
       toast('Profile saved');
-      return commit();
+      return reload();
+    }
     case 'notify':
-      for (const k of Object.keys(state.profile.notify)) state.profile.notify[k] = !!f[k];
+      await api('PATCH', '/me', { notify: Object.fromEntries(Object.keys(state.profile.notify ?? {}).map(k => [k, !!f[k]])) });
+      state.profile.notify = { ...state.profile.notify, ...Object.fromEntries(Object.keys(state.profile.notify ?? {}).map(k => [k, !!f[k]])) };
       toast('Preferences saved');
-      return commit();
+      return;
   }
 });
 
-function checkoutSubmit(e) {
+async function checkoutSubmit(e) {
+  e.preventDefault();
   if (e.submitter?.value !== 'pay') return;
   const f = Object.fromEntries(new FormData(e.target));
   const card = String(f.card).replace(/\D/g, ''), exp = /^(\d{2})\s*\/\s*(\d{2})$/.exec(String(f.exp).trim());
@@ -898,53 +752,47 @@ function checkoutSubmit(e) {
   if (!exp || Number(exp[1]) < 1 || Number(exp[1]) > 12 || new Date(2000 + Number(exp[2]), Number(exp[1])) < new Date()) return err('Use any future expiry date, as MM / YY.');
   if (!/^\d{3,4}$/.test(String(f.cvc).trim())) return err('Use any three digits.');
   if (!/^\S+@\S+\.\S+$/.test(String(f.email).trim())) return err('Add an email for the receipt.');
-  // The card fields are dropped here; only the order and the buyer's email are kept.
-  buy(ui.checkout, String(f.email).trim().toLowerCase());
-  save();
-  setTimeout(() => { toast('Test payment complete'); render(); }, 0);
+  // The card fields are dropped here: the app takes only the test card, and keeps the order and the buyer's email.
+  try {
+    await op('/checkout', { productId: ui.checkout, email: String(f.email).trim().toLowerCase(), card });
+    $('#checkout-dialog').close();
+    toast('Test payment complete');
+  } catch { /* the message is shown in the dialog */ }
 }
 
-function make(f) {
-  const b = state.biz, fmt = S.FORMATS.find(x => x.id === ui.format);
+async function make(f) {
+  const fmt = S.FORMATS.find(x => x.id === ui.format);
   if (!fmt?.ready) return toast('That format is not ready yet');
-  const credits = ui.count * Math.round((fmt.low + fmt.high) / 2);
-  if (!charge(credits, `Make ${ui.count} ${fmt.name.toLowerCase()}s`)) return commit();
-  const product = b.products.find(p => p.id === f.product);
-  const words = (f.prompt ?? '').trim() || product?.name || b.name;
-  ui.made = [];
-  const n0 = b.creatives.filter(c => c.kind === 'offer').length;
-  for (let i = 0; i < ui.count; i++) {
-    const c = { id: uid(), name: `offer-image-${n0 + i + 1}.svg`, kind: 'offer', at: now(), prompt: words, svg: S.offerImage({ brand: b.brand, words, product, look: ui.look, n: i, name: b.name }) };
-    b.creatives.push(c);
-    ui.made.push(c.id);
-  }
-  log(`Made ${ui.count} offer images`);
-  say(`I made ${plural(ui.count, 'offer image')} from "${words}". They are in the Studio's library.`);
-  return commit();
+  const product = state.biz.products.find(p => p.id === f.product);
+  const words = (f.prompt ?? '').trim() || product?.name || state.biz.name;
+  try {
+    const r = await op('/studio/make', { format: ui.format, words, look: ui.look, count: ui.count, productId: product?.id ?? null });
+    ui.made = (r.startup.creatives ?? []).slice(-ui.count).map(c => c.id);
+    ui.studio = 'library';
+    render();
+  } catch { /* the message is shown */ }
 }
 
-document.addEventListener('change', e => {
+document.addEventListener('change', async e => {
   const el = e.target, k = el.dataset?.change, b = state.biz;
   if (!k) return;
-  if (k === 'autopilot') { b.autopilot = el.checked; log(`Autopilot ${b.autopilot ? 'on' : 'off'}`); if (b.autopilot) for (const t of b.tasks.filter(x => x.status === 'approval')) approve(t.id, 'autopilot'); return commit(); }
-  if (k === 'briefing') { b.briefing = el.value; log(`Briefing: ${b.briefing}`); return commit(); }
+  if (k === 'autopilot') return op('/settings', { autopilot: el.checked });
+  if (k === 'briefing') return op('/settings', { briefing: el.value });
   if (k === 'billing') { ui.recurring = el.value === 'recurring'; el.closest('form').querySelector('[name=interval]').closest('label').classList.toggle('hidden', !ui.recurring); return; }
   if (k === 'studio-product') { ui.product = el.value; return; }
   if (k === 'ref') { ui.refs = el.checked ? [...ui.refs, el.value] : ui.refs.filter(x => x !== el.value); return; }
-  if (k === 'personal') { b.social.personal = el.checked; log(`Personal profile handoff ${el.checked ? 'on' : 'off'}`); return commit(); }
+  if (k === 'personal') return op('/settings', { personal: el.checked });
   if (k === 'leads' || k === 'upload') {
     const file = el.files?.[0];
     if (!file) return;
     file.text().then(text => {
-      if (k === 'upload') { b.uploads.push({ name: file.name, body: text.slice(0, 20000) }); log(`File uploaded: ${file.name}`); return commit(); }
+      if (k === 'upload') return void op('/file', { name: file.name, body: text.slice(0, 20000) });
       const rows = text.split(/\r?\n/).map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g, ''))).filter(r => r.some(Boolean));
       const header = rows[0].map(h => h.toLowerCase()), hasHeader = header.includes('email');
       const ni = hasHeader ? header.indexOf('name') : 0, ei = hasHeader ? header.indexOf('email') : 1;
       const leads = rows.slice(hasHeader ? 1 : 0).map(r => ({ name: r[ni] ?? '', email: r[ei] ?? '' })).filter(l => /@/.test(l.email));
-      b.leads = b.leads.concat(leads);
-      log(`Leads uploaded: ${leads.length}`);
       toast(`${plural(leads.length, 'lead')} read`);
-      commit();
+      void op('/leads', { leads });
     });
   }
 });
@@ -955,8 +803,6 @@ document.addEventListener('input', e => {
   if (k === 'studio-prompt') ui.prompt = e.target.value;
   if (k === 'file-search') { ui.fileSearch = e.target.value; render(); }
   if (e.target.id === 'search-input') renderSearch();
-  if (e.target.id === 'idea') { const n = $('#biz-name'); if (!n.dataset.edited) n.value = S.suggestName(e.target.value); }
-  if (e.target.id === 'biz-name') e.target.dataset.edited = '1';
 });
 
 document.addEventListener('keydown', e => {
@@ -971,4 +817,27 @@ document.addEventListener('click', e => {
 });
 
 window.addEventListener('hashchange', () => { ui.mailThread = null; render(); $('#main')?.focus({ preventScroll: true }); window.scrollTo(0, 0); });
-render();
+async function boot() {
+  try {
+    META = await (await fetch('/api/meta', { credentials: 'same-origin' })).json();
+    Object.assign(S, {
+      LAUNCH_WEEK: META.launchWeek ?? [], FORMATS: META.formats ?? [], LOOKS: META.looks ?? [], SOCIAL: META.social ?? [],
+      PLANS: META.plans ?? [], RATES: META.rates ?? {}, FREE_CREDITS: META.freeCredits ?? 50, PAYOUT_MIN: META.payoutMin ?? 20,
+      SEATS: META.seats ?? 10, TEST_CARD: META.testCard ?? '4242 4242 4242 4242',
+    });
+  } catch { /* the console still shows what the business already has */ }
+  if (!STARTUP_ID) { location.href = '/startups/'; return; }
+  try {
+    const me = await (await fetch('/api/me', { credentials: 'same-origin' })).json();
+    if (!me.user) { location.href = `/?next=${encodeURIComponent(location.pathname + location.search)}`; return; }
+    state.profile = me.user;
+    startups = me.startups ?? [];
+    await reload();
+  } catch {
+    location.href = '/';
+    return;
+  }
+  render();
+}
+
+boot();

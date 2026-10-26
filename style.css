@@ -108,3 +108,25 @@ img { max-width: 100%; }
   .split { grid-template-columns: 1fr; }
   .hero { padding-top: 28px; }
 }
+
+/* forms on the public pages: the account, a new business, and the language picker */
+.field { display: block; margin: 0 0 12px; font-weight: 600; font-size: 0.95rem; }
+.field input, .field textarea {
+  display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 9px 11px;
+  font: inherit; font-weight: 400; color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: var(--radius);
+}
+.field small { display: block; margin-top: 4px; font-weight: 400; color: var(--muted); }
+.error { margin: 6px 0 10px; color: var(--bad); font-size: 0.9rem; }
+.error:empty { display: none; }
+.linkish { background: none; border: 0; padding: 0; font: inherit; color: var(--accent); cursor: pointer; }
+.langbtn {
+  margin-left: 10px; padding: 2px 8px; font: 600 0.85rem var(--sans); color: var(--text);
+  background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer;
+}
+.langlist { list-style: none; padding: 0; margin: 0 0 14px; display: grid; gap: 6px; }
+.langlist a { display: block; padding: 8px 10px; border-radius: var(--radius); text-decoration: none; color: var(--text); }
+.langlist a[aria-current="true"] { background: var(--accent-soft); color: var(--accent); }
+.foot-right { display: inline-flex; align-items: center; gap: 4px; }
+a.card { display: block; text-decoration: none; color: inherit; }
+a.card:hover { border-color: var(--accent); }

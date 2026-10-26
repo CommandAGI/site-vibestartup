@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <title>VibeStartup: start a real business with an AI co-founder</title>
-<meta name="description" content="VibeStartup starts vibestartups: real small businesses made and run with an AI co-founder that builds the site, checkout, email, ads and content, and brings the big decisions to you.">
+<meta name="description" content="VibeStartup is a startup factory: sign up, describe an idea, and an AI co-founder builds and runs a real small business with you. Every big decision stays yours.">
 <link rel="stylesheet" href="style.css">
 <link rel="icon" href="mark.svg" type="image/svg+xml">
 </head>
@@ -13,26 +13,46 @@
 <a class="skip" href="#main">Skip to the content</a>
 <header class="site-head">
   <div class="wrap">
-    <a class="brand" href="index.html"><img src="mark.svg" alt="" width="32" height="32">VibeStartup</a>
+    <a class="brand" href="/"><img src="mark.svg" alt="" width="32" height="32">VibeStartup</a>
     <nav class="site-nav" aria-label="Site">
-      <a href="index.html" aria-current="page">Home</a>
+      <a href="/" aria-current="page">Home</a>
       <a href="#how">How it works</a>
       <a href="#plans">Plans</a>
-      <a href="console/" id="try">Try the console</a>
+      <a href="/startups/" id="signin-link">Your businesses</a>
     </nav>
   </div>
 </header>
 
 <main id="main" class="wrap">
   <section class="hero">
-    <p class="eyebrow">A company of CommandAGI</p>
+    <p class="eyebrow">An independent company &middot; vibestartup.pro</p>
     <h1>Have an idea on Monday. Have a <em>business</em> by Sunday.</h1>
     <p class="lede">A vibestartup is a real small business you start with an AI co-founder. You bring the idea and the calls only you can make. Your co-founder builds the storefront, sets up checkout and a business inbox, makes the brand and the content, runs the ads, and briefs you every morning.</p>
     <div class="btns">
-      <a class="btn primary" href="console/" id="start">Start a vibestartup</a>
+      <a class="btn primary" href="#account" id="start">Start free</a>
       <a class="btn" href="#how">How it works</a>
     </div>
-    <p class="notice"><strong>Not launched yet.</strong> VibeStartup is being built. The console on this site is a demo: it runs on one sample business in your browser, its co-founder is a script, and nothing you type leaves this page.</p>
+  </section>
+
+  <section class="section split" id="account" aria-labelledby="account-title">
+    <form class="card" data-auth="signup" id="signup">
+      <h2 id="account-title">Create your account</h2>
+      <p class="small muted">Free credits to start. No card. Prices are set at launch.</p>
+      <label class="field">Your name<input name="name" autocomplete="name" required placeholder="Ada Lovelace"></label>
+      <label class="field">Email<input name="email" type="email" autocomplete="email" required placeholder="you@example.com"></label>
+      <label class="field">Password<input name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters"></label>
+      <label class="field">Your first idea <small>(optional: your co-founder starts on it now)</small><textarea name="idea" rows="2" placeholder="A camera-enabled desk lamp that lets an assistant see your notebook"></textarea></label>
+      <p class="error" role="alert" data-error></p>
+      <button class="btn primary" type="submit">Create my account</button>
+    </form>
+    <form class="card" data-auth="signin" id="signin">
+      <h3>Already have an account?</h3>
+      <label class="field">Email<input name="email" type="email" autocomplete="email" required></label>
+      <label class="field">Password<input name="password" type="password" autocomplete="current-password" required></label>
+      <p class="error" role="alert" data-error></p>
+      <button class="btn" type="submit">Sign in</button>
+      <p class="small muted">One account runs as many businesses as your plan allows.</p>
+    </form>
   </section>
 
   <section class="section" aria-labelledby="what">
@@ -62,7 +82,7 @@
     <h2 id="honest">What you get, and what you don't</h2>
     <div class="split">
       <div class="card"><h3>You get</h3><ul><li>A new site, hosted for you, with checkout, email, ads and content.</li><li>A co-founder that explains what it does and why.</li><li>Every file of your business, readable and yours.</li></ul></div>
-      <div class="card"><h3>You don't get</h3><ul><li>Sourcing, stock or shipping of physical goods: you bring the supplier, or sell digital products and services.</li><li>Edits to a site you already have. Your co-founder can read it for context and builds a new one here if you ask.</li><li>Sales made up to look good: only completed sales are counted.</li></ul></div>
+      <div class="card"><h3>You don't get</h3><ul><li>Sourcing, stock or shipping of physical goods: you bring the supplier, or sell digital products and services.</li><li>Edits to a site you already have. Your co-founder can read it for context and builds a new one here if you ask.</li><li>Sales made up to look good: only completed sales are counted.</li><li>Live money, ads, posts, email or a custom domain until you connect your own provider account. Each of those screens stops and tells you what it needs.</li></ul></div>
     </div>
   </section>
 
@@ -79,9 +99,21 @@
 
 <footer class="site-foot">
   <div class="wrap">
-    <span>VibeStartup, a company of CommandAGI &middot; vibestartup.pro &middot; hello@vibestartup.pro</span>
-    <span><a href="console/">Console demo</a> &middot; <a href="#plans">Plans</a></span>
+    <span>VibeStartup &middot; vibestartup.pro &middot; hello@vibestartup.pro</span>
+    <span class="foot-right"><a href="/startups/">Your businesses</a> &middot; <a href="#plans">Plans</a>
+      <button type="button" class="langbtn" data-lang aria-haspopup="dialog" aria-label="Language">A/文</button></span>
   </div>
 </footer>
+
+<dialog id="lang-dialog" aria-labelledby="lang-title">
+  <h2 id="lang-title">Language</h2>
+  <ul class="langlist">
+    <li><a href="/" hreflang="en" lang="en" aria-current="true">English</a></li>
+    <li><a href="/es/" hreflang="es" lang="es">Español</a></li>
+    <li><a href="/zh/" hreflang="zh-Hans" lang="zh-Hans">简体中文</a></li>
+  </ul>
+  <form method="dialog"><button class="btn">Close</button></form>
+</dialog>
+<script type="module" src="site.js"></script>
 </body>
 </html>

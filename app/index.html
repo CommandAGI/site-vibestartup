@@ -3,16 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-<title>Console demo | VibeStartup</title>
-<meta name="description" content="The VibeStartup console as a demo: a sample business and a scripted co-founder, in your browser only.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<title>Your business | VibeStartup</title>
+<meta name="description" content="The VibeStartup console: your business, your AI co-founder, and every decision waiting on you.">
 <link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="console.css">
+<link rel="stylesheet" href="app.css">
 <link rel="icon" href="../mark.svg" type="image/svg+xml">
 </head>
 <body class="console">
 <a class="skip" href="#app">Skip to the console</a>
-<p class="demo-banner" role="note"><strong>Demo:</strong> a sample business; the co-founder is a script; nothing leaves this browser.</p>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -76,6 +75,6 @@
   </form>
 </dialog>
 
-<script type="module" src="console.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
