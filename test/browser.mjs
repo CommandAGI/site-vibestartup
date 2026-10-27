@@ -111,7 +111,7 @@ export async function page(wsUrl, { out, width = 1440, height = 900 } = {}) {
   const click = async sel => {
     const box = await rect(sel);
     if (!box) throw Error(`nothing to click at ${sel}`);
-    await evalJs(`document.querySelector(${JSON.stringify(sel)}).scrollIntoView({ block: 'center' })`);
+    await evalJs(`document.querySelector(${JSON.stringify(sel)}).scrollIntoView({ block: 'center', behavior: 'instant' })`);
     const at = await rect(sel);
     for (const type of ['mousePressed', 'mouseReleased']) await send('Input.dispatchMouseEvent', { type, x: at.x, y: at.y, button: 'left', clickCount: 1 });
     await sleep(120);
@@ -119,7 +119,7 @@ export async function page(wsUrl, { out, width = 1440, height = 900 } = {}) {
 
   /** Click what the words say, inside a selector's matches (a button by its label). */
   const clickText = async (sel, words) => {
-    const found = await evalJs(`(() => { const e = [...document.querySelectorAll(${JSON.stringify(sel)})].find(x => (x.innerText || '').includes(${JSON.stringify(words)})); if (!e) return null; e.scrollIntoView({ block: 'center' }); return true; })()`);
+    const found = await evalJs(`(() => { const e = [...document.querySelectorAll(${JSON.stringify(sel)})].find(x => (x.innerText || '').includes(${JSON.stringify(words)})); if (!e) return null; e.scrollIntoView({ block: 'center', behavior: 'instant' }); return true; })()`);
     if (!found) throw Error(`no ${sel} says "${words}"`);
     const at = await evalJs(`(() => { const e = [...document.querySelectorAll(${JSON.stringify(sel)})].find(x => (x.innerText || '').includes(${JSON.stringify(words)})); const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
     for (const type of ['mousePressed', 'mouseReleased']) await send('Input.dispatchMouseEvent', { type, x: at.x, y: at.y, button: 'left', clickCount: 1 });

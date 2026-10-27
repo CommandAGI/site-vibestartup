@@ -42,6 +42,19 @@ async function run(browser, width) {
   const landing = await browser.shot(`landing-${width}`);
   check(landing.sideways <= 0, `${label}: the landing page scrolls sideways by ${landing.sideways}px`);
 
+  // 1a. The cover's sketch: a typed idea writes the facing page, in this browser, and says it is a sketch.
+  await browser.fill('#idea-line', 'Hand-thrown ceramic mugs sold to cafes');
+  await browser.click('#sketch button[type=submit]');
+  await browser.waitFor('/Mugs/.test(document.querySelector("[data-f=name]")?.textContent ?? "")', 5000);
+  check(/Ceramic Mugs/.test(await browser.text('[data-f=product]')), `${label}: the sketch names the product from the idea`);
+  check(/nothing is sent/i.test(await browser.text('#sketch-note')), `${label}: the sketch says it is made in the browser`);
+  // 1b. Every film is captioned as generated, has a poster, and has an AV1 and an H.264 source.
+  const films = await browser.eval(`[...document.querySelectorAll('.film')].map(f => ({
+    caption: /Generated film/.test(f.querySelector('figcaption')?.textContent ?? ''),
+    poster: !!f.querySelector('video')?.poster, sources: f.querySelectorAll('source').length }))`);
+  check(films.length === 4, `${label}: the landing has ${films.length} films (4 expected)`);
+  check(films.every(f => f.caption && f.poster && f.sources === 2), `${label}: a film lacks its caption, poster or sources`);
+
   await browser.fill('#signup [name=name]', 'Journey Person');
   await browser.fill('#signup [name=email]', email);
   await browser.fill('#signup [name=password]', 'correct horse battery');

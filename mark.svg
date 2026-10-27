@@ -1,6 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="VibeStartup">
-  <rect x="2" y="2" width="60" height="60" rx="12" fill="#c2410c"/>
-  <path d="M15 21 L26 45 L37 21" fill="none" stroke="#fffaf2" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M43 39 L49 21" fill="none" stroke="#fffaf2" stroke-width="6" stroke-linecap="round"/>
-  <circle cx="41" cy="46" r="3.6" fill="#fffaf2"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="VibeStartup"><title>VibeStartup</title>
+<rect width="64" height="64" fill="#212121"/>
+<path d="M46 0h10v20l-5-4-5 4z" fill="#f36c50"/>
+<path transform="translate(8.95 55) scale(0.06301 -0.06301)" fill="#fff8e9" d="M168 -10Q164 -10 160.0 -7.0Q156 -4 156 6L145 640Q144 668 138.0 679.0Q132 690 113 694L100 697Q88 700 88 709Q88 720 105 720H270Q283 720 283 710Q283 699 263 697L243 695Q226 694 219.5 684.5Q213 675 213 653L218 180Q218 170 224.0 169.0Q230 168 234 176L453 632Q481 689 435 695L421 697Q406 700 406 709Q406 720 423 720H568Q580 720 580 710Q580 701 564 697L548 694Q528 690 514.0 674.5Q500 659 486 631L187 6Q183 -4 177.5 -7.0Q172 -10 168 -10Z"/>
 </svg>

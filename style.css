@@ -1,54 +1,65 @@
-/* VibeStartup: warm paper, charcoal ink, serif headings, framed cards, a burnt-orange accent; light and dark from the person's setting. */
+/* VibeStartup's house style: the book (redesign/DESIGN.md). Ivory paper, ink, the editor's tomato pen, cobalt sparingly; Instrument Serif and Instrument Sans; square corners. The console and the account pages use these tokens; the landing adds book.css. */
+@font-face { font-family: "Instrument Sans"; font-style: italic; font-weight: 400 700; font-stretch: 75% 100%; font-display: swap; src: url("/fonts/InstrumentSans-italic-latin-ext.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Instrument Sans"; font-style: italic; font-weight: 400 700; font-stretch: 75% 100%; font-display: swap; src: url("/fonts/InstrumentSans-italic-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Instrument Sans"; font-style: normal; font-weight: 400 700; font-stretch: 75% 100%; font-display: swap; src: url("/fonts/InstrumentSans-normal-latin-ext.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Instrument Sans"; font-style: normal; font-weight: 400 700; font-stretch: 75% 100%; font-display: swap; src: url("/fonts/InstrumentSans-normal-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Instrument Serif"; font-style: italic; font-weight: 400; font-display: swap; src: url("/fonts/InstrumentSerif-italic-latin-ext.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Instrument Serif"; font-style: italic; font-weight: 400; font-display: swap; src: url("/fonts/InstrumentSerif-italic-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Instrument Serif"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/InstrumentSerif-normal-latin-ext.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Instrument Serif"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/InstrumentSerif-normal-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+/* metric-matched fallbacks, so the swap to the house faces does not move the page */
+@font-face { font-family: "Instrument Serif Fallback"; src: local("Georgia"), local("Times New Roman"), local("Liberation Serif"); size-adjust: 88%; ascent-override: 98%; descent-override: 26%; }
+@font-face { font-family: "Instrument Sans Fallback"; src: local("Arial"), local("Helvetica"), local("Liberation Sans"); size-adjust: 97%; ascent-override: 96%; descent-override: 25%; }
 :root {
-  --bg: #fcfbf7;
-  --surface: #ffffff;
-  --soft: #f3efe8;
-  --line: #e4e0d8;
-  --text: #2f2b28;
-  --muted: #7c766f;
-  --ink: #26221f;
-  --ink-text: #fffaf2;
-  --accent: #c2410c;
-  --accent-soft: #fbe7da;
+  --bg: #fff8e9;
+  --surface: #fffcf4;
+  --soft: #f6ecd6;
+  --line: #e2d7bf;
+  --text: #212121;
+  --muted: #6b645a;
+  --ink: #212121;
+  --ink-text: #fff8e9;
+  --accent: #b23a22;
+  --accent-soft: #fde1d8;
   --accent-text: #ffffff;
   --ok: #2f7d4f;
   --ok-soft: #e3f2e8;
   --warn: #8a5a00;
   --warn-soft: #fbf0d4;
   --bad: #b3261e;
-  --focus: #c2410c;
-  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --focus: #2752ed;
+  --serif: "Instrument Serif", "Instrument Serif Fallback", Georgia, serif;
+  --sans: "Instrument Sans", "Instrument Sans Fallback", Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --radius: 8px;
+  --radius: 0;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1a1816;
-    --surface: #23201d;
-    --soft: #2c2925;
-    --line: #3a3631;
-    --text: #ede8e1;
-    --muted: #a9a198;
-    --ink: #ede8e1;
-    --ink-text: #1a1816;
-    --accent: #fb8a4c;
-    --accent-soft: #3b2518;
-    --accent-text: #1a1816;
+    --bg: #1c1b19;
+    --surface: #242320;
+    --soft: #2d2b27;
+    --line: #3d3a34;
+    --text: #f3ead6;
+    --muted: #b3aa98;
+    --ink: #fff8e9;
+    --ink-text: #212121;
+    --accent: #f36c50;
+    --accent-soft: #3d231c;
+    --accent-text: #212121;
     --ok: #7dd3a0;
     --ok-soft: #1f3327;
     --warn: #f3c86b;
     --warn-soft: #3a2f16;
     --bad: #ff8a80;
-    --focus: #fb8a4c;
+    --focus: #8ea6ff;
   }
 }
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); }
-h1, h2, h3 { font-family: var(--serif); font-weight: 500; color: var(--ink); letter-spacing: -0.01em; }
+h1, h2, h3 { font-family: var(--serif); font-weight: 400; text-wrap: balance; color: var(--ink); letter-spacing: -0.01em; }
 a { color: var(--accent); }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 img { max-width: 100%; }
@@ -58,7 +69,7 @@ img { max-width: 100%; }
 
 /* header and footer */
 .site-head .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding-top: 18px; padding-bottom: 18px; }
-.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font: 600 1.35rem var(--serif); }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font: 400 1.45rem var(--serif); }
 .brand img { width: 32px; height: 32px; }
 .site-nav { display: flex; flex-wrap: wrap; gap: 4px 20px; }
 .site-nav a { color: var(--muted); text-decoration: none; font-size: 0.96rem; padding: 4px 0; border-bottom: 1px solid transparent; }
@@ -79,11 +90,7 @@ img { max-width: 100%; }
 .btns { display: flex; flex-wrap: wrap; gap: 10px; }
 
 /* landing */
-.hero { padding: 56px 0 24px; max-width: 760px; }
 .eyebrow { text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.76rem; color: var(--muted); margin: 0 0 12px; }
-.hero h1 { margin: 0 0 16px; font-size: clamp(2.2rem, 5.4vw, 3.8rem); line-height: 1.05; }
-.hero h1 em { color: var(--accent); font-style: italic; }
-.hero p.lede { margin: 0 0 26px; color: var(--muted); font-size: 1.15rem; max-width: 36em; }
 .notice { background: var(--soft); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; margin: 22px 0 0; font-size: 0.95rem; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; margin-top: 20px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
@@ -103,10 +110,8 @@ img { max-width: 100%; }
 .plan h3 { margin: 0; font-size: 1.35rem; }
 .plan .price { font: 500 1rem var(--serif); color: var(--muted); font-style: italic; }
 .plan ul { margin: 6px 0 0; padding-left: 1.2em; color: var(--muted); font-size: 0.94rem; }
-.tag { display: inline-block; font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; letter-spacing: 0.02em; vertical-align: middle; }
 @media (max-width: 720px) {
   .split { grid-template-columns: 1fr; }
-  .hero { padding-top: 28px; }
 }
 
 /* forms on the public pages: the account, a new business, and the language picker */

@@ -18,7 +18,8 @@ const root = path.resolve(here, '..');
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml',
-  '.webp': 'image/webp', '.png': 'image/png', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8',
+  '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8',
+  '.woff2': 'font/woff2', '.mp4': 'video/mp4', '.webm': 'video/webm',
 };
 
 /** D1's statement surface over node:sqlite: prepare/bind/first/all/run. */

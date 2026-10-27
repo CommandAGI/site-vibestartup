@@ -1,108 +1,221 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" class="book">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <title>VibeStartup: empieza un negocio real con un cofundador de IA</title>
 <meta name="description" content="VibeStartup es una fábrica de startups: crea tu cuenta, describe una idea y un cofundador de IA construye y lleva un pequeño negocio real contigo. Cada decisión importante sigue siendo tuya.">
-<link rel="stylesheet" href="../style.css">
-<link rel="icon" href="../mark.svg" type="image/svg+xml">
+<meta property="og:title" content="VibeStartup: el libro de tu negocio">
+<meta property="og:description" content="Una idea el lunes. Un negocio el domingo. Un cofundador de IA lo escribe contigo.">
+<meta property="og:image" content="https://vibestartup.commandagi.app/og.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#fff8e9">
+<link rel="preload" href="/fonts/InstrumentSerif-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/InstrumentSerif-italic-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/book.css">
+<link rel="icon" href="/mark.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/touch-icon.png">
 </head>
 <body>
 <a class="skip" href="#main">Ir al contenido</a>
-<header class="site-head">
-  <div class="wrap">
-    <a class="brand" href="/es/"><img src="../mark.svg" alt="" width="32" height="32">VibeStartup</a>
-    <nav class="site-nav" aria-label="Sitio">
-      <a href="/es/" aria-current="page">Inicio</a>
-      <a href="#how">Cómo funciona</a>
-      <a href="#plans">Planes</a>
-      <a href="/startups/">Tus negocios</a>
-    </nav>
-  </div>
+<header class="running-head">
+  <a class="rh-brand" href="/es/" aria-label="VibeStartup, inicio"><img src="/wordmark.svg" alt="VibeStartup" width="148" height="41"></a>
+  <p class="rh-chapter" aria-hidden="true"><i data-chapter>La portada</i></p>
+  <nav class="rh-nav" aria-label="Sitio">
+    <button type="button" class="rh-link" popovertarget="contents" aria-haspopup="true">Índice</button>
+    <a class="rh-link" href="/startups/" id="signin-link">Tus negocios</a>
+    <a class="rh-start" href="#account">Empezar</a>
+  </nav>
+  <span class="ribbon" aria-hidden="true"></span>
 </header>
 
-<main id="main" class="wrap">
-  <section class="hero">
-    <p class="eyebrow">Una empresa independiente &middot; vibestartup.pro</p>
-    <h1>Una idea el lunes. Un <em>negocio</em> el domingo.</h1>
-    <p class="lede">Una vibestartup es un pequeño negocio real que empiezas con un cofundador de IA. Tú pones la idea y las decisiones que solo tú puedes tomar. Tu cofundador construye la tienda, el cobro y el buzón del negocio, hace la marca y el contenido, lleva los anuncios y te informa cada mañana.</p>
-    <div class="btns">
-      <a class="btn primary" href="#account">Empezar gratis</a>
-      <a class="btn" href="#how">Cómo funciona</a>
+<div id="contents" popover class="contents">
+  <p class="contents-title">Índice</p>
+  <ol>
+    <li><a href="#cover"><span>La portada</span><i>0</i></a></li>
+    <li><a href="#how"><span>El día uno y la semana</span><i>I</i></a></li>
+    <li><a href="#what"><span>Qué hace tu cofundador</span><i>II</i></a></li>
+    <li><a href="#honest"><span>Fe de erratas: lo que no tienes</span><i>II</i></a></li>
+    <li><a href="#plans"><span>Ediciones</span><i>III</i></a></li>
+    <li><a href="#account"><span>Firma la primera página</span><i>IV</i></a></li>
+  </ol>
+</div>
+
+<main id="main">
+  <section class="cover spread" id="cover" data-title="La portada" aria-labelledby="cover-title">
+    <div class="page left">
+      <p class="folio">VibeStartup · una fábrica de startups</p>
+      <h1 id="cover-title">Una idea el lunes. Un <em>negocio</em> el domingo.</h1>
+      <p class="lede">Tú escribes la idea y tomas las decisiones que solo tú puedes tomar. Un cofundador de IA construye el resto a tu lado, y discute en los márgenes.</p>
+      <form class="notebook" id="sketch" aria-describedby="sketch-note">
+        <label for="idea-line" class="nb-label">Mi idea</label>
+        <textarea id="idea-line" name="idea" rows="2" maxlength="160" spellcheck="false">Una lámpara de escritorio con cámara que deja que un asistente vea tu cuaderno</textarea>
+        <div class="nb-actions">
+          <button type="submit" class="pen-btn">Esbozar la primera página</button>
+          <a class="ink-btn" href="#account" id="start">Empezar gratis</a>
+          <a class="rule-btn" href="#how">Cómo funciona</a>
+        </div>
+      </form>
     </div>
-  </section>
-
-  <section class="section split" id="account" aria-labelledby="account-title">
-    <form class="card" data-auth="signup" id="signup">
-      <h2 id="account-title">Crea tu cuenta</h2>
-      <p class="small muted">Créditos gratis para empezar. Sin tarjeta. Los precios se fijan en el lanzamiento.</p>
-      <label class="field">Tu nombre<input name="name" autocomplete="name" required placeholder="Ada Lovelace"></label>
-      <label class="field">Correo electrónico<input name="email" type="email" autocomplete="email" required placeholder="tu@ejemplo.com"></label>
-      <label class="field">Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="Al menos 8 caracteres"></label>
-      <label class="field">Tu primera idea <small>(opcional: tu cofundador empieza con ella ahora)</small><textarea name="idea" rows="2" placeholder="Una lámpara de escritorio con cámara que deja que un asistente vea tu cuaderno"></textarea></label>
-      <p class="error" role="alert" data-error></p>
-      <button class="btn primary" type="submit">Crear mi cuenta</button>
-    </form>
-    <form class="card" data-auth="signin" id="signin">
-      <h3>¿Ya tienes una cuenta?</h3>
-      <label class="field">Correo electrónico<input name="email" type="email" autocomplete="email" required></label>
-      <label class="field">Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
-      <p class="error" role="alert" data-error></p>
-      <button class="btn" type="submit">Entrar</button>
-      <p class="small muted">Una cuenta lleva tantos negocios como permita tu plan.</p>
-    </form>
-  </section>
-
-  <section class="section" aria-labelledby="what">
-    <h2 id="what">Qué hace tu cofundador</h2>
-    <p class="sub">Una conversación, y cada parte del negocio al lado. Las decisiones importantes llegan a ti para aprobarlas; con el piloto automático, el resto simplemente ocurre.</p>
-    <div class="cards">
-      <div class="card"><h3>Construye y publica el sitio</h3><p>Una tienda en su propia dirección, un kit de marca, un logotipo, y cada cambio probado antes de salir.</p></div>
-      <div class="card"><h3>Cobra</h3><p>Productos y suscripciones, cobro, pedidos y clientes. Haz una compra de prueba antes de la primera real.</p></div>
-      <div class="card"><h3>Lleva el buzón</h3><p>Una dirección de correo del negocio. Tu cofundador redacta y responde; tú controlas cada envío.</p></div>
-      <div class="card"><h3>Hace el contenido</h3><p>Imágenes de oferta, vídeos cortos y publicaciones con tu marca, con un rango de créditos antes de hacer nada.</p></div>
-      <div class="card"><h3>Encuentra clientes</h3><p>Un plan de semana de lanzamiento, una lista cercana, secuencias de contacto, publicaciones sociales y una campaña de anuncios dentro del presupuesto que fijes.</p></div>
-      <div class="card"><h3>Lo recuerda todo</h3><p>El negocio vive en archivos de texto que puedes leer: su alma, su dueño, su manual, su memoria y el mapa de su código.</p></div>
+    <div class="gutter" aria-hidden="true"></div>
+    <div class="page right" aria-labelledby="sketch-title">
+      <p class="folio">La primera página <span class="sr">del negocio esbozado</span></p>
+      <div class="facing" id="facing" aria-live="polite">
+        <h2 id="sketch-title" class="f-name"><span data-f="name">Casa Lámpara</span></h2>
+        <p class="f-tag" data-f="tag">Una lámpara que ve tu cuaderno.</p>
+        <div class="f-store">
+          <svg class="f-mark" viewBox="0 0 48 48" aria-hidden="true"><path pathLength="1" d="M6 40 L24 8 L42 40 Z"/><path pathLength="1" d="M14 40 L24 22 L34 40"/></svg>
+          <div><b data-f="product">Lámpara de escritorio</b><span>Precio: lo pones tú</span></div>
+          <span class="f-buy">Cobro · modo de prueba</span>
+        </div>
+        <ol class="f-tasks">
+          <li data-f="t1">Ponerle nombre y dibujar su marca</li>
+          <li data-f="t2">Una tienda en su propia dirección</li>
+          <li data-f="t3">Un producto, cobro en modo de prueba</li>
+          <li data-f="t4">Escribir a diez personas que conoces</li>
+        </ol>
+      </div>
+      <p class="f-note" id="sketch-note">Un esbozo hecho en tu navegador por un script; no se envía nada. Tu cofundador real empieza cuando firmas la primera página.</p>
     </div>
+    <aside class="margin" aria-label="Las notas al margen del cofundador">
+      <p class="note" data-f="n1">¿Quién compra el primero? Di tres nombres.</p>
+      <p class="note" data-f="n2">¿Quién fabrica las lámparas? El suministro es tuyo, o véndela en preventa.</p>
+      <p class="note" data-f="n3">Primero un producto. El catálogo puede esperar.</p>
+    </aside>
   </section>
 
-  <section class="section" aria-labelledby="how">
-    <h2 id="how">Cómo funciona</h2>
-    <ol class="steps">
-      <li><strong>Di la idea.</strong> Una frase basta. Nombra el negocio y a tu cofundador.</li>
-      <li><strong>Día uno.</strong> Tu cofundador prepara la marca, el sitio, un primer producto y el cobro, y te pregunta antes de algo grande.</li>
-      <li><strong>Semana de lanzamiento.</strong> Siete días, un paso por día: tu lista cercana, notas personales, publicaciones de lanzamiento, el día del lanzamiento, seguimientos, un balance.</li>
-      <li><strong>Cada mañana.</strong> Un informe en el chat y por correo: visitas, carritos, ventas, lo que espera por ti y el plan del día.</li>
+  <figure class="film" data-film="clay" data-title="I. El día uno">
+    <video muted loop playsinline preload="metadata" poster="/media/clay.webp" aria-hidden="true">
+      <source src="/media/clay.webm" type="video/webm; codecs=av01.0.05M.08">
+      <source src="/media/clay.mp4" type="video/mp4">
+    </video>
+    <img class="film-still" src="/media/clay.webp" alt="" width="1280" height="720" fetchpriority="low">
+    <figcaption><span class="film-num">I</span><span class="film-title">El día uno</span><small>Película generada. No es un cliente de VibeStartup.</small></figcaption>
+  </figure>
+
+  <section class="week" id="how" data-title="I. El día uno y la semana" aria-labelledby="how-title">
+    <h2 id="how-title" class="chapter"><span>I.</span> Cómo funciona</h2>
+    <ol class="steps-book">
+      <li><p><b>Di la idea.</b> Una frase basta. Nombra el negocio y a tu cofundador.</p><em class="note">Las ideas cortas se construyen. Las largas reciben preguntas.</em></li>
+      <li><p><b>Día uno.</b> La marca, el sitio, un primer producto y el cobro. Todo lo grande pasa antes por ti.</p><em class="note">Pregunto antes de gastar.</em></li>
+      <li><p><b>Semana de lanzamiento.</b> Siete días, un paso por día.</p></li>
+      <li><p><b>Cada mañana.</b> Un informe en el chat y por correo: visitas, carritos, ventas, lo que espera por ti y el plan del día.</p><em class="note">Solo cuentan las ventas completadas.</em></li>
     </ol>
-  </section>
-
-  <section class="section" aria-labelledby="honest">
-    <h2 id="honest">Qué tienes, y qué no</h2>
-    <div class="split">
-      <div class="card"><h3>Tienes</h3><ul><li>Un sitio nuevo, alojado, con cobro, correo, anuncios y contenido.</li><li>Un cofundador que explica qué hace y por qué.</li><li>Todos los archivos de tu negocio, legibles y tuyos.</li></ul></div>
-      <div class="card"><h3>No tienes</h3><ul><li>Compra, almacén ni envío de productos físicos: tú traes al proveedor, o vendes productos y servicios digitales.</li><li>Ediciones de un sitio que ya tienes. Tu cofundador puede leerlo como contexto y construir uno nuevo aquí si se lo pides.</li><li>Ventas inventadas para verse bien: solo cuentan las ventas completadas.</li><li>Dinero real, anuncios, publicaciones, correo o un dominio propio hasta que conectes tu propia cuenta de proveedor. Cada una de esas pantallas se detiene y te dice qué necesita.</li></ul></div>
+    <div class="days" role="list" aria-label="Semana de lanzamiento, un paso por día">
+      <div role="listitem"><i>1</i>El sitio y la primera oferta</div>
+      <div role="listitem"><i>2</i>Tu lista cercana</div>
+      <div role="listitem"><i>3</i>Notas personales</div>
+      <div role="listitem"><i>4</i>Publicaciones de lanzamiento</div>
+      <div role="listitem"><i>5</i>El día del lanzamiento</div>
+      <div role="listitem"><i>6</i>Seguimientos</div>
+      <div role="listitem"><i>7</i>El balance</div>
     </div>
   </section>
 
-  <section class="section" aria-labelledby="plans">
-    <h2 id="plans">Planes</h2>
+  <figure class="film" data-film="stitch" data-title="II. Qué hace tu cofundador">
+    <video muted loop playsinline preload="none" poster="/media/stitch.webp" aria-hidden="true">
+      <source src="/media/stitch.webm" type="video/webm; codecs=av01.0.05M.08">
+      <source src="/media/stitch.mp4" type="video/mp4">
+    </video>
+    <img class="film-still" src="/media/stitch.webp" alt="" width="1280" height="720" loading="lazy">
+    <figcaption><span class="film-num">II</span><span class="film-title">Qué hace tu cofundador</span><small>Película generada. No es un cliente de VibeStartup.</small></figcaption>
+  </figure>
+
+  <section class="index" id="what" data-title="II. Qué hace tu cofundador" aria-labelledby="what-title">
+    <h2 id="what-title" class="chapter"><span>II.</span> Índice analítico</h2>
+    <p class="sub">Una conversación, y cada parte del negocio al lado. Las decisiones importantes llegan a ti. Con el piloto automático, el resto simplemente ocurre.</p>
+    <dl class="index-list">
+      <div><dt>Sitio, construido y publicado</dt><dd>su propia dirección, un kit de marca, cada cambio probado antes</dd></div>
+      <div><dt>Cobro</dt><dd>productos, suscripciones, cobro; una compra de prueba antes de la primera real</dd></div>
+      <div><dt>Buzón</dt><dd>un correo del negocio; redacta, tú apruebas cada envío</dd></div>
+      <div><dt>Contenido</dt><dd>imágenes de oferta, vídeos cortos, publicaciones; los créditos a la vista antes de hacer nada</dd></div>
+      <div><dt>Clientes</dt><dd>una lista cercana, contacto, publicaciones, una campaña de anuncios dentro de tu presupuesto</dd></div>
+      <div><dt>Memoria</dt><dd>archivos de texto que puedes leer: su alma, su dueño, su manual, su memoria</dd></div>
+    </dl>
+  </section>
+
+  <section class="errata" id="honest" data-title="II. Fe de erratas" aria-labelledby="honest-title">
+    <h2 id="honest-title" class="chapter small-chapter">Fe de erratas: qué tienes, y qué no</h2>
+    <div class="errata-cols">
+      <div>
+        <h3>Tienes</h3>
+        <ul>
+          <li>Un sitio nuevo, alojado, con cobro, correo, anuncios y contenido.</li>
+          <li>Un cofundador que explica qué hace y por qué.</li>
+          <li>Todos los archivos de tu negocio, legibles y tuyos.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>No tienes</h3>
+        <ul class="struck">
+          <li><s>Almacén, compra y envío.</s> <em>Tú traes al proveedor, o vendes productos y servicios digitales.</em></li>
+          <li><s>Ediciones del sitio que ya tienes.</s> <em>Lo lee como contexto y construye uno nuevo aquí.</em></li>
+          <li><s>Ventas inventadas para verse bien.</s> <em>Solo cuentan las ventas completadas.</em></li>
+          <li><s>Dinero real, anuncios, publicaciones o correo el primer día.</s> <em>Cada uno espera tu propia cuenta de proveedor, y lo dice.</em></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <figure class="film" data-film="dough" data-title="III. Ediciones">
+    <video muted loop playsinline preload="none" poster="/media/dough.webp" aria-hidden="true">
+      <source src="/media/dough.webm" type="video/webm; codecs=av01.0.05M.08">
+      <source src="/media/dough.mp4" type="video/mp4">
+    </video>
+    <img class="film-still" src="/media/dough.webp" alt="" width="1280" height="720" loading="lazy">
+    <figcaption><span class="film-num">III</span><span class="film-title">Ediciones</span><small>Película generada. No es un cliente de VibeStartup.</small></figcaption>
+  </figure>
+
+  <section class="editions" id="plans" data-title="III. Ediciones" aria-labelledby="plans-title">
+    <h2 id="plans-title" class="chapter"><span>III.</span> Planes</h2>
     <p class="sub">Empieza gratis con unos créditos. Los precios se fijan en el lanzamiento.</p>
-    <div class="plans">
-      <div class="plan"><h3>Starter</h3><span class="price">Precio en el lanzamiento</span><ul><li>Un negocio</li><li>Trabajo de código, imagen y vídeo</li><li>Correo y contacto</li><li>Anuncios con piloto automático</li><li>Un subdominio de vibestartup.pro</li></ul></div>
-      <div class="plan featured"><h3>Growth <span class="tag">El más elegido</span></h3><span class="price">Precio en el lanzamiento</span><ul><li>Tres negocios</li><li>Todo lo de Starter</li><li>Tu propio dominio</li><li>Ayuda prioritaria</li></ul></div>
-      <div class="plan"><h3>Scale</h3><span class="price">Precio en el lanzamiento</span><ul><li>Diez negocios</li><li>Todo lo de Growth</li><li>La mayor cantidad de créditos al mes</li></ul></div>
+    <div class="ed-list">
+      <article><h3>Starter</h3><p class="ed-price">Precio en el lanzamiento</p><p>Un negocio. Trabajo de código, imagen y vídeo. Correo y contacto. Anuncios con piloto automático. Un subdominio de vibestartup.pro.</p></article>
+      <article><h3>Growth</h3><p class="ed-price">Precio en el lanzamiento</p><p>Tres negocios. Todo lo de Starter. Tu propio dominio. Ayuda prioritaria.</p></article>
+      <article><h3>Scale</h3><p class="ed-price">Precio en el lanzamiento</p><p>Diez negocios. Todo lo de Growth. La mayor cantidad de créditos al mes.</p></article>
     </div>
+  </section>
+
+  <figure class="film" data-film="parcel" data-title="IV. Firma la primera página">
+    <video muted loop playsinline preload="none" poster="/media/parcel.webp" aria-hidden="true">
+      <source src="/media/parcel.webm" type="video/webm; codecs=av01.0.05M.08">
+      <source src="/media/parcel.mp4" type="video/mp4">
+    </video>
+    <img class="film-still" src="/media/parcel.webp" alt="" width="1280" height="720" loading="lazy">
+    <figcaption><span class="film-num">IV</span><span class="film-title">Firma la primera página</span><small>Película generada. No es un cliente de VibeStartup.</small></figcaption>
+  </figure>
+
+  <section class="bookplate-wrap" id="account" data-title="IV. Firma la primera página" aria-labelledby="account-title">
+    <form class="bookplate" data-auth="signup" id="signup">
+      <p class="ex-libris">Ex libris</p>
+      <h2 id="account-title">Crea tu cuenta</h2>
+      <p class="plate-sub">Créditos gratis para empezar. Sin tarjeta. Los precios se fijan en el lanzamiento.</p>
+      <label class="line">Tu nombre<input name="name" autocomplete="name" required placeholder="Ada Lovelace"></label>
+      <label class="line">Correo electrónico<input name="email" type="email" autocomplete="email" required placeholder="tu@ejemplo.com"></label>
+      <label class="line">Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="Al menos 8 caracteres"></label>
+      <label class="line">Tu primera idea <small>opcional: tu cofundador empieza con ella ahora</small><textarea name="idea" rows="2" placeholder="Una lámpara de escritorio con cámara que deja que un asistente vea tu cuaderno"></textarea></label>
+      <p class="error" role="alert" data-error></p>
+      <button class="ink-btn" type="submit">Crear mi cuenta</button>
+    </form>
+    <form class="signin" data-auth="signin" id="signin">
+      <h3>¿Ya tienes una cuenta?</h3>
+      <label class="line">Correo electrónico<input name="email" type="email" autocomplete="email" required></label>
+      <label class="line">Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
+      <p class="error" role="alert" data-error></p>
+      <button class="rule-btn" type="submit">Entrar</button>
+      <p class="plate-sub">Una cuenta lleva tantos negocios como permita tu plan.</p>
+    </form>
   </section>
 </main>
 
-<footer class="site-foot">
-  <div class="wrap">
-    <span>VibeStartup &middot; vibestartup.pro &middot; hello@vibestartup.pro</span>
-    <span class="foot-right"><a href="/startups/">Tus negocios</a> &middot; <a href="#plans">Planes</a>
-      <button type="button" class="langbtn" data-lang aria-haspopup="dialog" aria-label="Idioma">A/文</button></span>
-  </div>
+<footer class="colophon">
+  <p class="colo-mark"><img src="/wordmark.svg" alt="VibeStartup" width="148" height="41"></p>
+  <p>Colofón. Compuesto en Instrument Serif e Instrument Sans. Las películas son generadas (fal); no se muestra a ningún cliente. Escrito en vibestartup.pro · <a href="mailto:hello@vibestartup.pro">hello@vibestartup.pro</a></p>
+  <p class="foot-right"><a href="/startups/">Tus negocios</a> · <a href="#plans">Planes</a>
+    <button type="button" class="langbtn" data-lang aria-haspopup="dialog" aria-label="Idioma">A/文</button></p>
 </footer>
 
 <dialog id="lang-dialog" aria-labelledby="lang-title">
@@ -112,8 +225,9 @@
     <li><a href="/es/" hreflang="es" lang="es" aria-current="true">Español</a></li>
     <li><a href="/zh/" hreflang="zh-Hans" lang="zh-Hans">简体中文</a></li>
   </ul>
-  <form method="dialog"><button class="btn">Cerrar</button></form>
+  <form method="dialog"><button class="rule-btn">Cerrar</button></form>
 </dialog>
-<script type="module" src="../site.js"></script>
+<script type="module" src="/site.js"></script>
+<script type="module" src="/book.js"></script>
 </body>
 </html>
