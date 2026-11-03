@@ -3,7 +3,8 @@ import { requireSignIn, whoami, user, credits, signOut, eraseAccount } from '/li
 import { $, esc, initial, confirm, toast, oops, num } from '/lib/ui.js';
 import { listBusinesses, launchDay, markSvg } from '/lib/business.js';
 
-if (!requireSignIn()) throw new Error('sign in first');
+// A signed-out visitor is sent to /auth/ and this page does nothing more (no thrown error: the redirect is the answer).
+const signedInHere = requireSignIn();
 
 const list = $('#list');
 const card = b => {
@@ -43,4 +44,4 @@ $('#delete-account').onclick = async () => {
   if (!await confirm('This removes your CommandAGI account and every business it holds, with its records, files and sites. It cannot be undone.', { title: 'Delete my account', ok: 'Delete everything', danger: true })) return;
   try { await eraseAccount(); toast('Your account was deleted.'); location.href = '/'; } catch (e) { toast(oops(e), 'bad'); }
 };
-load();
+if (signedInHere) load();

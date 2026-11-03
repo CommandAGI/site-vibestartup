@@ -17,7 +17,7 @@
 
 | what | selector |
 |---|---|
-| create account | `#signup` with `[name=name]`, `[name=email]`, `[name=password]`, `button[type=submit]`, `[data-error]` |
+| create account | `#signup` with `[name=name]`, `[name=email]`, `[name=password]`, `[name=birthdate]` (a date; the platform's models for adults need it), `button[type=submit]`, `[data-error]` |
 | sign in | `#signin` with `[name=email]`, `[name=password]`, `button[type=submit]`, `[data-error]` |
 | the switch between them | `[data-auth-switch]` |
 

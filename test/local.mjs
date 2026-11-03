@@ -11,8 +11,8 @@
 // COMMANDAGI_ROOT is the CommandAGI checkout the platform is built from (default: the checkout this folder is mounted
 // in, five levels up); COMMANDAGI_ENV_ROOT is where the .env cascade is read (default: COMMANDAGI_ROOT).
 import { createServer } from 'node:http';
-import { readFile, mkdtemp } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { readFile, writeFile, mkdtemp } from 'node:fs/promises';
+import { existsSync, cpSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -47,11 +47,27 @@ async function serviceBindings() {
   }
 }
 
+/**
+ * The cloud://global folder the local platform serves: the checkout's, copied, with the daily sign-up cap raised.
+ * A fresh platform's migrations make about 70 accounts dated today, and the platform's cap (5 a day off production,
+ * `signup.dailyCap` in global settings.json) counts them, so a journey's sign-ups would be refused `signup_capped`.
+ */
+async function globalDirWithCap(stateDir) {
+  const source = path.join(COMMANDAGI_ROOT, 'seed/user-commandagi/global');
+  const target = path.join(stateDir, 'global');
+  if (!existsSync(target)) cpSync(source, target, { recursive: true });
+  const file = path.join(target, 'settings.json');
+  const settings = existsSync(file) ? JSON.parse(await readFile(file, 'utf8')) : {};
+  settings['signup.dailyCap'] = Number(process.env.VIBESTARTUP_SIGNUP_CAP || 10000);
+  await writeFile(file, JSON.stringify(settings, null, 2) + '\n');
+  return target;
+}
+
 /** Start the local CommandAGI platform from the checkout. → { base, stop } */
 export async function startPlatform({ dir, build = true } = {}) {
   const { startCheckoutPlatform } = await import(pathToFileURL(path.join(COMMANDAGI_ROOT, 'scripts/workbench/local-platform.mjs')).href);
   const stateDir = dir ?? await mkdtemp(path.join(tmpdir(), 'vibestartup-platform-'));
-  const p = await startCheckoutPlatform({ dir: stateDir, build, vars: await serviceBindings() });
+  const p = await startCheckoutPlatform({ dir: stateDir, build, vars: await serviceBindings(), globalDir: await globalDirWithCap(stateDir) });
   return { base: p.base, dir: stateDir, stop: () => p.stop(), logFile: p.logFile };
 }
 

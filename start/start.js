@@ -4,7 +4,8 @@ import { requireSignIn, setNotificationPref, ApiError } from '/lib/api.js';
 import { $, $$, esc, oops } from '/lib/ui.js';
 import { IDEA_STARTERS, suggestBlueprints, suggestNames, suggestTagline, VIBES, VOICES, PARTNERS, COFOUNDER_NAMES, brandFor, createBusiness } from '/lib/business.js';
 
-if (!requireSignIn()) throw new Error('sign in first');
+// A signed-out visitor is sent to /auth/ and this page does nothing more (no thrown error: the redirect is the answer).
+const signedInHere = requireSignIn();
 
 const STEPS = ['idea', 'blueprint', 'name', 'vibe', 'voice', 'partner', 'cofounder', 'updates'];
 const LABELS = { idea: 'Idea', blueprint: 'Blueprint', name: 'Name', vibe: 'Look', voice: 'Voice', partner: 'Partner', cofounder: 'Co-founder', updates: 'Updates' };
@@ -134,4 +135,4 @@ async function build() {
   }
 }
 
-show();
+if (signedInHere) show();
