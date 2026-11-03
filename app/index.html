@@ -2,79 +2,55 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
-<title>Your business | VibeStartup</title>
-<meta name="description" content="The VibeStartup console: your business, your AI co-founder, and every decision waiting on you.">
-<link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="app.css">
-<link rel="icon" href="../mark.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://api.commandagi.com https://api-dev.commandagi.com http://127.0.0.1:* http://localhost:*; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<title>Console · VibeStartup</title>
+<meta name="description" content="One business, its co-founder and every part of it: chat, the launch week, tasks, email, products, orders, customers, ads, studio, outbound, social, files, legal, settings, activity.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f0f12" media="(prefers-color-scheme: dark)">
+<link rel="preload" href="/fonts/InstrumentSans-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/app/console.css">
+<link rel="icon" href="/mark.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/touch-icon.png">
+<script src="/brand.js"></script>
 </head>
 <body class="console">
-<a class="skip" href="#app">Skip to the console</a>
-<div id="app"></div>
-<div id="toast" role="status" aria-live="polite"></div>
+<a class="skip" href="#main">Skip to the content</a>
 
-<dialog id="search-dialog" aria-labelledby="search-title">
-  <form method="dialog" id="search-form">
-    <h2 id="search-title" class="sr">Search</h2>
-    <label class="field"><span class="sr">Go to</span><input id="search-input" type="search" placeholder="Go to a tab or page…" autocomplete="off"></label>
-    <ul id="search-results" class="search-results"></ul>
-  </form>
+<aside class="rail" id="rail" aria-label="Console">
+  <button type="button" class="biz-switch" id="biz-switch" aria-haspopup="menu" aria-label="Switch business">
+    <span class="avatar" id="biz-avatar">·</span>
+    <span class="biz-name"><b id="biz-name">Loading</b><small>Business</small></span>
+  </button>
+  <button type="button" class="search-btn" id="search-open" aria-label="Search (Ctrl+K)"><span class="search-ico"></span><span>Search</span><kbd>⌘K</kbd></button>
+  <nav class="tabs" id="tabs" aria-label="Tabs"></nav>
+  <div class="rail-foot">
+    <a class="credits" id="credits" href="#page=billing" data-page="billing"><span class="credits-ico"></span><span><b id="credits-balance-rail">…</b> credits</span></a>
+    <button type="button" class="account" id="account-menu" aria-haspopup="menu" aria-label="Account menu"><span class="avatar" id="me-avatar">·</span><span class="me-name" id="me-name">Account</span></button>
+  </div>
+</aside>
+
+<div class="frame">
+  <header class="topbar" id="topbar">
+    <button type="button" class="btn icon rail-toggle" id="rail-toggle" aria-label="Menu" data-tip="Menu"></button>
+    <h1 class="tab-title" id="tab-title">Chat</h1>
+    <div class="actions" id="actions" role="toolbar" aria-label="Actions"></div>
+  </header>
+  <main id="main" tabindex="-1" aria-live="polite"></main>
+  <aside class="panel-right" id="building" aria-label="What is being built" hidden></aside>
+</div>
+
+<nav class="bottombar" id="bottombar" aria-label="Tabs"></nav>
+
+<dialog id="search" class="modal search" aria-label="Search">
+  <div class="search-box">
+    <input type="search" placeholder="Jump to a tab or a business…" autocomplete="off" aria-label="Search">
+    <ul class="search-results" role="listbox"></ul>
+  </div>
 </dialog>
 
-<dialog id="share-dialog" aria-labelledby="share-title">
-  <form method="dialog">
-    <h2 id="share-title">Share and earn</h2>
-    <p class="muted">Give a friend a discount on their first month; get credits when they subscribe. The amounts are set at launch.</p>
-    <label class="field">Your invite link<input id="share-link" readonly></label>
-    <div class="btns"><button type="button" class="btn" data-action="copy-share">Copy</button><a class="btn" id="share-mail" href="#">Email</a><a class="btn" id="share-sms" href="#">Text</a></div>
-    <p class="muted small" id="share-earned"></p>
-    <div class="btns end"><button class="btn primary" value="close">Close</button></div>
-  </form>
-</dialog>
-
-<dialog id="checkout-dialog" aria-labelledby="checkout-title">
-  <form method="dialog" id="checkout-form">
-    <p class="sandbox">Test mode · no card is charged</p>
-    <h2 id="checkout-title">Pay <span id="checkout-biz"></span></h2>
-    <p class="checkout-line"><span id="checkout-product"></span><strong id="checkout-amount"></strong></p>
-    <p class="hint">Test card: <code>4242 4242 4242 4242</code>, any future date, any three digits.</p>
-    <label class="field">Email<input name="email" type="email" autocomplete="off" required placeholder="buyer@example.com"></label>
-    <label class="field">Card number<input name="card" inputmode="numeric" autocomplete="off" required placeholder="1234 1234 1234 1234"></label>
-    <div class="row2">
-      <label class="field">Expiry<input name="exp" autocomplete="off" required placeholder="MM / YY"></label>
-      <label class="field">CVC<input name="cvc" autocomplete="off" required placeholder="123"></label>
-    </div>
-    <p class="error" id="checkout-error" role="alert"></p>
-    <div class="btns end"><button class="btn" value="cancel" formnovalidate>Cancel</button><button class="btn primary" value="pay" id="checkout-pay">Pay</button></div>
-  </form>
-</dialog>
-
-<dialog id="store-dialog" aria-labelledby="store-title" class="wide">
-  <form method="dialog">
-    <div id="store-body"></div>
-    <div class="btns end"><button class="btn" value="close">Close the store</button></div>
-  </form>
-</dialog>
-
-<dialog id="confirm-dialog" aria-labelledby="confirm-title">
-  <form method="dialog" id="confirm-form">
-    <h2 id="confirm-title"></h2>
-    <p id="confirm-text"></p>
-    <label class="field hidden" id="confirm-type-wrap"><span id="confirm-type-label"></span><input id="confirm-type" autocomplete="off"></label>
-    <div class="btns end"><button class="btn" value="cancel" formnovalidate>Cancel</button><button class="btn danger" value="ok" id="confirm-ok"></button></div>
-  </form>
-</dialog>
-
-<dialog id="preview-dialog" aria-labelledby="preview-title" class="wide">
-  <form method="dialog">
-    <div class="preview-head"><h2 id="preview-title"></h2><span class="muted small" id="preview-meta"></span></div>
-    <div id="preview-body"></div>
-    <div class="btns end"><button type="button" class="btn" data-action="copy-preview">Copy content</button><button class="btn primary" value="close">Close</button></div>
-  </form>
-</dialog>
-
-<script type="module" src="app.js"></script>
+<script type="module" src="/app/console.js"></script>
 </body>
 </html>
