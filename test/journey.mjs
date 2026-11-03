@@ -10,7 +10,8 @@
 //   node test/journey.mjs --url <site> [--api …]  a site already running
 //   node test/journey.mjs --no-chat               do not wait for the model's reply
 //   node test/journey.mjs --width 1440            one width only
-//   node test/journey.mjs --keep                  keep the account at the end (to look at it)
+//   node test/journey.mjs --keep                  keep the accounts at the end (to look at them); otherwise a stopped
+//                                                 run erases its accounts through the API
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withBrowser, sleep } from './browser.mjs';
@@ -34,6 +35,8 @@ if (!base) {
 async function run(browser, width) {
   const label = `@${width}`;
   const email = `journey-${stamp}-${width}@example.com`;
+  made.push(email);
+  console.log(`${label}: account ${email}`);
   const idea = 'Hand-thrown ceramic mugs sold to cafes by subscription';
   const b = browser;
   const hash = async tab => { await b.eval(`location.hash = 'tab=${tab}'`); await sleep(300); };
@@ -257,7 +260,8 @@ async function run(browser, width) {
   // 10. Activity and Billing.
   await hash('activity');
   await b.waitFor('document.querySelector("#main")?.dataset.tab === "activity" && !/^Loading/.test(document.querySelector("#main")?.innerText ?? "")', 30000).catch(() => null);
-  if (hasThread) check(await b.eval('document.querySelectorAll("#activity .event").length') >= 1, `${label}: Activity has events`);
+  // The tab refreshes every 5 s; a co-founder still on its first turn may have written nothing yet.
+  if (hasThread) check(await b.waitFor('document.querySelectorAll("#activity .event").length >= 1', 45000).then(() => true, () => false), `${label}: Activity has events`);
   await b.shot(`console-activity-${width}`);
   await b.eval('location.hash = "page=billing"'); await sleep(300);
   await b.waitFor('!!document.querySelector("#credits-balance")', 20000);
@@ -316,7 +320,15 @@ async function run(browser, width) {
     check(/cannot be undone/i.test(await b.text('.modal')), `${label}: the delete modal says it cannot be undone`);
     await b.shot(`delete-account-${width}`);
     await b.eval('document.querySelector(".modal .modal-actions [value=ok]").click()');
-    await b.waitFor('location.pathname === "/"', 60000);
+    // An erase that stops part way ends the session first (lib/api.js eraseAccount): the page asks for the password.
+    await b.waitFor('location.pathname === "/" || !!document.querySelector(".modal input[type=password]")', 90000);
+    if (await b.eval('location.pathname !== "/"')) {
+      await b.shot(`delete-password-${width}`);
+      await b.fill('.modal input[type=password]', 'correct horse battery');
+      await b.eval('document.querySelector(".modal .modal-actions [value=ok]").click()');
+      await b.waitFor('location.pathname === "/"', 90000);
+    }
+    erased.add(email);
     await b.goto(`${base}/auth/`);
     await b.waitFor('!!document.querySelector("#signin")');
     await b.fill('#signin [name=email]', email);
@@ -330,12 +342,35 @@ async function run(browser, width) {
 }
 
 const widths = arg('width') ? [Number(arg('width'))] : [1440, 390];
+
+// The accounts a run made and the ones its delete step erased; a stopped run erases the rest through the API, so a run
+// against a cloud leaves nothing behind (unless `--keep`).
+const made = [], erased = new Set();
+async function eraseLeftovers() {
+  if (flag('keep')) return;
+  const left = made.filter(e => !erased.has(e));
+  if (!left.length) return;
+  const api = arg('api') ?? (await (await fetch(`${base}/brand.js`)).text()).match(/"api":"([^"]+)"/)?.[1];
+  for (const email of left) {
+    let said = 'not tried';
+    for (let i = 0; i < 4 && said !== 'erased' && said !== 'no account'; i++) {
+      if (i) await sleep(5000 * i);
+      const tok = await (await fetch(`${api}/oauth/token`, { method: 'POST', body: new URLSearchParams({ grant_type: 'password', client_id: 'vibestartup', username: email, password: 'correct horse battery', scope: '*' }) })).json().catch(() => ({}));
+      if (!tok.access_token) { said = tok.error === 'invalid_grant' ? 'no account' : `sign-in: ${tok.error}`; continue; }
+      const r = await fetch(`${api}/me/erase`, { method: 'POST', headers: { authorization: `Bearer ${tok.access_token}`, 'content-type': 'application/json' }, body: '{"confirm":true}' });
+      said = r.ok ? 'erased' : `erase: ${r.status} ${(await r.text()).slice(0, 120)}`;
+    }
+    console.log(`left over ${email}: ${said}`);
+    if (said !== 'erased' && said !== 'no account') problems.push(`the account ${email} is left on ${api}: ${said}`);
+  }
+}
+
 try {
   for (const width of widths) {
     console.log(`— ${width}px —`);
     await withBrowser(async browser => { try { await run(browser, width); } catch (e) { problems.push(`@${width}: the journey stopped: ${e.message}`); await browser.shot(`stopped-${width}`).catch(() => null); } }, { out: shots, width, height: width < 500 ? 844 : 900 });
   }
-} finally { await stop?.(); }
+} finally { await eraseLeftovers().catch(e => problems.push(`erasing the run's accounts: ${e.message}`)); await stop?.(); }
 
 console.log(problems.length ? `\n${problems.length} problem${problems.length === 1 ? '' : 's'}:\n${problems.map(p => ` - ${p}`).join('\n')}` : '\nno problems');
 process.exit(problems.length ? 1 : 0);

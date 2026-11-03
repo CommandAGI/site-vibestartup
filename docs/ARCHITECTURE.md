@@ -65,11 +65,11 @@ The co-founder's thread, triggers and site are CommandAGI objects whose ids `bus
 | tasks | `POST /me/tasks { dir, doc, body }`, `GET /me/tasks?labels=biz:<slug>&includeClosed=1`, MCP `task_list` |
 | routines (daily briefing) | the thread's triggers: `POST /threads/:id/triggers { kind: "cron", everySeconds, prompt, label }`, `PATCH … { enabled }`, `GET …/events`; run now: `POST /threads/:id/inject { prompt, label }` |
 | files (memory) | `GET /drive?path=`, `GET /drive/:id/content`, `POST /drive/upload?path=&name=`, `PUT /drive/:id/content`, `POST /drive/folders`, `DELETE /drive/:id` |
-| the storefront | `POST /sites { name, slug }` (its folder is `Sites/<name>`), VibeStartup's storefront files written into that folder, `POST /sites/:id/deploy { fromFolder: true }`; live at `https://<slug>.commandagi.app` |
+| the storefront | `POST /sites { name, slug }` (its folder is `Sites/<name>`), VibeStartup's storefront files written into that folder, `POST /sites/:id/deploy { source: "folder" }`; live at `https://<slug>.commandagi.app` |
 | custom domain | `POST /sites/:id/domains { hostname }` → the records to add; `GET /sites/:id` → `domains[]` |
 | environment secrets | `PUT /sites/:id/env { key, value, secret: true }`; `GET /sites/:id/env` lists names (a secret's value is write-only) |
 | analytics | `GET /sites/:id/analytics?hours=` (requests, errors, CPU: what the edge measured; no visitor is invented) |
-| business email | `POST /me/email-addresses { localPart, label }` → `<local>@commandagi.email`; `GET /email/addresses`, `/email/addresses/:id/threads`, `…/threads/:tid`, `…/reply`, `…/compose` |
+| business email | `POST /me/email-addresses { localPart, label }` → `<local>@commandagi.email`; `GET /email/addresses`, `/email/addresses/:id/threads`, `…/threads/:tid`, `…/reply`, `…/compose`. One personal address per account (the platform's mailbox rule): a second business shows the gap and says why |
 | products, orders, customers | files (above); the storefront's checkout is test mode until the founder adds a payment provider's keys as secrets |
 | ads | `ads/campaign.json` + `GET /integrations` (an ad account connector when one exists); readiness is computed from real state |
 | studio | `POST /generate { modelId: "text-to-image.flux-schnell" … , inputs: { prompt }, name }` → a Drive file; brand book from `brand/` |
@@ -79,7 +79,7 @@ The co-founder's thread, triggers and site are CommandAGI objects whose ids `bus
 | members | folder shares on the business folder: `POST /drive/folder-share { path, email, capability: "view" \| "edit" }`, `GET`, `DELETE` |
 | activity | `GET /threads/:id/events?limit=` newest first |
 | billing | `GET /me/credits`, `GET /me/credits/history`, `GET /me/subscription` |
-| profile | `GET /me`, `GET /users/:id`, `POST /me/profile { name }`, `GET/POST /me/notification-prefs`, `POST /me/erase { confirm: true }` |
+| profile | `GET /me`, `GET /users/:id`, `POST /me/profile { name }`, `GET/POST /me/notification-prefs`, `POST /me/erase { confirm: true }` (the platform revokes the sign-ins before it erases the Drive, so an erase that fails late ends the session: the page asks for the password, signs in again and finishes it) |
 | delete a business | the folder to the Trash (`DELETE /drive/:id`), `DELETE /sites/:id`, the triggers deleted; the thread is left (its run is a record) |
 
 Every request is the founder's own: the API's authority, key scopes, audit and billing run unchanged. Nothing here

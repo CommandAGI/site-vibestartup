@@ -1,6 +1,6 @@
 // The account's businesses: each a folder in the founder's Drive (lib/business.js), and the account's two acts.
 import { requireSignIn, whoami, user, credits, signOut, eraseAccount } from '/lib/api.js';
-import { $, esc, initial, confirm, toast, oops, num } from '/lib/ui.js';
+import { $, esc, initial, confirm, prompt, toast, oops, num } from '/lib/ui.js';
 import { listBusinesses, launchDay, markSvg } from '/lib/business.js';
 
 // A signed-out visitor is sent to /auth/ and this page does nothing more (no thrown error: the redirect is the answer).
@@ -42,6 +42,14 @@ async function load() {
 $('#signout').onclick = async () => { await signOut(); location.href = '/'; };
 $('#delete-account').onclick = async () => {
   if (!await confirm('This removes your CommandAGI account and every business it holds, with its records, files and sites. It cannot be undone.', { title: 'Delete my account', ok: 'Delete everything', danger: true })) return;
-  try { await eraseAccount(); toast('Your account was deleted.'); location.href = '/'; } catch (e) { toast(oops(e), 'bad'); }
+  try { await eraseAccount(); toast('Your account was deleted.'); location.href = '/'; }
+  catch (e) {
+    if (!e?.needsPassword) { toast(oops(e), 'bad'); return; }
+    // The erase stopped part way and ended this session (lib/api.js eraseAccount): the password finishes it.
+    const password = await prompt('Deleting stopped part way, and your session ended with it. Enter your password to finish.', { title: 'Finish deleting', ok: 'Finish deleting', type: 'password' });
+    if (!password) return;
+    try { await eraseAccount({ email: $('#account-email').textContent, password }); toast('Your account was deleted.'); location.href = '/'; }
+    catch (e2) { toast(oops(e2), 'bad'); }
+  }
 };
 if (signedInHere) load();

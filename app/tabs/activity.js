@@ -21,5 +21,7 @@ export async function render(ctx) {
   };
   $('#act-refresh').onclick = paint;
   await paint();
+  const timer = setInterval(paint, 5000);
+  return () => clearInterval(timer);
 }
 const $ = (s, r = document) => r.querySelector(s);
