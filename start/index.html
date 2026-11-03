@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://api.commandagi.com https://api-dev.commandagi.com http://127.0.0.1:* http://localhost:*; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<title>New business | VibeStartup</title>
+<meta name="description" content="Say the idea, pick a name, a look and a voice, name your co-founder, and watch the business take shape.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f0f12" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/start/start.css">
+<link rel="icon" href="/mark.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/touch-icon.png">
+<script src="/brand.js"></script>
+</head>
+<body class="wizard-page">
+<a class="skip" href="#wizard">Skip to the content</a>
+<header class="wiz-head">
+  <a class="brand" href="/" aria-label="VibeStartup, home"><picture><source srcset="/wordmark-dark.svg" media="(prefers-color-scheme: dark)"><img src="/wordmark.svg" alt="VibeStartup" width="86" height="24"></picture></a>
+  <p class="wiz-progress"><span id="step-label">Step 1 of 8 · Idea</span></p>
+  <a class="btn ghost sm" href="/home/">Your businesses</a>
+</header>
+<div class="wiz-bar" aria-hidden="true"><i id="wiz-fill"></i></div>
+
+<main id="wizard" data-step="idea" aria-live="polite">
+  <section class="wiz-card">
+    <h1 id="wiz-title">First things first: what are we building?</h1>
+    <p class="wiz-sub muted" id="wiz-sub">Tell me your idea in a line, or start from one below.</p>
+
+    <div id="wiz-body" class="wiz-body"></div>
+
+    <p class="error" role="alert" data-error id="wiz-error"></p>
+    <div class="wiz-actions">
+      <button type="button" class="btn quiet" id="back">Back</button>
+      <span class="grow"></span>
+      <button type="button" class="btn ghost" id="skip" hidden>Skip this step</button>
+      <button type="button" class="btn primary" id="continue">Looks good</button>
+    </div>
+  </section>
+  <p class="hint wiz-foot">Nothing is created until the last step. A step's suggestions are made by a script from your words; your co-founder starts when the business exists.</p>
+</main>
+<script type="module" src="/start/start.js"></script>
+</body>
+</html>

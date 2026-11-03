@@ -1,0 +1,59 @@
+/* The wizard: one question per screen, centred, the suggestions as cards (docs/DESIGN.md). */
+.wizard-page { background: var(--canvas); min-height: 100vh; }
+.wiz-head { display: flex; align-items: center; gap: 16px; height: 64px; padding: 0 20px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.wiz-head .brand img { height: 24px; width: auto; }
+.wiz-progress { margin: 0 auto; font-size: 13px; font-weight: 500; color: var(--ink-2); }
+.wiz-bar { height: 3px; background: var(--line); }
+.wiz-bar i { display: block; height: 100%; width: 12.5%; background: var(--accent); transition: width .32s var(--ease); }
+#wizard { width: min(100% - 32px, 640px); margin: 40px auto 48px; display: grid; gap: 16px; }
+.wiz-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); padding: 32px; display: grid; gap: 16px; }
+.wiz-card h1 { font-size: clamp(24px, 3.4vw, 32px); }
+.wiz-sub { font-size: 16px; }
+.wiz-body { display: grid; gap: 12px; }
+.wiz-actions { display: flex; align-items: center; gap: 8px; padding-top: 8px; }
+.wiz-foot { text-align: center; }
+
+#idea { min-height: 96px; font-size: 18px; }
+.starters { display: flex; flex-wrap: wrap; gap: 8px; }
+.choices { display: grid; gap: 10px; }
+.choice { display: grid; gap: 4px; text-align: left; padding: 14px 16px; border: 1px solid var(--line-2); border-radius: var(--r-card); background: var(--surface); cursor: pointer; transition: border-color .16s var(--ease), background .16s var(--ease); position: relative; }
+.choice:hover { border-color: var(--ink-3); }
+.choice[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.choice b { font-size: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.choice p { font-size: 14px; color: var(--ink-2); }
+.choice .traits { display: flex; gap: 6px; flex-wrap: wrap; }
+.choice .traits span { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); }
+.choice[aria-pressed="true"] .traits span { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent-deep); }
+.choice.suggested b::after { content: "Suggested"; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-deep); }
+.choice .sample { font-style: italic; color: var(--ink-2); font-size: 14px; }
+.own { display: grid; gap: 6px; }
+.own input { min-height: 44px; }
+.names { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.names .choice { padding: 12px 14px; }
+.chips-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.summary { display: grid; gap: 8px; padding: 14px 16px; background: var(--surface-2); border-radius: var(--r-card); font-size: 14px; }
+.summary div { display: flex; gap: 12px; }
+.summary span:first-child { color: var(--ink-3); min-width: 96px; }
+.vibe-swatches { display: flex; gap: 4px; margin-top: 4px; }
+.vibe-swatches i { width: 16px; height: 16px; border-radius: 50%; border: 1px solid rgba(0,0,0,.08); }
+
+/* building */
+#building { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+#building li { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-card); color: var(--ink-2); }
+#building li i { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line-2); flex: none; font-style: normal; }
+#building li.doing { color: var(--ink); border-color: var(--line-2); }
+#building li.doing i { border-color: var(--accent); border-right-color: transparent; animation: spin .8s linear infinite; }
+#building li[data-done] { color: var(--ink); }
+#building li[data-done] i { background: var(--ok); border-color: var(--ok); color: #fff; font-size: 13px; }
+#building li[data-done] i::before { content: "✓"; }
+#building li.gap i { border-color: var(--warn); color: var(--warn); }
+#building li.gap i::before { content: "!"; }
+#building li small { margin-left: auto; color: var(--ink-3); font-size: 12px; }
+
+@media (max-width: 600px) {
+  .wiz-card { padding: 20px; }
+  .wiz-head .btn { display: none; }
+  .wiz-progress { margin-right: 0; }
+  .wiz-actions { flex-wrap: wrap; }
+  .wiz-actions .primary { order: -1; width: 100%; }
+}

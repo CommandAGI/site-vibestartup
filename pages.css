@@ -1,0 +1,42 @@
+/* The account pages (home, auth): centred, on the canvas. */
+.page-canvas { background: var(--canvas); min-height: 100vh; display: flex; flex-direction: column; }
+.page-head { display: flex; align-items: center; gap: 16px; height: 64px; padding: 0 20px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.page-head .brand img { height: 24px; width: auto; }
+.page-head .right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.page-main { width: min(100% - 32px, 960px); margin: 40px auto 64px; display: grid; gap: 32px; flex: 1; }
+.page-main > section { display: grid; gap: 16px; }
+.page-main h1 { font-size: clamp(26px, 3.4vw, 34px); }
+.section-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+/* home */
+.biz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.biz-card { display: grid; gap: 12px; align-content: start; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); position: relative; }
+.biz-card .mark { width: 44px; height: 44px; border-radius: 10px; overflow: hidden; }
+.biz-card .mark svg { width: 44px; height: 44px; }
+.biz-card h2 { font-size: 20px; }
+.biz-card .tag { color: var(--ink-2); font-size: 14px; }
+.biz-card .meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.biz-card .gaps { font-size: 13px; color: var(--warn); }
+.biz-card a.open { margin-top: 4px; }
+.new-card { display: grid; place-items: center; gap: 10px; padding: 32px 20px; border: 1px dashed var(--line-2); border-radius: var(--r-panel); color: var(--ink-2); text-align: center; min-height: 180px; }
+.new-card:hover { border-color: var(--accent); color: var(--ink); }
+.new-card b { font-size: 16px; color: var(--ink); }
+.new-card .plus { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-deep); font-size: 22px; }
+.account-card { display: grid; gap: 12px; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); }
+.account-card .row { gap: 12px; }
+
+/* auth */
+.auth-main { width: min(100% - 32px, 440px); margin: 48px auto 64px; display: grid; gap: 16px; flex: 1; }
+.auth-card { display: grid; gap: 16px; padding: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); }
+.auth-card h1 { font-size: 26px; }
+.auth-card form { display: grid; gap: 14px; }
+.auth-card form[hidden] { display: none; }
+.auth-switch { text-align: center; font-size: 14px; color: var(--ink-2); }
+.auth-switch button { border: 0; background: none; padding: 0; color: var(--accent-deep); font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+.auth-foot { text-align: center; }
+.auth-foot a { text-decoration: underline; text-underline-offset: 3px; }
+
+@media (max-width: 600px) {
+  .page-main { margin: 24px auto 48px; }
+  .auth-card { padding: 20px; }
+}

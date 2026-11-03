@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://api.commandagi.com https://api-dev.commandagi.com http://127.0.0.1:* http://localhost:*; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<title>Your businesses | VibeStartup</title>
+<meta name="description" content="Every business you run with VibeStartup, and a new one from an idea.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f0f12" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/pages.css">
+<link rel="icon" href="/mark.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/touch-icon.png">
+<script src="/brand.js"></script>
+</head>
+<body class="page-canvas">
+<a class="skip" href="#main">Skip to the content</a>
+<header class="page-head">
+  <a class="brand" href="/" aria-label="VibeStartup, home"><picture><source srcset="/wordmark-dark.svg" media="(prefers-color-scheme: dark)"><img src="/wordmark.svg" alt="VibeStartup" width="86" height="24"></picture></a>
+  <div class="right">
+    <span class="hint" id="who"></span>
+    <a class="btn primary sm" href="/start/">New business</a>
+  </div>
+</header>
+
+<main id="main" class="page-main">
+  <section aria-labelledby="biz-title">
+    <div class="section-row">
+      <h1 id="biz-title">Your businesses</h1>
+      <span class="hint" id="biz-count"></span>
+    </div>
+    <p class="muted">One account, many businesses. Each has its own co-founder, its own launch week and its own files in your Drive.</p>
+    <div class="biz-grid" id="list" aria-live="polite" aria-busy="true">
+      <a class="new-card" id="new-business" href="/start/"><span class="plus" aria-hidden="true">+</span><b>Start a new business</b><span class="small">Say the idea in a sentence.</span></a>
+    </div>
+  </section>
+
+  <section aria-labelledby="account-title">
+    <h2 id="account-title">Account</h2>
+    <div class="account-card">
+      <div class="row"><span class="avatar" id="account-initial">?</span><div><b id="account-name"></b><div class="muted small" id="account-email"></div></div><span class="right badge" id="credits-badge" title="Credits on your CommandAGI account"></span></div>
+      <p class="hint">Your account is a CommandAGI account under the VibeStartup brand. Billing, profile and share &amp; earn are in a business's console.</p>
+      <div class="row">
+        <button type="button" class="btn quiet sm" id="signout">Sign out</button>
+        <button type="button" class="btn danger sm right" id="delete-account">Delete my account</button>
+      </div>
+      <p class="hint">Deleting removes your CommandAGI account and every business it holds, with its records and files. It cannot be undone.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap"><span>VibeStartup is a brand of CommandAGI Inc.</span><a href="mailto:hello@vibestartup.pro">hello@vibestartup.pro</a><a href="/" class="right">Home</a></div>
+</footer>
+<script type="module" src="/home/home.js"></script>
+</body>
+</html>

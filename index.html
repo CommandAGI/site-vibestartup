@@ -1,233 +1,261 @@
 <!doctype html>
-<html lang="en" class="book">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://api.commandagi.com https://api-dev.commandagi.com http://127.0.0.1:* http://localhost:*; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <title>VibeStartup: start a real business with an AI co-founder</title>
-<meta name="description" content="VibeStartup is a startup factory: sign up, describe an idea, and an AI co-founder builds and runs a real small business with you. Every big decision stays yours.">
-<meta property="og:title" content="VibeStartup: the book of your business">
-<meta property="og:description" content="Have an idea on Monday. Have a business by Sunday. An AI co-founder writes it with you.">
+<meta name="description" content="Describe an idea in a sentence. Your AI co-founder builds the storefront, the checkout, the business email and the launch week with you. Every big decision stays yours.">
+<meta property="og:title" content="VibeStartup: turn an idea into a running business">
+<meta property="og:description" content="Describe it in a sentence. An AI co-founder builds the storefront, the checkout, the email and the launch week with you.">
 <meta property="og:image" content="https://vibestartup.commandagi.app/og.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#fff8e9">
-<link rel="preload" href="/fonts/InstrumentSerif-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/fonts/InstrumentSerif-italic-latin.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f0f12" media="(prefers-color-scheme: dark)">
+<link rel="preload" href="/fonts/InstrumentSans-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/style.css">
-<link rel="stylesheet" href="/book.css">
+<link rel="stylesheet" href="/landing.css">
 <link rel="icon" href="/mark.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/touch-icon.png">
+<script src="/brand.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to the content</a>
-<header class="running-head">
-  <a class="rh-brand" href="/" aria-label="VibeStartup, home"><img src="/wordmark.svg" alt="VibeStartup" width="148" height="41"></a>
-  <p class="rh-chapter" aria-hidden="true"><i data-chapter>The cover</i></p>
-  <nav class="rh-nav" aria-label="Site">
-    <button type="button" class="rh-link" popovertarget="contents" aria-haspopup="true">Contents</button>
-    <a class="rh-link" href="/startups/" id="signin-link">Your businesses</a>
-    <a class="rh-start" href="#account">Start</a>
-  </nav>
-  <span class="ribbon" aria-hidden="true"></span>
+<header class="site-head" id="head">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="VibeStartup, home"><picture><source srcset="/wordmark-dark.svg" media="(prefers-color-scheme: dark)"><img src="/wordmark.svg" alt="VibeStartup" width="101" height="28"></picture></a>
+    <nav aria-label="Site">
+      <a href="#product">Product</a>
+      <a href="#how">How it works</a>
+      <a href="#plans">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="actions">
+      <a class="btn ghost" href="/auth/" id="signin-link">Sign in</a>
+      <a class="btn primary" href="/start/">Start free</a>
+      <button type="button" class="btn icon menu-btn" id="menu-btn" aria-label="Menu" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
+    </div>
+  </div>
+  <div class="top-menu" id="top-menu" hidden>
+    <a href="#product">Product</a><a href="#how">How it works</a><a href="#plans">Pricing</a><a href="#faq">FAQ</a><a href="/auth/">Sign in</a>
+  </div>
 </header>
 
-<div id="contents" popover class="contents">
-  <p class="contents-title">Contents</p>
-  <ol>
-    <li><a href="#cover"><span>The cover</span><i>0</i></a></li>
-    <li><a href="#how"><span>Day one, and the week</span><i>I</i></a></li>
-    <li><a href="#what"><span>What your co-founder does</span><i>II</i></a></li>
-    <li><a href="#honest"><span>Errata: what you don’t get</span><i>II</i></a></li>
-    <li><a href="#plans"><span>Editions</span><i>III</i></a></li>
-    <li><a href="#account"><span>Sign the first page</span><i>IV</i></a></li>
-  </ol>
-</div>
-
 <main id="main">
-  <section class="cover spread" id="cover" data-title="The cover" aria-labelledby="cover-title">
-    <div class="page left">
-      <p class="folio">VibeStartup · a startup factory</p>
-      <h1 id="cover-title">Have an idea on Monday. Have a <em>business</em> by Sunday.</h1>
-      <p class="lede">You write the idea and make the calls only you can make. An AI co-founder builds the rest beside you, and argues in the margins.</p>
-      <form class="notebook" id="sketch" aria-describedby="sketch-note">
-        <label for="idea-line" class="nb-label">My idea</label>
-        <textarea id="idea-line" name="idea" rows="2" maxlength="160" spellcheck="false">A camera-enabled desk lamp that lets an assistant see your notebook</textarea>
-        <div class="nb-actions">
-          <button type="submit" class="pen-btn">Sketch the first page</button>
-          <a class="ink-btn" href="#account" id="start">Start free</a>
-          <a class="rule-btn" href="#how">How it works</a>
+  <section class="hero" id="product" aria-labelledby="hero-title">
+    <div class="wash" aria-hidden="true"></div>
+    <div class="wrap hero-inner">
+      <p class="eyebrow">An AI co-founder for people with an idea and no team</p>
+      <h1 id="hero-title">Turn an idea into a <em>running</em> business.</h1>
+      <p class="lede">Describe it in a sentence. Your co-founder builds the storefront, the checkout, the business email and the launch week with you. Every big decision stays yours.</p>
+
+      <form class="idea-box" id="idea-form" autocomplete="off">
+        <label class="sr-only" for="idea">Describe your business idea</label>
+        <textarea id="idea" name="idea" rows="2" maxlength="240" placeholder="A camera-enabled desk lamp that lets an assistant see your notebook" spellcheck="false"></textarea>
+        <div class="idea-actions">
+          <span class="hint" id="idea-count"></span>
+          <a class="btn primary" id="start" href="/start/">Start building <span aria-hidden="true">→</span></a>
         </div>
       </form>
-    </div>
-    <div class="gutter" aria-hidden="true"></div>
-    <div class="page right" aria-labelledby="sketch-title">
-      <p class="folio">The first page <span class="sr">of the sketched business</span></p>
-      <div class="facing" id="facing" aria-live="polite">
-        <h2 id="sketch-title" class="f-name"><span data-f="name">Lampwise</span></h2>
-        <p class="f-tag" data-f="tag">A desk lamp that sees your notebook.</p>
-        <div class="f-store">
-          <svg class="f-mark" viewBox="0 0 48 48" aria-hidden="true"><path pathLength="1" d="M6 40 L24 8 L42 40 Z"/><path pathLength="1" d="M14 40 L24 22 L34 40"/></svg>
-          <div><b data-f="product">The Notebook Lamp</b><span>Price: yours to set</span></div>
-          <span class="f-buy">Checkout · test mode</span>
+      <div class="chips" id="chips" aria-label="Example ideas"></div>
+
+      <div class="sketch" id="sketch" aria-live="polite" hidden>
+        <div class="sk-head">
+          <span class="sk-mark" data-f="mark" aria-hidden="true"></span>
+          <div class="grow">
+            <h2 class="sk-name" data-f="name">Lampwise</h2>
+            <p class="sk-tag muted" data-f="tagline">A desk lamp that sees your notebook.</p>
+          </div>
+          <div class="sk-swatches" data-f="swatches" aria-label="Brand colours"></div>
         </div>
-        <ol class="f-tasks">
-          <li data-f="t1">Name it, and draw its mark</li>
-          <li data-f="t2">A storefront on its own address</li>
-          <li data-f="t3">One product, checkout in test mode</li>
-          <li data-f="t4">Write to ten people you know</li>
-        </ol>
-      </div>
-      <p class="f-note" id="sketch-note">A sketch made in your browser by a script; nothing is sent. Your real co-founder starts when you sign the first page.</p>
-    </div>
-    <aside class="margin" aria-label="The co-founder’s margin notes">
-      <p class="note" data-f="n1">Who buys the first one? Name three people.</p>
-      <p class="note" data-f="n2">Who makes the lamps? Sourcing stays with you, or sell it as a pre-order.</p>
-      <p class="note" data-f="n3">One product first. A catalogue can wait.</p>
-    </aside>
-  </section>
-
-  <figure class="film" data-film="clay" data-title="I. Day one">
-    <video muted loop playsinline preload="metadata" poster="/media/clay.webp" aria-hidden="true">
-      <source src="/media/clay.webm" type="video/webm; codecs=av01.0.05M.08">
-      <source src="/media/clay.mp4" type="video/mp4">
-    </video>
-    <img class="film-still" src="/media/clay.webp" alt="" width="1280" height="720" fetchpriority="low">
-    <figcaption><span class="film-num">I</span><span class="film-title">Day one</span><small>Generated film. Not a VibeStartup customer.</small></figcaption>
-  </figure>
-
-  <section class="week" id="how" data-title="I. Day one, and the week" aria-labelledby="how-title">
-    <h2 id="how-title" class="chapter"><span>I.</span> How it works</h2>
-    <ol class="steps-book">
-      <li><p><b>Say the idea.</b> One sentence is enough. Name the business and your co-founder.</p><em class="note">Short ideas get built. Long ones get questions.</em></li>
-      <li><p><b>Day one.</b> The brand, the site, a first product and checkout. Anything big comes to you first.</p><em class="note">I ask before I spend.</em></li>
-      <li><p><b>Launch week.</b> Seven days, one step a day.</p></li>
-      <li><p><b>Every morning.</b> A briefing in chat and by email: visitors, carts, sales, what waits on you, today’s plan.</p><em class="note">Only completed sales are counted.</em></li>
-    </ol>
-    <div class="days" role="list" aria-label="Launch week, one step a day">
-      <div role="listitem"><i>1</i>Site and first offer</div>
-      <div role="listitem"><i>2</i>Your warm list</div>
-      <div role="listitem"><i>3</i>Personal notes</div>
-      <div role="listitem"><i>4</i>Launch posts</div>
-      <div role="listitem"><i>5</i>Launch day</div>
-      <div role="listitem"><i>6</i>Follow-ups</div>
-      <div role="listitem"><i>7</i>The debrief</div>
-    </div>
-  </section>
-
-  <figure class="film" data-film="stitch" data-title="II. What your co-founder does">
-    <video muted loop playsinline preload="none" poster="/media/stitch.webp" aria-hidden="true">
-      <source src="/media/stitch.webm" type="video/webm; codecs=av01.0.05M.08">
-      <source src="/media/stitch.mp4" type="video/mp4">
-    </video>
-    <img class="film-still" src="/media/stitch.webp" alt="" width="1280" height="720" loading="lazy">
-    <figcaption><span class="film-num">II</span><span class="film-title">What your co-founder does</span><small>Generated film. Not a VibeStartup customer.</small></figcaption>
-  </figure>
-
-  <section class="index" id="what" data-title="II. What your co-founder does" aria-labelledby="what-title">
-    <h2 id="what-title" class="chapter"><span>II.</span> Index</h2>
-    <p class="sub">One conversation, and every part of the business beside it. Big decisions come to you. With autopilot on, the rest just happens.</p>
-    <dl class="index-list">
-      <div><dt>Site, built and shipped</dt><dd>its own address, a brand kit, every change tested first</dd></div>
-      <div><dt>Payment</dt><dd>products, subscriptions, checkout; a test buy before the first real one</dd></div>
-      <div><dt>Inbox</dt><dd>a business address; it drafts, you approve every send</dd></div>
-      <div><dt>Content</dt><dd>offer images, short videos, posts; the credits shown before anything is made</dd></div>
-      <div><dt>Customers</dt><dd>a warm list, outbound, posts, one careful ad campaign inside your budget</dd></div>
-      <div><dt>Memory</dt><dd>plain files you can read: its soul, its owner, its playbook, its memory</dd></div>
-    </dl>
-  </section>
-
-  <section class="errata" id="honest" data-title="II. Errata" aria-labelledby="honest-title">
-    <h2 id="honest-title" class="chapter small-chapter">Errata: what you get, and what you don’t</h2>
-    <div class="errata-cols">
-      <div>
-        <h3>You get</h3>
-        <ul>
-          <li>A new site, hosted for you, with checkout, email, ads and content.</li>
-          <li>A co-founder that explains what it does and why.</li>
-          <li>Every file of your business, readable and yours.</li>
-        </ul>
-      </div>
-      <div>
-        <h3>You don’t get</h3>
-        <ul class="struck">
-          <li><s>Stock, sourcing and shipping.</s> <em>You bring the supplier, or sell digital products and services.</em></li>
-          <li><s>Edits to the site you have.</s> <em>It reads it for context and builds a new one here.</em></li>
-          <li><s>Sales made up to look good.</s> <em>Only completed sales count.</em></li>
-          <li><s>Live money, ads, posts or email on day one.</s> <em>Each waits for your own provider account, and says so.</em></li>
-        </ul>
+        <div class="sk-grid">
+          <div class="sk-store">
+            <p class="sk-label">Storefront</p>
+            <div class="sk-product">
+              <b data-f="product">The Notebook Lamp</b>
+              <span class="muted">Price: yours to set</span>
+              <span class="badge warn">Checkout · test mode</span>
+            </div>
+            <p class="hint" data-f="url">yourbusiness.commandagi.app</p>
+          </div>
+          <div class="sk-week">
+            <p class="sk-label">Launch week</p>
+            <ol class="sk-days">
+              <li data-f="day-1"><i>1</i>Site and first offer</li>
+              <li data-f="day-2"><i>2</i>Your warm list</li>
+              <li data-f="day-3"><i>3</i>Personal notes</li>
+              <li data-f="day-4"><i>4</i>Launch posts</li>
+              <li data-f="day-5"><i>5</i>Launch day</li>
+              <li data-f="day-6"><i>6</i>Follow-ups</li>
+              <li data-f="day-7"><i>7</i>Debrief</li>
+            </ol>
+          </div>
+          <div class="sk-cof">
+            <p class="sk-label">Your co-founder</p>
+            <div class="sk-msg"><span class="avatar cofounder" data-f="cof-initial">J</span><p data-f="cof-line">Who buys the first one? Name three people, and we start there.</p></div>
+          </div>
+        </div>
+        <p class="sketch-note illustrative" id="sketch-note">A sketch made in your browser by a script. Nothing was sent. Your real co-founder starts when you create the business.</p>
       </div>
     </div>
   </section>
 
-  <figure class="film" data-film="dough" data-title="III. Editions">
-    <video muted loop playsinline preload="none" poster="/media/dough.webp" aria-hidden="true">
-      <source src="/media/dough.webm" type="video/webm; codecs=av01.0.05M.08">
-      <source src="/media/dough.mp4" type="video/mp4">
-    </video>
-    <img class="film-still" src="/media/dough.webp" alt="" width="1280" height="720" loading="lazy">
-    <figcaption><span class="film-num">III</span><span class="film-title">Editions</span><small>Generated film. Not a VibeStartup customer.</small></figcaption>
-  </figure>
-
-  <section class="editions" id="plans" data-title="III. Editions" aria-labelledby="plans-title">
-    <h2 id="plans-title" class="chapter"><span>III.</span> Plans</h2>
-    <p class="sub">Start free with a few credits. Prices are set at launch.</p>
-    <div class="ed-list">
-      <article><h3>Starter</h3><p class="ed-price">Price set at launch</p><p>One business. Coding, image and video work. Email and outbound. Ads on autopilot. A subdomain of vibestartup.pro.</p></article>
-      <article><h3>Growth</h3><p class="ed-price">Price set at launch</p><p>Three businesses. Everything in Starter. Your own domain. Priority help.</p></article>
-      <article><h3>Scale</h3><p class="ed-price">Price set at launch</p><p>Ten businesses. Everything in Growth. The most credits each month.</p></article>
+  <section class="band" id="how" aria-labelledby="how-title">
+    <div class="wrap">
+      <h2 id="how-title" class="h-section">How it works</h2>
+      <ol class="steps">
+        <li><span class="num">1</span><h3>Say the idea</h3><p>One sentence is enough. Pick a name, a look and a voice from the suggestions, or write your own.</p></li>
+        <li><span class="num">2</span><h3>Meet your co-founder</h3><p>Name it. Choose its character. It builds the storefront, claims the business email and writes its first plan while you watch.</p></li>
+        <li><span class="num">3</span><h3>Run the launch week</h3><p>Seven days, one step a day. Each step is a proposal you approve. Every morning, a briefing with the real numbers.</p></li>
+      </ol>
     </div>
   </section>
 
-  <figure class="film" data-film="parcel" data-title="IV. Sign the first page">
-    <video muted loop playsinline preload="none" poster="/media/parcel.webp" aria-hidden="true">
-      <source src="/media/parcel.webm" type="video/webm; codecs=av01.0.05M.08">
-      <source src="/media/parcel.mp4" type="video/mp4">
-    </video>
-    <img class="film-still" src="/media/parcel.webp" alt="" width="1280" height="720" loading="lazy">
-    <figcaption><span class="film-num">IV</span><span class="film-title">Sign the first page</span><small>Generated film. Not a VibeStartup customer.</small></figcaption>
-  </figure>
+  <section class="console-section" aria-labelledby="console-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="console-title" class="h-section">One console for the whole business</h2>
+        <p class="sub">Chat with your co-founder, and every part of the business beside it: the dashboard, tasks, email, products, orders, customers, ads, the studio, outbound, social, files, legal, settings and activity.</p>
+      </div>
+      <figure class="mock-frame" aria-label="The console, illustrative">
+        <div class="mock" aria-hidden="true">
+          <div class="mock-rail">
+            <div class="mock-biz"><span class="mock-mark">L</span><div><b>Lampwise</b><small>Business</small></div></div>
+            <div class="mock-search">Search ⌘K</div>
+            <div class="mock-group">Home</div>
+            <div class="mock-tab on">Chat</div><div class="mock-tab">Dashboard</div><div class="mock-tab">Analytics</div>
+            <div class="mock-group">Work</div>
+            <div class="mock-tab">Tasks <span class="badge accent">1</span></div><div class="mock-tab">Email</div><div class="mock-tab">Files</div>
+            <div class="mock-group">Sell</div>
+            <div class="mock-tab">Products</div><div class="mock-tab">Orders</div><div class="mock-tab">Customers</div>
+            <div class="mock-group">Grow</div>
+            <div class="mock-tab">Ads</div><div class="mock-tab">Studio</div><div class="mock-tab">Outbound</div><div class="mock-tab">Social</div>
+            <div class="mock-group">Company</div>
+            <div class="mock-tab">Legal</div><div class="mock-tab">Settings</div><div class="mock-tab">Activity</div>
+          </div>
+          <div class="mock-main">
+            <div class="mock-top"><b>Chat</b><span class="muted">Juno · AI co-founder</span></div>
+            <div class="mock-chat">
+              <div class="mock-msg cof"><span class="avatar cofounder">J</span><div><p>Hi. I read BUSINESS.md and the storefront is up in test mode. Two things for day one need your call.</p></div></div>
+              <div class="mock-card">
+                <div class="mock-card-head"><span class="badge accent">Needs your call</span><span class="muted">Day 1 · Site and first offer</span></div>
+                <b>Activate “The Notebook Lamp” as a pre-order at a price you set</b>
+                <p class="muted">The storefront shows it in test mode until you connect a payment provider. Nothing is charged.</p>
+                <div class="mock-actions"><span class="btn primary sm">Approve</span><span class="btn quiet sm">Reject</span><span class="btn ghost sm">Show reasoning</span></div>
+              </div>
+              <div class="mock-msg me"><div><p>Approve. Price it at 49.</p></div><span class="avatar">A</span></div>
+              <div class="mock-msg cof"><span class="avatar cofounder">J</span><div><p>Done: active at $49, test checkout works. Next: who are the first ten people you would tell? I’ll draft the notes.</p></div></div>
+            </div>
+            <div class="mock-composer"><span class="muted">Message Juno…</span><span class="mock-send">↑</span></div>
+          </div>
+          <div class="mock-side">
+            <b>Building</b>
+            <div class="mock-side-row"><span>Storefront</span><span class="badge ok">Live · test mode</span></div>
+            <div class="mock-side-row"><span>Brand kit</span><span class="badge">Ready</span></div>
+            <div class="mock-side-row"><span>Needs you</span><span class="badge accent">1</span></div>
+            <div class="mock-side-row"><span>Launch week</span><span class="badge">Day 1 of 7</span></div>
+            <div class="mock-side-row"><span>Credits</span><span class="badge">—</span></div>
+          </div>
+        </div>
+        <figcaption class="illustrative">Illustrative: a console with example data. Your numbers are only what was measured.</figcaption>
+      </figure>
+    </div>
+  </section>
 
-  <section class="bookplate-wrap" id="account" data-title="IV. Sign the first page" aria-labelledby="account-title">
-    <form class="bookplate" data-auth="signup" id="signup">
-      <p class="ex-libris">Ex libris</p>
-      <h2 id="account-title">Create your account</h2>
-      <p class="plate-sub">Free credits to start. No card. Prices are set at launch.</p>
-      <label class="line">Your name<input name="name" autocomplete="name" required placeholder="Ada Lovelace"></label>
-      <label class="line">Email<input name="email" type="email" autocomplete="email" required placeholder="you@example.com"></label>
-      <label class="line">Password<input name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters"></label>
-      <label class="line">Your first idea <small>optional: your co-founder starts on it now</small><textarea name="idea" rows="2" placeholder="A camera-enabled desk lamp that lets an assistant see your notebook"></textarea></label>
-      <p class="error" role="alert" data-error></p>
-      <button class="ink-btn" type="submit">Create my account</button>
-    </form>
-    <form class="signin" data-auth="signin" id="signin">
-      <h3>Already have an account?</h3>
-      <label class="line">Email<input name="email" type="email" autocomplete="email" required></label>
-      <label class="line">Password<input name="password" type="password" autocomplete="current-password" required></label>
-      <p class="error" role="alert" data-error></p>
-      <button class="rule-btn" type="submit">Sign in</button>
-      <p class="plate-sub">One account runs as many businesses as your plan allows.</p>
-    </form>
+  <section class="band" id="week" aria-labelledby="week-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="week-title" class="h-section">The launch week</h2>
+        <p class="sub">Seven days, one step a day. Each day’s work is a proposal; you approve it or send it back.</p>
+      </div>
+      <ol class="week">
+        <li><i>1</i><b>Site and first offer</b><p>The storefront is live and one product is active.</p></li>
+        <li><i>2</i><b>Your warm list</b><p>Five to fifteen real people. Only the people you give are recorded.</p></li>
+        <li><i>3</i><b>Personal notes</b><p>A short note to each, drafted for you to send or approve.</p></li>
+        <li><i>4</i><b>Launch posts</b><p>Posts in your brand, published to the accounts you connect, or ready for you to post.</p></li>
+        <li><i>5</i><b>Launch day</b><p>The offer goes live and the first follow-ups are scheduled.</p></li>
+        <li><i>6</i><b>Follow-ups</b><p>Every reply answered, every buyer thanked.</p></li>
+        <li><i>7</i><b>Debrief</b><p>What worked, what did not, and next week’s plan, written into memory.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="caps" id="what" aria-labelledby="what-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="what-title" class="h-section">What your co-founder does</h2>
+        <p class="sub">And where each part stops until you connect your own account. It never pretends.</p>
+      </div>
+      <div class="cap-grid">
+        <article><h3>Site</h3><p>A storefront on its own address, built and deployed from files you can read. Your own domain on paid plans.</p><small>Stops at: your registrar’s DNS record.</small></article>
+        <article><h3>Payments</h3><p>Products with one-time or recurring prices, and a checkout you can test with a test card.</p><small>Stops at: your payment provider’s keys.</small></article>
+        <article><h3>Email</h3><p>A business address from day one. It drafts replies; you approve every send.</p><small>Stops at: nothing. It works.</small></article>
+        <article><h3>Content</h3><p>Offer images, short clips and posts in your brand, with the credits shown before anything is made.</p><small>Stops at: image models not configured on a stack.</small></article>
+        <article><h3>Customers</h3><p>A warm list, personal notes and outbound to leads you upload. Only the people you give.</p><small>Stops at: a send without your approval.</small></article>
+        <article><h3>Ads</h3><p>One careful campaign inside a budget you approve, with a readiness checklist that blocks launch.</p><small>Stops at: your ad account.</small></article>
+        <article><h3>Memory</h3><p>Plain files you can open: its soul, the business, the owner, the playbook, what it learned.</p><small>Stops at: nothing. They are your files.</small></article>
+        <article><h3>Routines</h3><p>A daily briefing with the real numbers, and routines you write in plain words: pause, edit, run now.</p><small>Stops at: nothing. They run on schedule.</small></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="band honest" aria-labelledby="honest-title">
+    <div class="wrap">
+      <h2 id="honest-title" class="h-section">What you get, and what you don’t</h2>
+      <div class="honest-cols">
+        <div class="card"><h3>You get</h3><ul><li>A new site, hosted for you, with checkout, email, content and ads.</li><li>A co-founder that explains what it does and why, and asks before it spends.</li><li>Every file of your business, readable and yours.</li><li>A CommandAGI account underneath: the same agents, files and sites, under this brand.</li></ul></div>
+        <div class="card"><h3>You don’t get</h3><ul class="struck"><li><s>Stock, sourcing and shipping.</s> You bring the supplier, or sell digital products and services.</li><li><s>Edits to a site you already have.</s> It reads it for context and builds a new one here.</li><li><s>Sales made up to look good.</s> Only completed sales count. A test order is a test.</li><li><s>Live money, ads, posts or outbound mail on day one.</s> Each waits for your own provider account, and says so.</li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="plans" id="plans" aria-labelledby="plans-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="plans-title" class="h-section">Plans</h2>
+        <p class="sub">Start free with a few credits. Prices are set at launch.</p>
+      </div>
+      <div class="plan-grid">
+        <article class="card"><h3>Starter</h3><p class="price">Set at launch</p><p class="muted">Testing your first idea.</p><ul><li>One business</li><li>An agent team for code, images and video</li><li>Email and outbound</li><li>Ads on autopilot</li><li>A subdomain of vibestartup.pro</li></ul><a class="btn quiet full" href="/start/">Start free</a></article>
+        <article class="card"><h3>Growth</h3><p class="price">Set at launch</p><p class="muted">For founders ready to grow.</p><ul><li>Three businesses</li><li>Everything in Starter</li><li>Your own domain</li><li>Priority help</li></ul><a class="btn quiet full" href="/start/">Start free</a></article>
+        <article class="card"><h3>Scale</h3><p class="price">Set at launch</p><p class="muted">Operators with many businesses.</p><ul><li>Ten businesses</li><li>Everything in Growth</li><li>The most credits each month</li></ul><a class="btn quiet full" href="/start/">Start free</a></article>
+      </div>
+      <p class="hint plans-note">Every plan has a per-day safety cap on what runs without you; it is set at launch too. Unused monthly credits do not roll over. Billed work that was not what you asked for can be disputed for its credits.</p>
+    </div>
+  </section>
+
+  <section class="band faq" id="faq" aria-labelledby="faq-title">
+    <div class="wrap">
+      <h2 id="faq-title" class="h-section">Questions</h2>
+      <details><summary>Is the co-founder a person?</summary><p>No. It is an AI agent that runs on CommandAGI, and it says so to you and to anyone it writes to. It has tools over your files, your tasks, your routines and your storefront, and nothing else.</p></details>
+      <details><summary>What does it do without asking?</summary><p>With autopilot off, it proposes and waits. With autopilot on, it does routine work inside the limits you set and reports what it did. Spend, public posts, changes to the live site, contact lists and legal filings always wait for you.</p></details>
+      <details><summary>Can I take real money on day one?</summary><p>The checkout runs in test mode until you add your payment provider’s keys in Settings. A test order is marked as a test everywhere and never counts as a sale.</p></details>
+      <details><summary>Who owns the files?</summary><p>You do. A business is a folder in your CommandAGI Drive: the record, the co-founder’s memory, products, orders, leads, tasks. You can open every file.</p></details>
+      <details><summary>What is VibeStartup, legally?</summary><p>A brand of CommandAGI Inc, a Delaware C corporation. Your account is a CommandAGI account; CommandAGI’s terms and privacy policy apply.</p></details>
+      <details><summary>What does it cost?</summary><p>Prices are set at launch. Until then you start with free credits, and every plan page says “set at launch”.</p></details>
+    </div>
+  </section>
+
+  <section class="cta" aria-labelledby="cta-title">
+    <div class="wrap cta-inner">
+      <h2 id="cta-title">Start with one sentence.</h2>
+      <p class="sub">Free credits, no card. Your co-founder is ready when you are.</p>
+      <a class="btn primary lg" href="/start/">Start building</a>
+    </div>
   </section>
 </main>
 
-<footer class="colophon">
-  <p class="colo-mark"><img src="/wordmark.svg" alt="VibeStartup" width="148" height="41"></p>
-  <p>Colophon. Set in Instrument Serif and Instrument Sans. The films are generated (fal); no customer is shown. Written at vibestartup.pro · <a href="mailto:hello@vibestartup.pro">hello@vibestartup.pro</a></p>
-  <p class="foot-right"><a href="/startups/">Your businesses</a> · <a href="#plans">Plans</a>
-    <button type="button" class="langbtn" data-lang aria-haspopup="dialog" aria-label="Language">A/文</button></p>
+<footer class="site-foot">
+  <div class="wrap">
+    <picture><source srcset="/wordmark-dark.svg" media="(prefers-color-scheme: dark)"><img src="/wordmark.svg" alt="VibeStartup" width="86" height="24"></picture>
+    <span>VibeStartup is a brand of CommandAGI Inc.</span>
+    <a href="mailto:hello@vibestartup.pro">hello@vibestartup.pro</a>
+    <a href="https://commandagi.com/terms" rel="noopener">Terms</a>
+    <a href="https://commandagi.com/privacy" rel="noopener">Privacy</a>
+    <a href="/home/" class="right">Your businesses</a>
+  </div>
 </footer>
-
-<dialog id="lang-dialog" aria-labelledby="lang-title">
-  <h2 id="lang-title">Language</h2>
-  <ul class="langlist">
-    <li><a href="/" hreflang="en" lang="en" aria-current="true">English</a></li>
-    <li><a href="/es/" hreflang="es" lang="es">Español</a></li>
-    <li><a href="/zh/" hreflang="zh-Hans" lang="zh-Hans">简体中文</a></li>
-  </ul>
-  <form method="dialog"><button class="rule-btn">Close</button></form>
-</dialog>
-<script type="module" src="/site.js"></script>
-<script type="module" src="/book.js"></script>
+<script type="module" src="/landing.js"></script>
 </body>
 </html>

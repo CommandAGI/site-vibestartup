@@ -1,0 +1,58 @@
+<!doctype html>
+<!-- The share image (og.png, 1200×630) and the touch icon, rendered by brand/render.py with Playwright. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../style.css">
+<style>
+  html, body { margin: 0; background: #ffffff; }
+  .og { width: 1200px; height: 630px; position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr 440px; gap: 40px; padding: 64px 72px; box-sizing: border-box; font-family: var(--sans); color: #17161a; }
+  .wash { position: absolute; inset: 0; background: radial-gradient(60% 60% at 20% 20%, rgba(240,83,47,.10), transparent 70%), radial-gradient(40% 50% at 90% 90%, rgba(91,87,217,.10), transparent 70%); }
+  .left { position: relative; display: grid; align-content: space-between; }
+  .left img { height: 44px; width: auto; }
+  h1 { font-size: 70px; line-height: 1.04; letter-spacing: -.03em; margin: 0; font-weight: 600; }
+  h1 em { font-family: "Instrument Serif", Georgia, serif; font-style: italic; font-weight: 400; color: #c93f1f; }
+  .sub { font-size: 24px; color: #5f5c66; margin: 0; max-width: 20ch; }
+  .card { position: relative; align-self: center; background: #fff; border: 1px solid #e9e6e0; border-radius: 20px; padding: 24px; box-shadow: 0 1px 2px rgba(23,22,26,.06), 0 24px 60px rgba(23,22,26,.12); display: grid; gap: 16px; }
+  .idea { padding: 14px 16px; border: 1px solid #e9e6e0; border-radius: 14px; font-size: 17px; color: #17161a; }
+  .idea small { display: block; color: #8e8a93; font-size: 12px; margin-bottom: 4px; }
+  .sk { display: flex; gap: 12px; align-items: center; }
+  .mark { width: 44px; height: 44px; border-radius: 10px; background: #2a6f8f; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 22px; }
+  .sk b { font-size: 20px; display: block; }
+  .sk span { color: #5f5c66; font-size: 14px; }
+  .sw { margin-left: auto; display: flex; gap: 4px; }
+  .sw i { width: 16px; height: 16px; border-radius: 50%; display: block; }
+  .rows { display: grid; gap: 8px; font-size: 14px; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border: 1px solid #e9e6e0; border-radius: 10px; }
+  .badge { font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 999px; background: #fff0eb; color: #c93f1f; }
+  .badge.ok { background: #e4f4ea; color: #1f8a4c; }
+  .badge.c { background: #eeedfd; color: #5b57d9; }
+  .icon { width: 180px; height: 180px; border-radius: 40px; background: #17161a; position: relative; overflow: hidden; }
+  .icon .rib { position: absolute; right: 22px; top: 0; width: 34px; height: 62px; background: #f0532f; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%); }
+  .icon span { position: absolute; left: 26px; bottom: 18px; font-family: "Instrument Serif", Georgia, serif; font-style: italic; font-size: 150px; line-height: 1; color: #fff; }
+</style>
+</head>
+<body>
+<div class="og" id="og">
+  <div class="wash"></div>
+  <div class="left">
+    <img src="../wordmark.svg" alt="VibeStartup">
+    <div>
+      <h1>Turn an idea into a <em>running</em> business.</h1>
+    </div>
+    <p class="sub">An AI co-founder builds the storefront, the checkout, the email and the launch week with you.</p>
+  </div>
+  <div class="card">
+    <div class="idea"><small>Your idea</small>Hand-thrown ceramic mugs sold to cafes by subscription</div>
+    <div class="sk"><div class="mark">C</div><div><b>Ceramic Mugs Co</b><span>Launch week · day 1 of 7</span></div><div class="sw"><i style="background:#2a6f8f"></i><i style="background:#5aa0b5"></i><i style="background:#e08a3c"></i></div></div>
+    <div class="rows">
+      <div class="row"><span>Storefront</span><span class="badge ok">Live · test mode</span></div>
+      <div class="row"><span>Business email</span><span class="badge ok">Claimed</span></div>
+      <div class="row"><span>Needs your call</span><span class="badge">1</span></div>
+      <div class="row"><span>Co-founder</span><span class="badge c">Juno · AI</span></div>
+    </div>
+  </div>
+</div>
+<div class="icon" id="icon"><div class="rib"></div><span>V</span></div>
+</body>
+</html>
