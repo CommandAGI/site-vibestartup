@@ -1,102 +1,100 @@
-// Run VibeStartup's app on this computer: the site's static files and its server module (app.mjs), with the site's
-// database standing in as an in-memory SQLite. D1 is the one edge this cannot run here, so it is the one fake.
+// Run VibeStartup on this computer: the site's static files and app.mjs (for /brand.js), pointed at a CommandAGI API.
+// The API is a local platform this script starts (the whole api worker under workerd, its own database and files,
+// the checkout's service accounts so the co-founder's model calls are real), or an origin you name.
 //
-//   node test/local.mjs [--port 4180] [--db /tmp/vibestartup.db]
+//   node test/local.mjs [--port 4180] [--platform-dir DIR] [--api https://api-dev.commandagi.com] [--no-build]
 //
-// The page is served at http://127.0.0.1:<port>/ and the API at /api/*. The model key comes from
-// COMMANDAGI_ENV_ROOT's cascade or from the host's secrets file when VIBESTARTUP_USE_LOCAL_SECRETS=1.
+// --api           use that API instead of starting a local platform
+// --platform-dir  the local platform's state folder (default: a fresh temporary folder, so the sign-up cap is fresh)
+// --no-build      start the platform from the build already in <platform-dir>/dist
+//
+// COMMANDAGI_ROOT is the CommandAGI checkout the platform is built from (default: the checkout this folder is mounted
+// in, five levels up); COMMANDAGI_ENV_ROOT is where the .env cascade is read (default: COMMANDAGI_ROOT).
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdtemp } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { DatabaseSync } from 'node:sqlite';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
+const COMMANDAGI_ROOT = process.env.COMMANDAGI_ROOT || path.resolve(root, '../../../..');
+const ENV_ROOT = process.env.COMMANDAGI_ENV_ROOT || (existsSync(path.join(COMMANDAGI_ROOT, '.env')) ? COMMANDAGI_ROOT : path.resolve(root, '../../../..'));
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml',
   '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8',
-  '.woff2': 'font/woff2', '.mp4': 'video/mp4', '.webm': 'video/webm',
+  '.woff2': 'font/woff2', '.mp4': 'video/mp4', '.webm': 'video/webm', '.md': 'text/markdown; charset=utf-8',
 };
 
-/** D1's statement surface over node:sqlite: prepare/bind/first/all/run. */
-function d1(file = ':memory:') {
-  const db = new DatabaseSync(file);
-  return {
-    prepare(sql) {
-      let args = [];
-      const stmt = {
-        bind(...values) { args = values; return stmt; },
-        async first() { const row = db.prepare(sql).get(...args); return row ?? null; },
-        async all() { return { results: db.prepare(sql).all(...args), success: true }; },
-        async run() { const r = db.prepare(sql).run(...args); return { success: true, meta: { changes: r.changes } }; },
-      };
-      return stmt;
-    },
-    async batch(list) { const out = []; for (const s of list) out.push(await s.run()); return out; },
-    async exec(sql) { db.exec(sql); },
-  };
-}
-
-/** The model key for a local run: the environment first, then this host's own secrets file. Never printed. */
-async function modelKey() {
-  if (process.env.OPENROUTER_API_KEY) return process.env.OPENROUTER_API_KEY;
-  if (process.env.VIBESTARTUP_USE_LOCAL_SECRETS === '1') {
-    const file = path.join(process.env.HOME ?? '', '.commandagi/.secrets/env.json');
-    try {
-      const store = JSON.parse(await readFile(file, 'utf8'));
-      return store.SVC__OPENROUTER__MAIN__API_KEY ?? null;
-    } catch { return null; }
-  }
-  return null;
-}
-
-export async function startLocal({ port = 0, dbFile = ':memory:', model = undefined } = {}) {
-  const app = (await import(pathToFileURL(path.join(root, 'app.mjs')).href)).default;
-  const env = { DB: d1(dbFile), OPENROUTER_API_KEY: model ?? await modelKey(), COFOUNDER_MODEL: process.env.COFOUNDER_MODEL ?? 'deepseek/deepseek-chat-v3.1' };
-  const server = createServer(async (req, res) => {
-    const url = new URL(req.url, 'http://x');
-    const chunks = [];
-    for await (const c of req) chunks.push(c);
-    const hasBody = chunks.length > 0;
-    const request = new Request(`http://127.0.0.1${url.pathname}${url.search}`, {
-      method: req.method,
-      headers: req.headers,
-      ...(hasBody ? { body: Buffer.concat(chunks) } : {}),
-    });
-    let response;
-    if (url.pathname.startsWith('/api/')) {
-      response = await app.fetch(request, env, {});
-    } else {
-      const rel = decodeURIComponent(url.pathname).replace(/^\/+/, '');
-      const candidates = rel === '' || rel.endsWith('/') ? [`${rel}index.html`] : [rel, `${rel}/index.html`, `${rel}.html`];
-      let file = null, found = null;
-      for (const c of candidates) {
-        const abs = path.join(root, c);
-        if (!abs.startsWith(root + path.sep)) continue;
-        if (existsSync(abs)) { file = abs; found = c; break; }
-      }
-      if (file) {
-        response = new Response(await readFile(file), { headers: { 'content-type': TYPES[path.extname(file)] ?? 'application/octet-stream' } });
-      } else {
-        response = new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain' } });
+/** The service accounts as the worker reads them: one `SVC__<SERVICE>__<ACCOUNT>` binding per account. */
+async function serviceBindings() {
+  try {
+    const { localAccounts } = await import(pathToFileURL(path.join(ENV_ROOT, 'scripts/release/service-accounts.mjs')).href);
+    const out = {};
+    for (const [service, accounts] of Object.entries(localAccounts({ root: ENV_ROOT }).services ?? {})) {
+      for (const a of accounts) {
+        const { fields, id, name, service: _s, ...attributes } = a;
+        out[`SVC__${service.toUpperCase().replace(/-/g, '_')}__${String(name).toUpperCase().replace(/-/g, '_')}`] = JSON.stringify({ fields, ...attributes });
       }
     }
+    return out;
+  } catch (e) {
+    console.warn(`no service accounts (${e.message}): the co-founder has no model key on this run`);
+    return {};
+  }
+}
+
+/** Start the local CommandAGI platform from the checkout. → { base, stop } */
+export async function startPlatform({ dir, build = true } = {}) {
+  const { startCheckoutPlatform } = await import(pathToFileURL(path.join(COMMANDAGI_ROOT, 'scripts/workbench/local-platform.mjs')).href);
+  const stateDir = dir ?? await mkdtemp(path.join(tmpdir(), 'vibestartup-platform-'));
+  const p = await startCheckoutPlatform({ dir: stateDir, build, vars: await serviceBindings() });
+  return { base: p.base, dir: stateDir, stop: () => p.stop(), logFile: p.logFile };
+}
+
+/** The site on this computer, against `api`. → { url, close } */
+export async function startSite({ port = 0, api } = {}) {
+  const app = (await import(pathToFileURL(path.join(root, 'app.mjs')).href)).default;
+  const env = { VIBESTARTUP_API: api };
+  const server = createServer(async (req, res) => {
+    const url = new URL(req.url, 'http://x');
+    const rel = decodeURIComponent(url.pathname).replace(/^\/+/, '');
+    const candidates = rel === '' || rel.endsWith('/') ? [`${rel}index.html`] : [rel, `${rel}/index.html`, `${rel}.html`];
+    let file = null;
+    for (const c of candidates) {
+      const abs = path.join(root, c);
+      if (!abs.startsWith(root + path.sep)) continue;
+      if (existsSync(abs) && !abs.includes(`${path.sep}.`)) { file = abs; break; }
+    }
+    let response;
+    if (file) {
+      response = new Response(await readFile(file), { headers: { 'content-type': TYPES[path.extname(file)] ?? 'application/octet-stream', 'cache-control': 'no-store' } });
+    } else {
+      const request = new Request(`http://127.0.0.1${url.pathname}${url.search}`, { method: req.method, headers: req.headers });
+      response = await app.fetch(request, env, {});
+    }
     const headers = {};
-    for (const [k, v] of response.headers) headers[k] = k === 'set-cookie' ? undefined : v;
-    const cookies = response.headers.getSetCookie?.() ?? [];
-    res.writeHead(response.status, { ...headers, ...(cookies.length ? { 'set-cookie': cookies.map(c => c.replace('; Secure', '')) } : {}) });
+    for (const [k, v] of response.headers) headers[k] = v;
+    res.writeHead(response.status, headers);
     res.end(Buffer.from(await response.arrayBuffer()));
   });
   await new Promise(r => server.listen(port, '127.0.0.1', r));
-  return { server, url: `http://127.0.0.1:${server.address().port}`, env, close: () => new Promise(r => server.close(r)) };
+  return { server, url: `http://127.0.0.1:${server.address().port}`, close: () => new Promise(r => server.close(r)) };
+}
+
+/** Everything: a platform (unless `api` names one) and the site. → { url, api, stop } */
+export async function startLocal({ port = 0, api = null, platformDir = null, build = true } = {}) {
+  const platform = api ? null : await startPlatform({ dir: platformDir, build });
+  const site = await startSite({ port, api: api ?? platform.base });
+  return { url: site.url, api: api ?? platform.base, platform, stop: async () => { await site.close(); await platform?.stop(); } };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   const arg = (name, fallback) => { const i = process.argv.indexOf(`--${name}`); return i >= 0 ? process.argv[i + 1] : fallback; };
-  const { url } = await startLocal({ port: Number(arg('port', 4180)), dbFile: arg('db', ':memory:') });
-  console.log(`VibeStartup on ${url}`);
+  const local = await startLocal({ port: Number(arg('port', 4180)), api: arg('api', null), platformDir: arg('platform-dir', null), build: !process.argv.includes('--no-build') });
+  console.log(`VibeStartup on ${local.url} (API ${local.api}${local.platform ? `, platform state ${local.platform.dir}, log ${local.platform.logFile}` : ''})`);
+  for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => local.stop().finally(() => process.exit(0)));
 }
