@@ -1,7 +1,8 @@
 // VibeStartup's journey, from a blank browser against a local run (the site and a local CommandAGI platform): the
 // landing's sketch, an account, the wizard to a business, the console's co-founder, an approval, files, the launch
 // week, a product and a test buy, the test order, a routine paused and resumed, a secret listed by name only, a
-// domain record, a provider stop, activity, billing, and a second business from home. At 1440 and 390 px.
+// domain record, a provider stop, activity, billing, a second business from home, then the account deleted (so a run
+// against a cloud API leaves nothing behind). At 1440 and 390 px.
 // Screenshots in .test-results/; the problems are printed at the end and the exit code says whether there were any.
 //
 //   node test/journey.mjs                         starts the local run (test/local.mjs) and drives it
@@ -9,6 +10,7 @@
 //   node test/journey.mjs --url <site> [--api …]  a site already running
 //   node test/journey.mjs --no-chat               do not wait for the model's reply
 //   node test/journey.mjs --width 1440            one width only
+//   node test/journey.mjs --keep                  keep the account at the end (to look at it)
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withBrowser, sleep } from './browser.mjs';
@@ -305,6 +307,24 @@ async function run(browser, width) {
   await b.goto(`${base}/home/`);
   await b.waitFor('document.querySelectorAll(".biz-card[data-slug]").length >= 2', 30000);
   check(await b.eval('document.querySelectorAll(".biz-card[data-slug]").length') >= 2, `${label}: home shows two businesses`);
+
+  // 13. Delete the account: the modal on a deep shadow, then the landing, and the password no longer signs in. A run
+  // against a cloud API leaves nothing behind (`--keep` keeps the account to look at).
+  if (!flag('keep')) {
+    await b.click('#delete-account');
+    await b.waitFor('!!document.querySelector(".modal .modal-actions [value=ok]")', 5000);
+    check(/cannot be undone/i.test(await b.text('.modal')), `${label}: the delete modal says it cannot be undone`);
+    await b.shot(`delete-account-${width}`);
+    await b.eval('document.querySelector(".modal .modal-actions [value=ok]").click()');
+    await b.waitFor('location.pathname === "/"', 60000);
+    await b.goto(`${base}/auth/`);
+    await b.waitFor('!!document.querySelector("#signin")');
+    await b.fill('#signin [name=email]', email);
+    await b.fill('#signin [name=password]', 'correct horse battery');
+    await b.eval('document.querySelector("#signin").requestSubmit()');
+    await sleep(2500);
+    check(await b.eval('location.pathname === "/auth/"'), `${label}: the deleted account no longer signs in`);
+  }
 
   for (const p of b.problems) if (!/favicon|ResizeObserver|cloudflareinsights/.test(p)) problems.push(`${label}: ${p}`);
 }
