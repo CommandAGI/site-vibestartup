@@ -36,6 +36,12 @@ export async function render(ctx) {
         continue;
       }
       if (!m.text?.trim()) continue;
+      // The opening ask (lib/business.js openingFor: instructions to the agent and the business's address) reads as
+      // one quiet line, not as the founder's words.
+      if (who === 'me' && /Introduce yourself in three short lines/.test(m.text)) {
+        parts.push(`<div class="msg system" data-id="${esc(m.id ?? '')}"><div class="body"><div class="text">You started ${esc(biz.name)} with ${esc(cof.name ?? 'your co-founder')} · ${esc(time(m.at))}</div></div></div>`);
+        continue;
+      }
       parts.push(`<div class="msg ${who}" data-id="${esc(m.id ?? '')}">${who === 'me' ? '' : `<span class="avatar ${who === 'cofounder' ? 'cofounder' : ''}">${who === 'cofounder' ? initial(cof.name) : '·'}</span>`}<div class="body"><div class="who"><b>${esc(who === 'me' ? (founder?.name || 'You') : who === 'cofounder' ? (m.senderName || cof.name || 'Co-founder') : 'System')}</b><span>${esc(time(m.at))}</span></div><div class="text">${esc(m.text)}</div></div>${who === 'me' ? `<span class="avatar">${initial(founder?.name || founder?.email)}</span>` : ''}</div>`);
     }
     if (biz.site?.lastDeploy?.at) parts.push(`<div class="milestone">${icon('rocket')}<div><b>Site deployed</b> · <a href="${esc(biz.site.url)}" target="_blank" rel="noopener">${esc(biz.site.url)}</a> <small class="muted">${esc(ago(biz.site.lastDeploy.at))}</small></div></div>`);
