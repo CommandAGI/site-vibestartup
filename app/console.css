@@ -90,10 +90,10 @@ body.console[data-panel="1"] .frame { grid-template-columns: 1fr 320px; }
 .msg.system.composing .text::after { content: "…"; animation: blink 1.2s steps(3, end) infinite; }
 @keyframes blink { 50% { opacity: .2; } }
 .approval, .milestone, .briefing { max-width: 760px; margin-left: 42px; }
-.approval { border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--r-card); background: var(--surface); padding: 14px 16px; display: grid; gap: 8px; }
+.approval { border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line)); border-radius: var(--r-card); background: var(--surface); padding: 14px 16px; display: grid; gap: 8px; }
 .approval .acts { display: flex; gap: 8px; flex-wrap: wrap; }
 .approval .reasoning { white-space: pre-wrap; color: var(--ink-2); font-size: 13px; padding-top: 8px; border-top: 1px solid var(--line); }
-.milestone { border: 1px solid var(--line); border-left: 3px solid var(--ok); border-radius: var(--r-card); background: var(--surface); padding: 12px 16px; display: flex; gap: 10px; align-items: center; }
+.milestone { border: 1px solid color-mix(in srgb, var(--ok) 50%, var(--line)); border-radius: var(--r-card); background: var(--surface); padding: 12px 16px; display: flex; gap: 10px; align-items: center; }
 .briefing { border: 1px solid var(--line); border-radius: var(--r-card); background: var(--surface); padding: 14px 16px; }
 .composer { position: sticky; bottom: 0; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); background: var(--canvas); border-top: 1px solid var(--line); }
 .composer form { display: flex; align-items: flex-end; gap: 8px; max-width: 760px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 16px; padding: 8px 8px 8px 14px; box-shadow: var(--shadow-float); }

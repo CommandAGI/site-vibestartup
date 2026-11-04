@@ -1,7 +1,8 @@
 // VibeStartup's journey, from a blank browser against a local run (the site and a local CommandAGI platform): the
 // landing's sketch, an account, the wizard to a business, the console's co-founder, an approval, files, the launch
 // week, a product and a test buy, the test order, a routine paused and resumed, a secret listed by name only, a
-// domain record, a provider stop, activity, billing, a second business from home, then the account deleted (so a run
+// domain record, a provider stop, activity, billing, a second business from home, then the account deleted. Each
+// screenshot also checks one edge, square corners (test/edges.mjs) (so a run
 // against a cloud API leaves nothing behind). At 1440 and 390 px.
 // Screenshots in .test-results/; the problems are printed at the end and the exit code says whether there were any.
 //
@@ -15,6 +16,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withBrowser, sleep } from './browser.mjs';
+import { ONE_EDGE_SCAN } from './edges.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const arg = name => { const i = process.argv.indexOf(`--${name}`); return i >= 0 ? process.argv[i + 1] : undefined; };
@@ -39,6 +41,14 @@ async function run(browser, width) {
   console.log(`${label}: account ${email}`);
   const idea = 'Hand-thrown ceramic mugs sold to cafes by subscription';
   const b = browser;
+  // Every screenshot also holds the page to one edge, square corners (docs/DESIGN.md): a rounded element with a line on
+  // only some of its edges is a problem, named with the screenshot.
+  const shoot = b.shot.bind(b);
+  b.shot = async name => {
+    const shot = await shoot(name);
+    for (const f of JSON.parse(await b.eval(ONE_EDGE_SCAN).catch(() => '[]'))) check(false, `${label}: ${name}: one edge on rounded corners: ${f}`);
+    return shot;
+  };
   const hash = async tab => { await b.eval(`location.hash = 'tab=${tab}'`); await sleep(300); };
   const tabText = () => b.text('#main');
 

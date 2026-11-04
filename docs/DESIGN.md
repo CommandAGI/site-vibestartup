@@ -46,6 +46,12 @@ No gradients except the hero's soft radial wash (accent at 6 %, cofounder at 5 %
 - Buttons: `.btn` pill; `.btn.primary` accent on white text; `.btn.quiet` surface with a hairline; `.btn.ghost` text
   only; `.btn.danger` outline in `--bad` (a row's remove is a trash icon with a tooltip, never red text).
 - Toolbars use icon buttons with tooltips (`title` and `aria-label`); rare actions sit in a ⋯ menu.
+- One edge, square corners (owner, 2026-11-03; CommandAGI's `docs/regions.md` § one edge, square corners). A line on
+  only some edges (an accent bar, an underline, a tab's pressed line, an inset shadow line) curves up at its ends on a
+  rounded element. A rounded element is outlined on every edge or on none; a one-edge line goes on a square element, or
+  is its own element beside the rounded one (the console rail's current-tab bar). A card that must stand out is
+  outlined whole in its tint (`.approval`, `.milestone`). Check the final cascade, not one rule:
+  the journey scans the page at every screenshot (`test/edges.mjs`).
 
 ## layout
 
