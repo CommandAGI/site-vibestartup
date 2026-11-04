@@ -2,8 +2,8 @@
 // fresh profile, opens a page, and gives the journey click, type, read and screenshot over the DevTools protocol.
 // Set CHROME_PATH to choose the binary (default: chromium-browser, then chromium, then google-chrome).
 import { spawn } from 'node:child_process';
-import { mkdtemp, writeFile, mkdir } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { mkdtemp, writeFile, mkdir, readdir, stat, rm } from 'node:fs/promises';
+import { existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -23,7 +23,7 @@ export async function startChrome(profile, started) {
     '--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`,
     '--no-first-run', '--no-default-browser-check', '--disable-gpu', '--hide-scrollbars',
     '--window-size=1440,900', 'about:blank',
-  ], { stdio: 'ignore' });
+  ], { stdio: 'ignore', detached: true });
   started.push(child);
   for (let i = 0; i < 100; i++) {
     const r = await fetch(`http://127.0.0.1:${port}/json/version`).catch(() => null);
@@ -153,13 +153,45 @@ export async function page(wsUrl, { out, width = 1440, height = 900 } = {}) {
   return { send, eval: evalJs, goto, waitFor, click, clickText, type, fill, shot, text, close, problems, requests };
 }
 
+// Every Chrome this process started, killed however the process ends: a `finally` does not run when an error escapes
+// it (a socket callback that throws) or a signal ends Node, and a headless Chrome left behind runs for hours.
+const live = new Set(), profiles = new Set();
+// Chrome runs in its own process group (`detached`), so its renderers and its GPU process go with it.
+const kill = child => { try { process.kill(-child.pid, 'SIGKILL'); } catch { try { child.kill('SIGKILL'); } catch { /* gone */ } } };
+const killAll = () => {
+  for (const child of live) kill(child);
+  live.clear();
+  for (const dir of profiles) { try { rmSync(dir, { recursive: true, force: true }); } catch { /* Chrome still closing */ } }
+  profiles.clear();
+};
+process.on('exit', killAll);
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => { killAll(); process.exit(128 + ({ SIGINT: 2, SIGTERM: 15, SIGHUP: 1 })[sig]); });
+process.on('uncaughtException', e => { killAll(); console.error(e); process.exit(1); });
+
+// A profile a crashed run left (a power cut, `kill -9`) is removed by the next run once it is a day old.
+async function sweepProfiles() {
+  for (const name of await readdir(tmpdir()).catch(() => [])) {
+    if (!name.startsWith('vibestartup-chrome-')) continue;
+    const dir = path.join(tmpdir(), name);
+    const st = await stat(dir).catch(() => null);
+    if (st && Date.now() - st.mtimeMs > 24 * 3600e3) await rm(dir, { recursive: true, force: true }).catch(() => null);
+  }
+}
+
 export async function withBrowser(fn, { out, width = 1440, height = 900 } = {}) {
+  await sweepProfiles();
   const profile = await mkdtemp(path.join(tmpdir(), 'vibestartup-chrome-'));
-  const started = [];
-  const wsu = await startChrome(profile, started);
-  const p = await page(wsu, { out, width, height });
-  try { return await fn(p); } finally {
-    await p.close();
-    for (const child of started) { try { child.kill('SIGKILL'); } catch { /* gone */ } }
+  profiles.add(profile);
+  const started = { push: child => live.add(child) };
+  let p = null;
+  try {
+    p = await page(await startChrome(profile, started), { out, width, height });
+    return await fn(p);
+  } finally {
+    await p?.close();
+    const exited = [...live].map(child => child.exitCode !== null || child.signalCode !== null ? null : new Promise(r => { child.once('exit', r); setTimeout(r, 3000); }));
+    for (const child of live) kill(child);
+    await Promise.all(exited);
+    killAll();
   }
 }
