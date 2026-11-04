@@ -1,25 +1,27 @@
-// One edge, square corners (docs/DESIGN.md § shape and depth): the elements of the page whose corners are rounded and
-// whose edge lines differ from side to side (borders, or an inset shadow line). It runs in the page and answers JSON.
+// One edge, square corners (docs/DESIGN.md § shape and depth): a corner fails when it is rounded and the lines of its
+// two edges differ (a border, or an inset shadow line offset to one edge). A line whose ends meet square corners, and an
+// outline the same on every edge, pass. It runs in the page and answers JSON.
 function oneEdge() {
   const out = [];
   const name = el => el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + [...el.classList].map(c => '.' + c).join('') + (el.getAttribute('aria-pressed') ? `[aria-pressed=${el.getAttribute('aria-pressed')}]` : '');
+  const SIDES = ['Top', 'Right', 'Bottom', 'Left'];
+  // Corner → its two edges, as indexes into SIDES.
+  const CORNERS = { TopLeft: [0, 3], TopRight: [0, 1], BottomRight: [2, 1], BottomLeft: [2, 3] };
   for (const el of document.querySelectorAll('body *')) {
     const cs = getComputedStyle(el);
     if (cs.display === 'none' || cs.visibility === 'hidden') continue;
-    const r = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].map(k => parseFloat(cs[`border${k}Radius`]) || 0);
-    if (!r.some(v => v > 0)) continue;
-    const sides = ['Top', 'Right', 'Bottom', 'Left'].map(s => cs[`border${s}Style`] === 'none' || cs[`border${s}Style`] === 'hidden' ? 0 : (parseFloat(cs[`border${s}Width`]) || 0));
-    const colors = ['Top', 'Right', 'Bottom', 'Left'].map(s => cs[`border${s}Color`]);
-    const why = [];
-    if (sides.some(v => v > 0) && new Set(sides).size > 1) why.push(`borders ${sides.join('/')}`);
-    else if (sides.some(v => v > 0) && new Set(colors).size > 1 && !/spin/.test(el.className)) why.push(`border colors differ`);
+    const radius = Object.fromEntries(Object.keys(CORNERS).map(k => [k, parseFloat(cs[`border${k}Radius`]) || 0]));
+    if (!Object.values(radius).some(v => v > 0)) continue;
+    const line = SIDES.map(s => (cs[`border${s}Style`] === 'none' || cs[`border${s}Style`] === 'hidden') ? 0 : (parseFloat(cs[`border${s}Width`]) || 0));
+    // An inset shadow with no blur that is offset adds a line along the edge it is offset towards.
     for (const sh of (cs.boxShadow === 'none' ? [] : cs.boxShadow.split(/,(?![^(]*\))/))) {
       if (!/inset/.test(sh)) continue;
-      const nums = sh.replace(/rgba?\([^)]*\)|inset/g, '').trim().split(/\s+/).map(parseFloat).filter(n => !isNaN(n));
-      const [x = 0, y = 0, blur = 0, spread = 0] = nums;
-      if ((x || y) && blur === 0) why.push(`inset line ${sh.trim()}`);
+      const [x = 0, y = 0, blur = 0] = sh.replace(/[a-z-]+\([^)]*\)|inset|#[0-9a-f]+/gi, ' ').trim().split(/\s+/).map(parseFloat).filter(n => !isNaN(n));
+      if (blur !== 0) continue;
+      if (y > 0) line[0] += y; if (y < 0) line[2] += -y; if (x > 0) line[3] += x; if (x < 0) line[1] += -x;
     }
-    if (why.length) out.push(`${name(el)} radius ${r.join('/')}: ${why.join('; ')}`);
+    const bad = Object.entries(CORNERS).filter(([k, [a, b]]) => radius[k] > 0 && line[a] !== line[b]).map(([k]) => k);
+    if (bad.length) out.push(`${name(el)}: rounded ${bad.join(', ')} where edge lines ${line.join('/')} (top/right/bottom/left) differ`);
   }
   return JSON.stringify([...new Set(out)]);
 }
