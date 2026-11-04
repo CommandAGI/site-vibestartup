@@ -18,7 +18,8 @@ own: every feature is a CommandAGI feature, called from the browser with the fou
   and share & earn.
 
 The spec is `docs/`: `ARCHITECTURE.md` (how each feature maps to a CommandAGI route or tool, and the honesty rules),
-`DESIGN.md` (the look), `SELECTORS.md` (the ids and classes the journey drives).
+`DESIGN.md` (the look), `SELECTORS.md` (the ids and classes the journey drives), `HANDOFF.md` (where it stands, who owns
+what is open, and what is left).
 
 ## files
 
