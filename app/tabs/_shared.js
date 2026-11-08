@@ -1,6 +1,6 @@
 // What the tabs share: the business's files (products, orders, customers), small renderers, and the honest
 // "connect your provider" stop.
-import { drive, tasks, threads, sites } from '/lib/api.js';
+import { drive, tasks, threads, sites, goods, BRAND } from '/lib/api.js';
 import { folderOf, readBizJson, writeBizJson } from '/lib/business.js';
 import { esc, icon, money, when, ago } from '/lib/ui.js';
 
@@ -18,22 +18,39 @@ export const empty = (title, text, extra = '') => `<div class="empty"><h3>${esc(
 
 export async function productsOf(biz) { return (await readBizJson(biz.slug, 'products/products.json', { products: [] })).products ?? []; }
 export async function writeProducts(biz, products) { return writeBizJson(biz.slug, 'products/products.json', { products }); }
+/**
+ * The business's orders: what its storefront's checkout sold (`GET /goods/orders`, the lines of this business's goods),
+ * and the orders recorded in its folder before (`orders/orders.jsonl`). An order paid on a test stack is a test.
+ */
 export async function ordersOf(biz) {
-  const text = await drive.readPath(`${folderOf(biz.slug)}/orders`, 'orders.jsonl').catch(() => null);
-  return String(text ?? '').split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
-}
-export async function appendOrder(biz, order) {
-  const text = await drive.readPath(`${folderOf(biz.slug)}/orders`, 'orders.jsonl').catch(() => null);
-  await drive.write(`${folderOf(biz.slug)}/orders`, 'orders.jsonl', (text ?? '') + JSON.stringify(order) + '\n', 'application/x-ndjson');
+  const [text, products, sold] = await Promise.all([
+    drive.readPath(`${folderOf(biz.slug)}/orders`, 'orders.jsonl').catch(() => null),
+    productsOf(biz),
+    goods.orders().catch(() => []),
+  ]);
+  const recorded = String(text ?? '').split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+  const variants = new Set(products.map(p => p.variantId).filter(Boolean));
+  const paid = sold.filter(o => (o.items ?? []).some(it => variants.has(it.variantId))).map(o => ({
+    id: o.orderNumber ?? o.id,
+    name: (o.items ?? []).map(it => it.productName).filter(Boolean).join(', '),
+    amount: (Number(o.totalCents) || 0) / 100,
+    currency: (o.currency ?? 'usd').toUpperCase(),
+    email: o.email ?? '',
+    at: o.placedAt ?? o.createdAt,
+    status: o.status,
+    test: BRAND.stack !== 'production',
+    checkout: true,
+    returned: o.status === 'refunded' || o.status === 'charged_back',
+  }));
+  return [...paid, ...recorded];
 }
 export async function customersOf(biz) { return (await readBizJson(biz.slug, 'customers/customers.json', { customers: [] })).customers ?? []; }
-export async function writeCustomers(biz, customers) { return writeBizJson(biz.slug, 'customers/customers.json', { customers }); }
 export async function settingsOf(biz) { return readBizJson(biz.slug, 'settings.json', { autopilot: false, briefing: 'daily', members: [] }); }
 export async function writeSettings(biz, s) { return writeBizJson(biz.slug, 'settings.json', s); }
 
-/** Only completed, non-test orders count as sales. */
+/** Only completed, non-test orders count as sales; a refunded or charged-back one is not a sale. */
 export function realSales(orders) {
-  const real = orders.filter(o => !o.test);
+  const real = orders.filter(o => !o.test && !o.returned);
   return { count: real.length, revenue: real.reduce((a, o) => a + (Number(o.amount) || 0), 0), test: orders.length - real.length };
 }
 

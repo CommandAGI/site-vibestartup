@@ -183,7 +183,7 @@ async function run(browser, width) {
   check(/No sales yet|Total sales/i.test(await tabText()), `${label}: money says there are no sales yet`);
   await b.shot(`console-dashboard-${width}`);
 
-  // 6. A product, then a test buy; the order is marked test.
+  // 6. A physical product: a good sold through the checkout once payouts are connected, else ordered by email.
   await hash('products');
   await b.waitFor('!!document.querySelector("#add-product")', 20000);
   await b.click('#add-product');
@@ -194,21 +194,13 @@ async function run(browser, width) {
   await b.click('#create-product');
   await b.waitFor('[...document.querySelectorAll("#product-list .product")].some(e => /Harbour Mug/.test(e.innerText))', 40000);
   await b.shot(`console-products-${width}`);
-  await b.click('[data-test-buy]');
-  await b.waitFor('document.querySelector("#checkout-dialog")?.open === true', 10000);
-  await b.click('#copy-card');
-  check((await b.eval('document.querySelector("#checkout-dialog [name=card]").value')).replace(/\s/g, '') === '4242424242424242', `${label}: the test card was copied into the field`);
-  await b.fill('#checkout-dialog [name=exp]', '12 / 30');
-  await b.fill('#checkout-dialog [name=cvc]', '123');
-  await b.click('#checkout-dialog button[value=pay]');
-  await b.waitFor('!document.querySelector("#checkout-dialog")', 30000);
+  const mug = '[...document.querySelectorAll("#product-list .product")].find(e => /Harbour Mug/.test(e.innerText))';
+  const payable = await b.eval('!document.querySelector("#payments-needed")');
+  check(await b.eval(`/${payable ? 'checkout' : 'checkout after payouts|order by email'}/.test(${mug}.innerText)`), `${label}: the mug says how it is sold (${payable ? 'the checkout' : 'after payouts'})`);
+  check(!(await b.eval('!!document.querySelector("[data-test-buy], #checkout-dialog")')), `${label}: no checkout but the platform's (no test-card form in the console)`);
   await hash('orders');
-  await b.waitFor('[...document.querySelectorAll("#orders tbody tr")].some(e => /Harbour Mug/.test(e.innerText))', 30000);
-  check(/Test/.test(await b.text('#orders tbody tr.test')), `${label}: the test order is marked Test`);
+  await b.waitFor('!!document.querySelector("#orders")', 30000);
   await b.shot(`console-orders-${width}`);
-  await hash('customers');
-  await b.waitFor('/buyer@example.com|No customers/.test(document.querySelector("#main")?.innerText ?? "")', 20000);
-  check(/buyer@example.com/.test(await tabText()), `${label}: the test buyer is a customer, marked test`);
 
   // 7. Routines: created, paused, resumed.
   await hash('tasks');
@@ -232,17 +224,19 @@ async function run(browser, width) {
   } else console.log(`${label}: no thread, so no routines on this stack`);
   await b.shot(`console-tasks-${width}`);
 
-  // 8. Settings: a secret listed by name only, a domain record, members.
+  // 8. Settings: payments through Connect (no payment key field), a secret listed by name only, a domain record, members.
   await hash('settings');
   await b.waitFor('!!document.querySelector("#secrets")', 20000);
+  check(await b.eval('!!document.querySelector("#payments #connect-payouts, #payments .badge.ok")'), `${label}: payments connect through Stripe (a button, or connected)`);
+  check(!/STRIPE_SECRET_KEY/.test(await tabText()), `${label}: no payment key is asked for`);
   const siteGap = !await b.eval('!!document.querySelector("#secret-form")');
   if (!siteGap) {
-    await b.fill('#secret-name', 'STRIPE_SECRET_KEY');
-    await b.fill('#secret-value', 'sk_test_journey_not_a_real_key');
+    await b.fill('#secret-name', 'WEATHER_API_KEY');
+    await b.fill('#secret-value', 'journey_not_a_real_key');
     await b.click('#secret-save');
-    const listed = await b.waitFor('[...document.querySelectorAll("#secret-list .secret code")].some(e => e.textContent === "STRIPE_SECRET_KEY")', 30000).catch(() => false);
+    const listed = await b.waitFor('[...document.querySelectorAll("#secret-list .secret code")].some(e => e.textContent === "WEATHER_API_KEY")', 30000).catch(() => false);
     check(listed, `${label}: the secret is listed by name`);
-    check(!(await tabText()).includes('sk_test_journey'), `${label}: the secret's value is never shown`);
+    check(!(await tabText()).includes('journey_not_a_real_key'), `${label}: the secret's value is never shown`);
     await b.fill('#domain-form [name=hostname]', 'shop.example.com');
     await b.click('#domain-form button[type=submit]');
     const rec = await b.waitFor('!!document.querySelector("#domain-records .card") || !!document.querySelector(".toast")', 30000).catch(() => false);

@@ -1,6 +1,6 @@
 // Ads: one campaign on one ad network, run inside the budget the founder approves. The readiness checklist reads the
 // real state; launching stops at the ad account until the founder connects one.
-import { integrations, sites } from '/lib/api.js';
+import { integrations, payments } from '/lib/api.js';
 import { readBizJson, writeBizJson } from '/lib/business.js';
 import { $, $$, esc, icon, toast, money, when, oops, busy } from '/lib/ui.js';
 import { head, section, siteState, productsOf, ordersOf, realSales, providerStop, askLink } from './_shared.js';
@@ -12,13 +12,13 @@ export async function render(ctx) {
   actions.innerHTML = `<button type="button" class="btn icon" id="ads-recheck" aria-label="Recheck plan" data-tip="Recheck plan">${icon('refresh')}</button>`;
   const paint = async () => {
     const plan = { ...DEFAULT, ...(await readBizJson(biz.slug, 'ads/campaign.json', {})) };
-    const [st, products, orders, env, ints] = await Promise.all([siteState(biz), productsOf(biz), ordersOf(biz), biz.site?.id ? sites.env.list(biz.site.id).catch(() => []) : [], integrations.list().catch(() => ({ integrations: [] }))]);
+    const [st, products, orders, pay, ints] = await Promise.all([siteState(biz), productsOf(biz), ordersOf(biz), payments.readiness().catch(() => ({ ready: false })), integrations.list().catch(() => ({ integrations: [] }))]);
     const sales = realSales(orders);
     const adAccount = (ints.integrations ?? []).find(i => /ads|meta|facebook|google/i.test(`${i.id} ${i.category} ${i.label}`) && i.connections?.length);
     const checks = [
       ['Storefront live', st.live, st.live ? st.url : 'Publish the storefront from Products or Settings.'],
       ['Something to promote', products.some(p => p.status === 'active'), products.some(p => p.status === 'active') ? `${products.filter(p => p.status === 'active').length} active` : 'Activate a product.'],
-      ['Taking payment', env.some(v => /STRIPE_SECRET_KEY|PAYMENT/i.test(v.key)), env.some(v => /STRIPE_SECRET_KEY|PAYMENT/i.test(v.key)) ? 'a payment key is set' : 'Add your payment provider\'s key in Settings; checkout is in test mode until then.'],
+      ['Taking payment', !!pay.ready, pay.ready ? 'payouts connected: the checkout pays your Stripe account' : 'Connect payouts in Settings; until then the storefront takes orders by email.'],
       ['Sales tracking', !st.gap, st.gap ? 'No site to measure.' : 'The edge measures requests to the storefront.'],
       ['Ad account', !!adAccount, adAccount ? adAccount.label : 'No ad account is connected. CommandAGI has no ad-network connector on this stack yet.'],
       ['Sales history', sales.count > 0, sales.count ? `${sales.count} real sales` : 'No real sales yet. Early results are noise; the 14-day window is for that.'],

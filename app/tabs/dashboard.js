@@ -27,7 +27,7 @@ export async function render(ctx) {
       ${card('image', 'Library', `${studio.length} ${studio.length === 1 ? 'piece' : 'pieces'}`, ctx.tabHref('studio'))}
       ${card('tasks', 'Tasks', `${tasksAll.filter(t => t.status === 'doing').length} in progress · ${tasksAll.filter(t => t.status === 'done').length} done`, ctx.tabHref('tasks'))}
       ${card('bolt', 'Runtime', st.gap ? 'No site' : `${(st.deployments ?? []).length} ${(st.deployments ?? []).length === 1 ? 'deploy' : 'deploys'}`, ctx.tabHref('settings'))}
-      ${card('card', 'Checkout test', sales.test ? `${sales.test} test ${sales.test === 1 ? 'order' : 'orders'}` : 'Try a test buy', ctx.tabHref('products'))}
+      ${card('card', 'Checkout', sales.count ? `${sales.count} ${sales.count === 1 ? 'sale' : 'sales'}${sales.test ? `, ${sales.test} test` : ''}` : sales.test ? `${sales.test} test ${sales.test === 1 ? 'order' : 'orders'}` : 'Put a product on sale', ctx.tabHref('products'))}
       ${card('flag', 'Blueprint', biz.blueprint?.title ?? biz.idea, ctx.tabHref('chat'))}
     </div>`);
   $('#autopilot', el).onchange = async e => {
