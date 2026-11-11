@@ -88,13 +88,22 @@ CommandAGI `docs/regions.md` § one edge, square corners).
 ## layout
 
 - **Landing**: a 64 px sticky header (wordmark, Product, How it works, Pricing, FAQ; Sign in; Start free). Hero:
-  headline, one sentence, the idea box (textarea, example chips below, "Start building" inside the box), then the
+  two figures in the margins behind it (below), the headline, one sentence, the idea box (textarea, example chips below, "Start building" inside the box), then the
   business sketch that grows under it as the visitor types (name, brand colours, storefront card, launch week): made
   in the browser, labelled a preview. Then: how it works (three steps with arrows between them), the console in a
   framed window (labelled "with example data"), the launch week (seven days), what the co-founder does (eight cards,
   one per capability: an icon, a title, a sentence, and one line that says what you connect or that it is ready),
   what you get and don't, plans (the three listings at Billing's prices, `app/tabs/billing.js`; the first one's
   button is the primary one, because every founder starts there), FAQ, footer.
+- **The hero's figures** (owner, 2026-11-11: an "instagirl" at her phone on the left and a "tech bro" at his laptop
+  on the right, both making money on their startups, "like marginal visuals in the bg"). Two drawn, fictional people
+  in one flat style and the brand's colours (`hero/her.webp`, `hero/him.webp`: made with CommandAGI's image route,
+  cut from white to clear, under 50 KB each, decorative, `alt=""`). They are background: 42 % opacity, less
+  saturated, fading out at the foot, placed 430 px from the centre so the window's edge cuts them and they never
+  reach the headline or the idea box. Each has two small notes (`.hero-note`: an order, a week's total, a payout, a
+  sales line) that drift 5 px; they float, so they are rounded (`--r-tip`). The notes are a picture of the product,
+  not a claim about a customer: no person's name, no quote. At 1100 px and under the figures are gone. Reduced motion:
+  nothing drifts.
 - **Wizard** (`/start/`): one question per screen, centred, max 640 px, a progress line "Step 3 of 8 · Name", the
   co-founder's suggested answers as cards (one marked Suggested), a text field for your own, Continue and Back.
 - **Home** (`/home/`): the businesses as cards (name, mark, launch-week day, what waits on you, credits), a new
@@ -181,7 +190,7 @@ same box, with the same sketch, is the first screen of the wizard and the "New b
 
 ## don'ts
 
-No invented founders, numbers, logos or quotes. No stock photos of people. No "most popular" badge until prices
+No invented founders, numbers, logos or quotes (the hero's background notes are the one picture with amounts in it: they name no person and sit behind the page). No stock photos of people. No "most popular" badge until prices
 exist. No red text for destructive actions. No second accent. No drop shadows on cards. No pill buttons, no rounded
 cards, no rounded or inset highlight on a chosen row. No walls of text: a section
 says one thing. The co-founder never pretends a provider is connected.

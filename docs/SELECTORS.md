@@ -11,6 +11,7 @@
 | the sketch under the box | `#sketch` with `[data-f=name]`, `[data-f=tagline]`, `[data-f=product]`, `[data-f=day-1]` … and `#sketch-note` (says it is a preview) |
 | start building | `#start` (a link to `/start/?idea=…`, its text names the sketched business) |
 | sign in | `a[href="/auth/"]` |
+| the hero's background figures | `.hero-figs` (`aria-hidden`; gone at 1100 px and under), `.hero-fig.her`, `.hero-fig.him`, `.hero-note` |
 | how it works | `#how .steps li` (an arrow after each but the last) |
 | what the co-founder does | `#what .cap-grid article` (each has a `.cap-icon`) |
 | plans | `#plans .plan-grid article` (the three listings; each shows its price "/ 30 days") |

@@ -8,6 +8,23 @@
 /* hero */
 .hero { position: relative; padding: 72px 0 56px; overflow: hidden; }
 .wash { position: absolute; inset: -20% -10% auto; height: 120%; pointer-events: none; background: radial-gradient(60% 50% at 50% 30%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%), radial-gradient(40% 40% at 80% 70%, color-mix(in srgb, var(--cofounder) 6%, transparent), transparent 70%); }
+/* Two figures in the margins, behind the hero (owner, 2026-11-11: "like marginal visuals in the bg"): faint, fading
+   into the page, cut by the window's edge. They are placed from the centre, so they never come nearer than 420 px to
+   it: the headline and the idea box stay the focus. Their notes are glimpses; they float, so they are rounded. */
+.hero-figs { position: absolute; inset: 0; pointer-events: none; }
+.hero-fig { position: absolute; top: 132px; }
+.hero-fig.her { right: calc(50% + 430px); width: 300px; }
+.hero-fig.him { left: calc(50% + 430px); width: 350px; top: 168px; }
+.hero-fig img { width: 100%; height: auto; opacity: .42; filter: saturate(.75); -webkit-mask-image: linear-gradient(#000 55%, transparent 96%); mask-image: linear-gradient(#000 55%, transparent 96%); }
+.hero-note { position: absolute; display: grid; gap: 1px; padding: 7px 10px; background: color-mix(in srgb, var(--surface) 88%, transparent); border: 1px solid var(--line); border-radius: var(--r-tip); box-shadow: 0 6px 18px rgba(23, 22, 26, .05); font-size: 11px; line-height: 1.3; color: var(--ink-3); white-space: nowrap; opacity: .9; animation: hero-in .8s var(--ease) both, hero-drift 7s ease-in-out 1s infinite; }
+.hero-note b { font-size: 12px; font-weight: 600; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.hero-note svg { color: var(--accent); }
+.hero-fig.her .n1 { top: 34px; right: -34px; }
+.hero-fig.her .n2 { top: 236px; left: 44px; animation-delay: .25s, 2.5s; }
+.hero-fig.him .n1 { top: 8px; left: -18px; animation-delay: .4s, 3.5s; }
+.hero-fig.him .n2 { top: 214px; left: 150px; animation-delay: .6s, 1.8s; }
+@keyframes hero-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes hero-drift { 50% { transform: translateY(-5px); } }
 .hero-inner { position: relative; display: grid; justify-items: center; text-align: center; gap: 18px; }
 .eyebrow { font-size: 13px; font-weight: 500; color: var(--ink-2); padding: 5px 14px; border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface); }
 .hero h1 { font-size: clamp(40px, 6.5vw, 76px); letter-spacing: -.03em; max-width: 14ch; }
@@ -136,6 +153,10 @@
 .cta-inner { display: grid; justify-items: center; text-align: center; gap: 14px; }
 .cta h2 { font-size: clamp(30px, 4vw, 48px); letter-spacing: -.03em; }
 
+/* No margin to stand in: the figures leave, and the hero is the headline and the idea box alone. */
+@media (max-width: 1100px) {
+  .hero-figs { display: none; }
+}
 @media (max-width: 1000px) {
   .steps, .plan-grid { grid-template-columns: 1fr; }
   .steps { row-gap: 40px; }

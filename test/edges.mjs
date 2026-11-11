@@ -11,7 +11,7 @@ function shapes() {
   const out = [];
   const name = el => el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + [...el.classList].map(c => '.' + c).join('') + (el.getAttribute('aria-pressed') ? `[aria-pressed=${el.getAttribute('aria-pressed')}]` : '');
   // What may be rounded: floats, pills, and the round by nature.
-  const ROUNDED = 'dialog, .menu, .top-menu, .toast, .guide, .guide-dots i, .chip, .badge, .eyebrow, .traits span, .avatar, .switch i, .spin, .dot, #building li i';
+  const ROUNDED = 'dialog, .menu, .top-menu, .toast, .guide, .guide-dots i, .hero-note, .chip, .badge, .eyebrow, .traits span, .avatar, .switch i, .spin, .dot, #building li i';
   const SIDES = ['Top', 'Right', 'Bottom', 'Left'];
   // Corner → its two edges, as indexes into SIDES.
   const CORNERS = { TopLeft: [0, 3], TopRight: [0, 1], BottomRight: [2, 1], BottomLeft: [2, 3] };
