@@ -126,8 +126,15 @@ body.console[data-panel="1"] .frame { grid-template-columns: 1fr 320px; }
 
 /* products and library */
 .product { display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: center; }
-.product .swatch { width: 56px; height: 56px; }
-.product .acts { display: flex; gap: 4px; }
+.product .swatch, .product .thumb { width: 56px; height: 56px; }
+.product .thumb { object-fit: cover; background: var(--surface-2); }
+.product .acts { display: flex; gap: 4px; align-items: center; }
+/* the picture chooser: square tiles, the chosen ones ringed and numbered in the order chosen (the first is the cover) */
+.pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; max-height: 280px; overflow: auto; }
+.pick { position: relative; aspect-ratio: 1; padding: 0; border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; overflow: hidden; }
+.pick img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pick[aria-pressed="true"] { box-shadow: inset 0 0 0 3px var(--accent); }
+.pick b { position: absolute; top: 0; left: 0; min-width: 24px; height: 24px; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-size: 12px; }
 .piece { display: grid; gap: 8px; }
 .piece img { width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--surface-2); }
 
@@ -278,7 +285,7 @@ body.console .toasts { left: auto; right: 20px; transform: none; }
   .subtabs button { min-height: 44px; }
   .event { grid-template-columns: 1fr; gap: 2px; }
   .product { grid-template-columns: 44px 1fr; }
-  .product .swatch { width: 44px; height: 44px; }
+  .product .swatch, .product .thumb { width: 44px; height: 44px; }
   .product .acts { grid-column: 1 / -1; }
   .task { grid-template-columns: auto 1fr; }
   .task .acts { grid-column: 1 / -1; flex-wrap: wrap; }
