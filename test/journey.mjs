@@ -56,19 +56,21 @@ async function run(browser, width) {
   b.shot = async name => {
     const shot = await shoot(name);
     for (const f of JSON.parse(await b.eval(SHAPE_SCAN).catch(() => '[]'))) check(false, `${label}: ${name}: shape: ${f}`);
+    // A phone's window grows to hold content that is too wide, so `sideways` reads 0 there: the window's own width tells.
+    if (shot.width > width) check(false, `${label}: ${name}: the page is ${shot.width}px wide: ${await b.eval(`[...document.querySelectorAll('body *')].filter(e => e.getClientRects().length && e.getBoundingClientRect().right > ${width} + 1 && !e.closest('.prompts, .subtabs, .rail, .toasts')).slice(0, 4).map(e => e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + '.' + e.className).join(', ')`).catch(() => '')}`);
     return shot;
   };
   const hash = async tab => { await b.eval(`location.hash = 'tab=${tab}'`); await sleep(300); };
   const tabText = () => b.text('#main');
 
-  // 1. The landing: the sketch grows under the box, made by a script; Start names the business.
+  // 1. The landing: the sketch grows under the box, labelled a preview; Start names the business.
   await b.goto(`${base}/`);
   check(/business/i.test(await b.text('h1')), `${label}: the landing headline promises a business`);
   await b.fill('#idea', idea);
   await b.waitFor('!document.querySelector("#sketch")?.hidden && /Mugs|Ceramic|Cafes/i.test(document.querySelector("[data-f=name]")?.textContent ?? "")', 8000).catch(() => null);
   const sketched = await b.text('[data-f=name]');
   check(sketched.trim().length >= 3 && !/Lampwise/i.test(sketched), `${label}: the sketch names the business from the idea (got "${sketched}")`);
-  check(/script/i.test(await b.text('#sketch-note').catch(() => '')), `${label}: the sketch note says it is made by a script`);
+  check(/preview/i.test(await b.text('#sketch-note').catch(() => '')), `${label}: the sketch note says it is a preview`);
   check(/Start building/i.test(await b.text('#start')), `${label}: the Start button says "Start building"`);
   const landing = await b.shot(`landing-${width}`);
   check(landing.sideways <= 0, `${label}: the landing scrolls sideways by ${landing.sideways}px`);
@@ -288,7 +290,7 @@ async function run(browser, width) {
   await sleep(6000);
   check(await b.eval('!!document.querySelector("#main #plans article") && !document.querySelector("#main .chat") && !document.querySelector("#chat-refresh") && document.querySelector("#building").hidden'), `${label}: Billing stays when Chat, left a moment before, answers late`);
   await b.eval('location.hash = "page=billing"');
-  check((await b.text('#plans')).includes('set at launch'), `${label}: plans say prices are set at launch`);
+  check((await b.text('#plans')).includes('$39') && (await b.text('#plans')).includes('/ 30 days'), `${label}: plans show their prices per 30 days`);
   await b.shot(`console-billing-${width}`);
   await b.eval('location.hash = "page=profile"'); await sleep(300);
   await b.waitFor('!!document.querySelector("#profile-email")', 20000);

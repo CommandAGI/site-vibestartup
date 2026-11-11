@@ -131,7 +131,7 @@ export async function render(ctx) {
         ? `<button type="button" class="btn ${l.id === 'listing-vibestartup-cofounder' ? 'primary' : 'quiet'}" data-hire="${esc(l.id)}">${active ? `Renew ${esc(l.name)}` : `Hire ${esc(l.name)}`}</button>`
         : `<button type="button" class="btn quiet" data-hire="${esc(l.id)}" disabled aria-disabled="true">Hire ${esc(l.name)}</button>`;
       return `<article class="card" data-listing="${esc(l.id)}" data-open="${l.open ? '1' : '0'}"><h3>${esc(l.name)}${l.open ? '' : ` ${soonPill()}`}</h3><p class="muted">${esc(l.for)}</p><p class="price">${esc(dollars(l.price))} <span class="muted">/ 30 days</span></p><ul>${l.features.map(f => `<li>${esc(f)}</li>`).join('')}</ul>`
-        + `<p class="hint">${esc(num(l.price))} credits for 30 days of work, up to ${esc(num(l.ceiling))} credits of it in model, image and mail cost. ${l.open ? 'Renew each month; nothing renews by itself.' : `Price set at launch: opens ${esc(launchDay())}.`}</p>${button}</article>`;
+        + `<p class="hint">${esc(num(l.price))} credits for 30 days of work, up to ${esc(num(l.ceiling))} credits of it in model, image and mail cost. ${l.open ? 'Renew each month; nothing renews by itself.' : `Opens ${esc(launchDay())}.`}</p>${button}</article>`;
     }).join('')}</div>`)
     + section('Your plan', `<div class="panel stack"><p id="plan-current">${planLine}</p>`
       + (contracts == null ? '<p class="hint">Your contracts could not be read just now.</p>' : '')
