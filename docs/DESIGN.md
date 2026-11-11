@@ -134,9 +134,14 @@ CommandAGI `docs/regions.md` § one edge, square corners).
   search and in a rail row's tooltip), `[` and `]` step through the tabs, `?` lists every key.
 - **Toasts** sit in the console's bottom corner on a desktop and above the bottom bar on a phone, never over the
   composer.
-- **The storefront** (`storefrontFiles` in `lib/business.js`) wears the business's colours on the same shapes:
+- **The storefront** (`storefrontFiles` in `lib/storefront.js`) wears the business's colours on the same shapes:
   square cards and buttons, hairlines, a sticky 56 px header, one column of products until 600 px, 48 px targets,
-  16 px fields. The generated mark is a square.
+  16 px fields. The generated mark is a square. A product card is its first picture (4:3, cover), its name (the whole
+  card opens the product's page), three lines of description, the price and Buy or Order; a product with no picture
+  shows the brand's gradient. The product page is a square gallery that swipes (scroll snap, no script) with a strip of
+  thumbnails, then the name, the price, the whole description, Buy and one line on how it is delivered; two columns
+  from 900 px. "Get updates" is one bordered panel under the products: email, first name, the button, and the consent
+  box with the exact words recorded. The footer links Terms, Privacy, Refunds and the business address.
 
 ## guides (the first-run tour)
 
