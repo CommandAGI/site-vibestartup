@@ -278,6 +278,7 @@ body.console .toasts { left: auto; right: 20px; transform: none; }
   .file-row .name { overflow-wrap: anywhere; white-space: normal; }
   .kpi b { font-size: 20px; }
   .mail-folders { display: flex; flex-wrap: wrap; }
+  #social-accounts { grid-template-columns: 1fr 1fr; }
   .routine .row { flex-wrap: wrap; }
   .routine .row b { flex: 1 1 100%; white-space: normal; }
   .routine .row .right { display: none; }
