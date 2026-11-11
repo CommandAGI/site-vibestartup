@@ -62,7 +62,7 @@ After success the page goes to `?next=` or `/home/`.
 | customers | `#customers tbody tr` |
 | email | `#mail-address`, `#mail-folders [data-folder]`, `#mail-list .thread`, `#mail-thread`, `#mail-reply`, `#mail-compose` |
 | ads | `#ads-plan` (the form), `#ads-readiness li[data-ok]`, `#ads-recheck`, `#ads-ask` |
-| studio | `#studio-tabs [data-view="make|month|library|brand|formats"]`, `#make-format`, `#make-prompt`, `#make-count`, `#make-go`, `#library .piece`, `#brand-book` |
+| studio | `#studio-tabs [data-view="make|month|library|brand|formats"]`, `#make-format`, `#make-prompt`, `#make-count`, `#make-go`, `#library .piece`, `#brand-book`; video formats (`short`, `clip`, `film`): `#make-aspect [data-aspect="9:16|1:1|16:9"]`, `#make-still` (clip, short), `#make-stills input[type=checkbox]` (film), `#make-still-upload`, `#make-caption` (short), `#make-endcard` (film), `#make-credits`; the renders `#studio-jobs .job[data-id][data-state="rendering|done|failed|interrupted"]` with `[data-step]`, `[data-elapsed]`, `[data-player] [data-play]` → `video`, `[data-retry]`; a video in the library: `#library .piece [data-play]` |
 | outbound | `#leads-upload` (file input), `#leads tbody tr`, `#outbound-campaigns .campaign` |
 | social | `#social-accounts .account` with `[data-connect]`, `#compose-post`, `#posts .post`, `#social-view [data-view="calendar|list"]` |
 | files | `#file-search`, `#file-groups .group`, `.file-row` with `[data-open]`, `[data-copy]`, `#file-upload`, `#file-preview` |

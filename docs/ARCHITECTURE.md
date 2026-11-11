@@ -50,7 +50,8 @@ Businesses/<slug>/
   outbound/<campaign>/      a campaign's sequence drafts and per-lead status
   ads/campaign.json         the one campaign's plan, readiness and decision history
   social/posts.json         composed posts, scheduled or posted-by-hand
-  studio/                   everything the Studio made (files from POST /generate)
+  studio/                   everything the Studio made (files from POST /generate, and the videos put together here)
+  studio/jobs/<id>.json     one video render: its spec, its step, its clips, the credits before and after
   Tasks/                    the tasks and approvals (the tasks API, dir = this folder)
   settings.json             autonomy, briefing, members' notes
 ```
@@ -72,7 +73,7 @@ The co-founder's thread, triggers and site are CommandAGI objects whose ids `bus
 | business email | `POST /me/email-addresses { localPart, label }` → `<local>@commandagi.email`; `GET /email/addresses`, `/email/addresses/:id/threads`, `…/threads/:tid`, `…/reply`, `…/compose`. One personal address per account (the platform's mailbox rule): a second business shows the gap and says why |
 | products, orders, customers | files (above). A physical product is also a good (`POST /goods`, `PATCH /goods/:id`), live once the founder's Stripe Express account can be paid (`GET /payouts/readiness`; Settings → Payments starts `POST /connect/onboard`). The storefront's `checkout.html` makes a guest cart (`POST /commerce/cart`, `/items`) and starts the one cart checkout (`POST /billing/checkout`, `type: cart`): the buyer pays into the founder's account less the 0.5% fee and returns to the storefront (`?paid=1`, `?canceled=1`; the API reads the site from its records). Orders are `GET /goods/orders`. Any other kind is ordered by email. No payment key is ever pasted. The co-founder adds a product as a product file (`products/<slug>.product.tsx`, which the Drive indexes as a draft good; its charter and `PLAYBOOK.md` say how, `lib/business.js` `productsRule`) and an entry in `products.json` naming that `file`; the Products tab links the entry to its good (`GET /goods`, by `file`) and publishes the storefront. A digital good stays order-by-email: the checkout needs a signed-in buyer for it (`account_required`) |
 | ads | `ads/campaign.json` + `GET /integrations` (an ad account connector when one exists); readiness is computed from real state |
-| studio | `POST /generate { modelId: "text-to-image.flux-schnell" … , inputs: { prompt }, name }` → a Drive file; brand book from `brand/` |
+| studio | `POST /generate { modelId, inputs, name: "Businesses/<slug>/studio/<file>" }` → a Drive file (the route keeps a name's folders; it has no `path` field). Pictures: `text-to-image.flux-schnell`. Video: `image-to-video.kling` (§ studio video). Brand book from `brand/` |
 | outbound | leads file + sequence drafts; a send is `POST /email/addresses/:id/compose` after the founder approves |
 | social | `GET /integrations` (connectors with a social category), `POST /integrations/:id/oauth/start { redirectUri }`, `POST /integrations/:id/call`; otherwise "post by hand" with the prepared caption and image |
 | legal | formation proposed at traction (3 real sales or $100), computed from `orders.jsonl` (test orders excluded); terms and privacy pages in the site folder |
@@ -84,6 +85,39 @@ The co-founder's thread, triggers and site are CommandAGI objects whose ids `bus
 
 Every request is the founder's own: the API's authority, key scopes, audit and billing run unchanged. Nothing here
 acts for anyone but the signed-in founder, and the app holds no credential of its own.
+
+## studio video
+
+CommandAGI's generate catalog has one video model today: `image-to-video.kling` (Kling v2 master on fal, inputs
+`image_url` and `prompt`). It takes a still and a direction and gives a 5-second clip; the clip's shape is the still's.
+The route answers in one held request (the worker polls fal for up to 280 s). The rest is done in the founder's
+browser (`app/tabs/_video.js`):
+
+| format | how |
+|---|---|
+| clip | a still from the Studio library or the business's files, cropped to 9:16, 1:1 or 16:9, or a first frame made from the description (`text-to-image.flux-schnell` at that shape) → one Kling clip, `studio/<id>.mp4` |
+| short | the same clip (9:16 or 1:1) → the caption drawn over the lower third of every frame on a canvas and recorded (MediaRecorder) → `studio/<id>.mp4` (or `.webm` where the browser records only WebM); the clip without the caption is kept beside it as `<id>-part-1.mp4` |
+| film | 4 to 6 of the founder's photos → one Kling clip each, two at a time → the clips played one after another onto a canvas and recorded, with the business's name as the last frame → `studio/<id>.mp4` (20 to 30 s) |
+| presenter | not built: the catalog has no talking-head or lip-sync model (the `lipsync` task has no model row), so it stays "not yet" |
+
+The credits shown before a render are the catalog's price (`GENERATION_PRICES`: Kling v2 $0.28 a second, five at
+least, so 140 credits a clip; a FLUX first frame under 1 credit). After it, the page shows what the balance actually
+moved (`GET /me/credits` before and after). CommandAGI does not charge generations to any purse yet
+(`docs/billing.md` § a contract's cost ceiling), so that is 0 until it does. Checked on production on 2026-11-11
+(`test/studio-video.mjs`): a short from a description was ready in 171 s, 1080×1920 and 5.07 s, with the caption burned in;
+the balance stayed at 200. Two clips were stitched into a 1080×1920 MP4 in the page.
+
+A render is a job, written to `studio/jobs/<id>.json` before anything is sent and after every step. It runs in the
+page: a tab switch keeps it (the module stays loaded), and the job's card shows its step and the time since it started.
+A reload ends the held request. The page then waits for the clip it asked for, by its name in `studio/`, until 7 minutes
+after it was sent, and finishes the caption or the film when it comes. Otherwise it marks the job `interrupted`. A paid
+step is sent again only when the founder presses Try again. The caption and the stitch play in real time, so the
+founder is asked to keep the tab in front for those seconds.
+
+What a small API change would add (not made here): `duration` (`"5" | "10"`) as a declared input of
+`image-to-video.kling` in `packages/domain/core/src/genmodels.ts` (fal's endpoint takes it; `mappedInputs` drops an
+undeclared input today, and `generationQuote` already prices `inputs.duration`), for 10-second shorts and clips; and a job form of `POST /generate` (submit, then
+`GET /generate/jobs/:id`, as `data/maker.ts` already does for its pictures), so a render survives the page.
 
 ## honesty rules the pages keep
 
@@ -109,3 +143,4 @@ acts for anyone but the signed-in founder, and the app holds no credential of it
 | `style.css` | the tokens and base components every page shares |
 | `storefront/` | the storefront files VibeStartup writes into a business's site folder |
 | `test/local.mjs`, `test/journey.mjs`, `test/browser.mjs` | the local run (static files + a local CommandAGI platform) and the journey |
+| `test/studio-video.mjs` | a real short video from a fresh account (one paid Kling clip), the tab left and the page reloaded, the library's player, the film's stitch; the account erased |
