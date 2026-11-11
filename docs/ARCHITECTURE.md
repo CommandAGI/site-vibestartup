@@ -105,7 +105,7 @@ acts for anyone but the signed-in founder, and the app holds no credential of it
 | `app/` | the console (`console.js`, one file per tab in `app/tabs/`, `console.css`) |
 | `lib/api.js` | the CommandAGI client: token, refresh, REST, MCP, drive, threads, tasks, sites, email |
 | `lib/business.js` | the business record, its creation sequence and the co-founder's charter |
-| `lib/ui.js` | the shared UI: icons, toast, dialog, sheet, formatting |
+| `lib/ui.js` | the shared UI: icons, toast, dialog, menu, formatting |
 | `style.css` | the tokens and base components every page shares |
 | `storefront/` | the storefront files VibeStartup writes into a business's site folder |
 | `test/local.mjs`, `test/journey.mjs`, `test/browser.mjs` | the local run (static files + a local CommandAGI platform) and the journey |

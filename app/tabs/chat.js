@@ -5,16 +5,23 @@ import { wakeCofounder, writeBusiness, folderOf } from '/lib/business.js';
 import { $, $$, esc, icon, toast, initial, time, ago, oops, busy } from '/lib/ui.js';
 import { bizTasks, isApproval, approve, reject, siteState, askLink } from './_shared.js';
 
+// Questions a founder often has, one tap from the composer. A chip writes the question; the founder sends it.
+const PROMPTS = ['What should I do today?', 'What needs my call?', 'Change the storefront', 'Draft a launch post', 'How are sales?'];
+
 export async function render(ctx) {
   const { biz, founder, el, panel, actions } = ctx;
   const cof = biz.cofounder ?? {};
   el.innerHTML = `<div class="chat-wrap"><div class="chat" id="chat" aria-label="Conversation"></div>
-    <div class="composer"><form id="compose-form"><label class="sr-only" for="composer">Message ${esc(cof.name ?? 'your co-founder')}</label><textarea id="composer" rows="1" placeholder="Message ${esc(cof.name ?? 'your co-founder')}…"></textarea><button type="submit" class="btn icon send" id="send" aria-label="Send" data-tip="Send">${icon('send')}</button></form><p class="hint">${esc(cof.name ?? 'Your co-founder')} is an AI agent. Big decisions come to you as approval cards.</p></div></div>`;
+    <div class="composer"><div class="prompts" id="prompts" aria-label="Suggested questions">${PROMPTS.map(p => `<button type="button" class="chip" data-prompt>${esc(p)}</button>`).join('')}</div><form id="compose-form"><label class="sr-only" for="composer">Message ${esc(cof.name ?? 'your co-founder')}</label><textarea id="composer" rows="1" placeholder="Message ${esc(cof.name ?? 'your co-founder')}…"></textarea><button type="submit" class="btn icon send" id="send" aria-label="Send" data-tip="Send">${icon('send')}</button></form><p class="hint">${esc(cof.name ?? 'Your co-founder')} is an AI agent. Big decisions come to you as approval cards.</p></div></div>`;
   actions.innerHTML = `<button type="button" class="btn icon" id="chat-refresh" aria-label="Refresh" data-tip="Refresh">${icon('refresh')}</button>`;
   const chat = $('#chat', el);
   const composer = $('#composer', el);
   try { const q = sessionStorage.getItem('vs_ask'); if (q) { composer.value = q; sessionStorage.removeItem('vs_ask'); composer.focus(); } } catch { /* storage off */ }
-  composer.addEventListener('input', () => { composer.style.height = 'auto'; composer.style.height = `${Math.min(160, composer.scrollHeight)}px`; });
+  const prompts = $('#prompts', el);
+  const fit = () => { composer.style.height = 'auto'; composer.style.height = `${Math.min(160, composer.scrollHeight)}px`; prompts.hidden = !!composer.value.trim(); };
+  composer.addEventListener('input', fit);
+  prompts.addEventListener('click', e => { const b = e.target.closest('[data-prompt]'); if (!b) return; composer.value = b.textContent; fit(); composer.focus(); });
+  fit();
   composer.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#compose-form', el).requestSubmit(); } });
 
   let messages = [], approvalsList = [], composing = false, lastAgentAt = 0, alive = true, timer = null;
@@ -83,7 +90,7 @@ export async function render(ctx) {
     e.preventDefault();
     const text = composer.value.trim(); if (!text) return;
     if (!cof.threadId) return toast('Wake the co-founder first.', 'bad');
-    composer.value = ''; composer.style.height = 'auto';
+    composer.value = ''; fit();
     messages.push({ role: 'user', text, at: Date.now(), id: `local-${Date.now()}` });
     composing = true; paint();
     try { await threads.send(cof.threadId, text); setTimeout(load, 1500); }

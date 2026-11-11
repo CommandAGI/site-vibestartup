@@ -28,6 +28,7 @@
     <span class="avatar" id="biz-avatar">·</span>
     <span class="biz-name"><b id="biz-name">Loading</b><small>Business</small></span>
   </button>
+  <button type="button" class="btn icon rail-close" id="rail-close" aria-label="Close the menu"></button>
   <button type="button" class="search-btn" id="search-open" aria-label="Search (Ctrl+K)"><span class="search-ico"></span><span>Search</span><kbd>⌘K</kbd></button>
   <nav class="tabs" id="tabs" aria-label="Tabs"></nav>
   <div class="rail-foot">
@@ -38,7 +39,7 @@
 
 <div class="frame">
   <header class="topbar" id="topbar">
-    <button type="button" class="btn icon rail-toggle" id="rail-toggle" aria-label="Menu" data-tip="Menu"></button>
+    <button type="button" class="btn icon rail-toggle" id="rail-toggle" aria-label="Menu" aria-controls="rail" aria-expanded="false"></button>
     <h1 class="tab-title" id="tab-title">Chat</h1>
     <div class="actions" id="actions" role="toolbar" aria-label="Actions"></div>
   </header>
@@ -47,6 +48,7 @@
 </div>
 
 <nav class="bottombar" id="bottombar" aria-label="Tabs"></nav>
+<div class="scrim" id="rail-scrim" hidden></div>
 
 <dialog id="search" class="modal search" aria-label="Search">
   <div class="search-box">

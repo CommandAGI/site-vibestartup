@@ -21,8 +21,8 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   node test/journey.mjs --url https://vibestartup.pro
   ```
 
-- The journey checks one edge, square corners at every screenshot (`test/edges.mjs`, `docs/DESIGN.md` § shape and
-  depth).
+- The journey checks the shape rules at every screenshot: square shapes, rounded floats only, one edge on square
+  corners (`test/edges.mjs`, `docs/DESIGN.md` § shape and depth).
 - The platform side: the `vibestartup` OAuth client and `POST /oauth/signup` (CommandAGI 74f5c66, migration 0708);
   the sign-up cap is 500 a day on production and 200 on dev (CommandAGI 5503606; live since 2026-11-03 through a
   workbench-only deploy of c73b803 with only the settings changed).

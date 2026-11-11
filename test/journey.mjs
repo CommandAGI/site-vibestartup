@@ -2,8 +2,8 @@
 // landing's sketch, an account, the wizard to a business, the console's co-founder, an approval, files, the launch
 // week, a product and a test buy, the test order, a routine paused and resumed, a secret listed by name only, a
 // domain record, a provider stop, activity, billing, a second business from home, then the account deleted. Each
-// screenshot also checks one edge, square corners (test/edges.mjs) (so a run
-// against a cloud API leaves nothing behind). At 1440 and 390 px.
+// screenshot also checks the shape rules (test/edges.mjs: square shapes, rounded floats, one edge on square corners).
+// The account is deleted at the end so a run against a cloud API leaves nothing behind. At 1440 and 390 px.
 // Screenshots in .test-results/; the problems are printed at the end and the exit code says whether there were any.
 //
 //   node test/journey.mjs                         starts the local run (test/local.mjs) and drives it
@@ -16,7 +16,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withBrowser, sleep } from './browser.mjs';
-import { ONE_EDGE_SCAN } from './edges.mjs';
+import { SHAPE_SCAN } from './edges.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const arg = name => { const i = process.argv.indexOf(`--${name}`); return i >= 0 ? process.argv[i + 1] : undefined; };
@@ -41,12 +41,12 @@ async function run(browser, width) {
   console.log(`${label}: account ${email}`);
   const idea = 'Hand-thrown ceramic mugs sold to cafes by subscription';
   const b = browser;
-  // Every screenshot also holds the page to one edge, square corners (docs/DESIGN.md): a rounded element with a line on
-  // only some of its edges is a problem, named with the screenshot.
+  // Every screenshot also holds the page to the shape rules (docs/DESIGN.md § shape and depth): a rounded element that
+  // does not float, or a rounded one with a line on only some of its edges, is a problem, named with the screenshot.
   const shoot = b.shot.bind(b);
   b.shot = async name => {
     const shot = await shoot(name);
-    for (const f of JSON.parse(await b.eval(ONE_EDGE_SCAN).catch(() => '[]'))) check(false, `${label}: ${name}: one edge on rounded corners: ${f}`);
+    for (const f of JSON.parse(await b.eval(SHAPE_SCAN).catch(() => '[]'))) check(false, `${label}: ${name}: shape: ${f}`);
     return shot;
   };
   const hash = async tab => { await b.eval(`location.hash = 'tab=${tab}'`); await sleep(300); };
@@ -114,7 +114,7 @@ async function run(browser, width) {
   await b.waitFor('!!document.querySelector(".chat")', 30000);
   const slug = await b.eval('new URLSearchParams(location.search).get("b")');
   console.log(`${label}: business ${slug}`);
-  check(/Kiln/.test(await b.text('#biz-name')), `${label}: the rail names the business`);
+  check(/Kiln/.test(await b.eval('document.querySelector("#biz-name").textContent')), `${label}: the rail names the business`);
   const readGaps = () => b.eval(`(async () => { const { readBusiness } = await import('/lib/business.js'); const biz = await readBusiness(${JSON.stringify(slug)}); return (biz.gaps ?? []).map(g => g.what + ': ' + g.why); })()`);
   let gaps = await readGaps();
   if (gaps.length) console.log(`${label}: creation gaps on this stack: ${gaps.join(' | ')}`);
@@ -268,8 +268,20 @@ async function run(browser, width) {
   if (hasThread) check(await b.waitFor('document.querySelectorAll("#activity .event").length >= 1', 45000).then(() => true, () => false), `${label}: Activity has events`);
   await b.shot(`console-activity-${width}`);
   await b.eval('location.hash = "page=billing"'); await sleep(300);
-  await b.waitFor('!!document.querySelector("#credits-balance")', 20000);
+  // Billing is on the page at once (its plans need no answer); the balance fills in when its call answers.
+  await b.waitFor('!!document.querySelector("#main #plans article")', 3000).catch(() => null);
+  check(await b.eval('document.querySelectorAll("#main #plans article").length') === 3, `${label}: Billing shows its plans without waiting for a call`);
+  await b.waitFor('/\\d|—/.test(document.querySelector("#credits-balance")?.textContent ?? "")', 20000).catch(() => null);
   check(/\d|—/.test(await b.text('#credits-balance')), `${label}: Billing shows the credit balance`);
+  await b.waitFor('/Current plan/.test(document.querySelector("#plan-current")?.textContent ?? "")', 20000).catch(() => null);
+  check(/Current plan/.test(await b.text('#plan-current')), `${label}: Billing names the current plan`);
+  // A tab that answers late never paints over the one now shown: leave Chat (slow: the transcript, the tasks) for
+  // Billing in the same instant, and Billing is what stays, with Chat's refresh button gone from the top bar.
+  await b.eval('location.hash = "tab=chat"'); await b.eval('location.hash = "page=billing"');
+  await b.waitFor('!!document.querySelector("#main #plans article")', 3000).catch(() => null);
+  await sleep(6000);
+  check(await b.eval('!!document.querySelector("#main #plans article") && !document.querySelector("#main .chat") && !document.querySelector("#chat-refresh") && document.querySelector("#building").hidden'), `${label}: Billing stays when Chat, left a moment before, answers late`);
+  await b.eval('location.hash = "page=billing"');
   check((await b.text('#plans')).includes('set at launch'), `${label}: plans say prices are set at launch`);
   await b.shot(`console-billing-${width}`);
   await b.eval('location.hash = "page=profile"'); await sleep(300);
@@ -288,12 +300,35 @@ async function run(browser, width) {
     await b.eval('document.querySelector("#search input").dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }))');
     await b.waitFor('location.hash === "#tab=orders"', 5000);
     check(await b.eval('location.hash') === '#tab=orders', `${label}: ⌘K jumped to Orders`);
+    await b.click('#account-menu');
+    await b.waitFor('!!document.querySelector(".menu")');
+    check(await b.eval('(() => { const r = document.querySelector(".menu").getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; })()'), `${label}: the account menu opens inside the window`);
+    await b.shot(`console-menu-${width}`);
+    await b.eval('document.querySelector(".menu").remove()');
+    await b.click('#search-open');
+    await b.waitFor('document.querySelector("#search")?.open === true');
+    await b.shot(`console-search-${width}`);
+    await b.eval('document.querySelector("#search").close()');
   } else {
     check(await b.eval('getComputedStyle(document.querySelector("#bottombar")).display !== "none"'), `${label}: the bottom bar shows on a phone`);
     await b.click('#more');
-    await b.waitFor('!!document.querySelector(".sheet")');
-    check(await b.eval('document.querySelectorAll(".sheet a[data-tab]").length') >= 10, `${label}: More lists the rest of the tabs`);
-    await b.eval('document.querySelector(".scrim").click()');
+    await b.waitFor('document.body.dataset.rail === "open"');
+    await sleep(350);
+    check(await b.eval('(() => { const r = document.querySelector(".rail").getBoundingClientRect(); return r.left === 0 && r.width <= innerWidth; })()'), `${label}: More opens the rail as a drawer from the left edge`);
+    check(await b.eval('[...document.querySelectorAll(".rail a[data-tab]")].filter(a => a.getBoundingClientRect().height >= 44).length') >= 16, `${label}: the drawer lists every tab, each 44 px high`);
+    await b.shot(`console-drawer-${width}`);
+    await b.click('.rail a[data-tab=orders]');
+    await b.waitFor('location.hash === "#tab=orders" && document.body.dataset.rail !== "open"', 5000).catch(() => null);
+    check(await b.eval('location.hash === "#tab=orders" && document.body.dataset.rail !== "open"'), `${label}: a tab chosen in the drawer opens and the drawer closes`);
+    await sleep(350);
+    await b.click('#rail-toggle');
+    await b.waitFor('document.body.dataset.rail === "open"');
+    await b.click('#account-menu');
+    await b.waitFor('!!document.querySelector(".menu")');
+    check(await b.eval('(() => { const r = document.querySelector(".menu").getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth; })()'), `${label}: the account menu opens inside the window`);
+    await b.shot(`console-menu-${width}`);
+    await b.eval('document.querySelector(".menu").remove(); document.querySelector("#rail-scrim").click()');
+    await sleep(350);
   }
   const look = await b.shot(`console-${width}`);
   check(look.sideways <= 0, `${label}: the console scrolls sideways by ${look.sideways}px`);

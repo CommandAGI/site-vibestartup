@@ -3,7 +3,7 @@
 // founder's own CommandAGI token does everything (docs/ARCHITECTURE.md).
 import { signedIn, whoami, user, credits, signOut, auth, BRAND } from '/lib/api.js';
 import { listBusinesses, readBusiness, approvals } from '/lib/business.js';
-import { $, $$, esc, icon, toast, menu, sheet, initial, oops } from '/lib/ui.js';
+import { $, $$, esc, icon, toast, menu, initial, oops } from '/lib/ui.js';
 
 export const GROUPS = [
   { name: 'Home', tabs: [['chat', 'Chat', 'chat'], ['dashboard', 'Dashboard', 'dashboard'], ['analytics', 'Analytics', 'analytics']] },
@@ -16,7 +16,9 @@ export const TABS = GROUPS.flatMap(g => g.tabs.map(([id, label, ico]) => ({ id, 
 export const PAGES = [{ id: 'billing', label: 'Billing', icon: 'card' }, { id: 'profile', label: 'Profile', icon: 'user' }, { id: 'share', label: 'Share & earn', icon: 'gift' }];
 const PHONE_TABS = ['chat', 'dashboard', 'tasks', 'files'];
 
-export const state = { me: null, founder: null, biz: null, businesses: [], tab: 'chat', page: null, credits: null, cleanup: null, needs: 0 };
+export const state = { me: null, founder: null, biz: null, businesses: [], tab: 'chat', page: null, credits: null, cleanup: null, needs: 0, visit: 0 };
+// How long a view may wait before the page offers to try again.
+const SLOW_MS = 10000;
 
 const params = () => new URLSearchParams(location.search);
 const hashParams = () => new URLSearchParams(location.hash.replace(/^#/, ''));
@@ -41,13 +43,19 @@ function renderRail() {
   $('.search-ico').innerHTML = icon('search', 16);
   $('.credits-ico').innerHTML = icon('bolt', 16);
   $('#rail-toggle').innerHTML = icon('menu');
+  $('#rail-close').innerHTML = icon('x');
+  $('#credits').toggleAttribute('aria-current', state.page === 'billing');
   const bottom = $('#bottombar');
   bottom.innerHTML = PHONE_TABS.map(id => { const t = TABS.find(x => x.id === id); return `<a href="${tabHref(id)}" data-tab="${id}" ${state.tab === id && !state.page ? 'aria-current="page"' : ''}>${icon(t.icon, 20)}<span>${esc(t.label)}</span></a>`; }).join('') + `<button type="button" id="more">${icon('more', 20)}<span>More</span></button>`;
-  $('#more').onclick = () => {
-    const s = sheet(`<div class="stack"><h3>More</h3><div class="list">${TABS.filter(t => !PHONE_TABS.includes(t.id)).map(t => `<a href="${tabHref(t.id)}" data-tab="${t.id}" class="row">${icon(t.icon)}<span>${esc(t.label)}</span></a>`).join('')}${PAGES.map(p => `<a href="${pageHref(p.id)}" data-page="${p.id}" class="row">${icon(p.icon)}<span>${esc(p.label)}</span></a>`).join('')}<button type="button" class="row" id="sheet-signout" style="border:0;background:none;text-align:left;padding:12px 0">${icon('logout')}<span>Sign out</span></button></div></div>`, { label: 'More' });
-    $$('a', s.el).forEach(a => a.addEventListener('click', () => s.close()));
-    $('#sheet-signout', s.el).onclick = () => doSignOut();
-  };
+  $('#more').onclick = () => setRail(true);
+}
+
+/** The phone's rail is a drawer from the left edge (console.css); wider, the rail is always there and this does nothing. */
+function setRail(open) {
+  document.body.dataset.rail = open ? 'open' : '';
+  $('#rail-scrim').hidden = !open;
+  $('#rail-toggle').setAttribute('aria-expanded', String(open));
+  if (open) $('#tabs a[aria-current="page"]')?.focus({ preventScroll: true });
 }
 
 function renderIdentity() {
@@ -68,7 +76,7 @@ async function doSignOut() {
 
 function bindChrome() {
   $('#biz-switch').onclick = e => menu(e.currentTarget, [
-    ...state.businesses.map(b => ({ label: b.name, icon: 'store', onClick: () => { location.href = tabHref(state.tab, b.slug); } })),
+    ...state.businesses.map(b => ({ label: b.name, icon: 'store', onClick: () => { location.href = tabHref(state.tab ?? 'chat', b.slug); } })),
     'hr',
     { label: 'New business', icon: 'plus', onClick: () => { location.href = '/start/'; } },
     { label: 'All businesses', icon: 'home', onClick: () => { location.href = '/home/'; } },
@@ -80,7 +88,11 @@ function bindChrome() {
     'hr',
     { label: 'Sign out', icon: 'logout', onClick: doSignOut },
   ]);
-  $('#rail-toggle').onclick = () => $('#more').click();
+  $('#rail-toggle').onclick = () => setRail(document.body.dataset.rail !== 'open');
+  $('#rail-close').onclick = () => setRail(false);
+  $('#rail-scrim').onclick = () => setRail(false);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.dataset.rail === 'open') setRail(false); });
+  labelCells();
   // ⌘K search over tabs, pages and businesses
   const dlg = $('#search'); const input = $('#search input'); const list = $('#search .search-results');
   let items = [], sel = 0;
@@ -117,35 +129,70 @@ async function refreshNeeds() {
   state.needs = open.length; renderRail();
 }
 
+/**
+ * On a phone a table's row is a block and each cell a line that names its column (console.css). A cell learns its
+ * column's name here, whenever a tab writes a table.
+ */
+function labelCells() {
+  const label = () => {
+    for (const table of $$('#main table.table')) {
+      const heads = $$('thead th', table).map(th => th.textContent.trim());
+      for (const tr of $$('tbody tr', table)) [...tr.children].forEach((td, i) => { if (td.dataset.label !== (heads[i] ?? '')) td.dataset.label = heads[i] ?? ''; });
+    }
+  };
+  new MutationObserver(label).observe($('#main'), { childList: true, subtree: true });
+}
+
+/**
+ * Show a tab or a page. A view never stays blank: it shows that it is loading, then its content, or what went wrong
+ * and a way to try again. Each visit renders into elements of its own, so a tab that answers late (the founder already
+ * went elsewhere) writes into nothing: it cannot paint over the tab now shown, or leave its actions in the top bar.
+ */
 async function route() {
+  const visit = ++state.visit;
+  const current = () => visit === state.visit;
   state.cleanup?.(); state.cleanup = null;
+  setRail(false);
   const hp = hashParams();
-  state.page = hp.get('page');
+  state.page = PAGES.some(p => p.id === hp.get('page')) ? hp.get('page') : null;
   state.tab = state.page ? null : (hp.get('tab') || 'chat');
   if (!state.page && !TABS.some(t => t.id === state.tab)) state.tab = 'chat';
   renderRail(); renderIdentity();
   const main = $('#main'); main.dataset.tab = state.page ?? state.tab;
   document.body.dataset.panel = state.tab === 'chat' ? '1' : '0';
-  $('#building').hidden = state.tab !== 'chat';
   $('#tab-title').textContent = state.page ? PAGES.find(p => p.id === state.page).label : TABS.find(t => t.id === state.tab).label;
-  $('#actions').innerHTML = '';
-  main.innerHTML = '<p class="hint">Loading…</p>';
+  const own = id => { const was = $('#' + id); const el = was.cloneNode(false); was.replaceWith(el); return el; };
+  const actions = own('actions'); const panel = own('building'); panel.hidden = state.tab !== 'chat';
+  const view = document.createElement('div'); view.className = 'view';
+  view.innerHTML = '<div class="loading" role="status"><span class="spin"></span><span>Loading…</span></div>';
+  main.replaceChildren(view);
+  const failed = e => {
+    view.innerHTML = `<div class="empty"><h3>This tab could not load</h3><p>${esc(e ? oops(e) : 'It answered with nothing to show.')}</p><button type="button" class="btn quiet" data-retry>Try again</button></div>`;
+    actions.innerHTML = '';
+    $('[data-retry]', view).onclick = route;
+  };
+  const slow = setTimeout(() => {
+    const row = $(':scope > .loading', view); if (!current() || !row) return;
+    row.innerHTML = '<span class="spin"></span><span>Still loading. CommandAGI is slow to answer.</span><button type="button" class="btn sm quiet" data-retry>Try again</button>';
+    $('[data-retry]', row).onclick = route;
+  }, SLOW_MS);
   const name = state.page ?? state.tab;
+  let out;
   try {
     const mod = await import(`./tabs/${name}.js`);
     const ctx = {
-      biz: state.biz, me: state.me, founder: state.founder, el: main, actions: $('#actions'), panel: $('#building'),
-      refresh: route, setBiz: b => { state.biz = b; renderIdentity(); }, openTab, ask, refreshCredits, refreshNeeds, tabHref, pageHref,
+      biz: state.biz, me: state.me, founder: state.founder, el: view, actions, panel,
+      refresh: () => { if (current()) return route(); }, setBiz: b => { state.biz = b; renderIdentity(); }, openTab, ask, refreshCredits, refreshNeeds, tabHref, pageHref,
       businesses: state.businesses,
     };
-    const out = await mod.render(ctx);
-    if (typeof out === 'function') state.cleanup = out;
+    out = await mod.render(ctx);
+    if (current() && (!view.childElementCount || $(':scope > .loading', view))) failed(null);
   } catch (e) {
-    console.error(e);
-    main.innerHTML = `<div class="empty"><h3>This tab could not load</h3><p>${esc(oops(e))}</p><button class="btn quiet" id="retry">Try again</button></div>`;
-    $('#retry').onclick = route;
-  }
-  main.focus({ preventScroll: true });
+    if (current()) { console.error(e); failed(e); }
+  } finally { clearTimeout(slow); }
+  // A visit the founder already left stops what it started (a poll, a listener) at once.
+  if (typeof out === 'function') { if (current()) state.cleanup = out; else out(); }
+  if (current()) main.focus({ preventScroll: true });
 }
 
 async function init() {
@@ -159,13 +206,14 @@ async function init() {
   const bizP = slug ? readBusiness(slug).then(b => ({ b }), e => ({ e })) : null;
   const listP = listBusinesses().catch(() => []);
   refreshCredits();
+  $('#main').innerHTML = '<div class="loading" role="status"><span class="spin"></span><span>Opening your console…</span></div>';
   try {
     state.me = await meP;
     if (state.me?.exists === false) { await signOut().catch(() => null); return renderSignedOut(); }
   } catch (e) {
     if (e.status === 401 || !auth()) return renderSignedOut();
-    $('#main').innerHTML = `<div class="empty"><h3>CommandAGI did not answer</h3><p>${esc(oops(e))}</p><button class="btn quiet" id="retry">Try again</button></div>`;
-    $('#retry').onclick = init; return;
+    $('#main').innerHTML = `<div class="empty"><h3>CommandAGI did not answer</h3><p>${esc(oops(e))}</p><button type="button" class="btn quiet" id="retry">Try again</button></div>`;
+    $('#retry').onclick = () => location.reload(); return;
   }
   state.founder = (await (founderP && uid === state.me.id ? founderP : user(state.me.id).catch(() => null))) ?? { id: state.me.id, name: '', email: '' };
   state.businesses = [];

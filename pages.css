@@ -10,24 +10,24 @@
 
 /* home */
 .biz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-.biz-card { display: grid; gap: 12px; align-content: start; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); position: relative; }
-.biz-card .mark { width: 44px; height: 44px; border-radius: 10px; overflow: hidden; }
+.biz-card { display: grid; gap: 12px; align-content: start; padding: 20px; background: var(--surface); border: 1px solid var(--line); position: relative; }
+.biz-card .mark { width: 44px; height: 44px; overflow: hidden; }
 .biz-card .mark svg { width: 44px; height: 44px; }
 .biz-card h2 { font-size: 20px; }
 .biz-card .tag { color: var(--ink-2); font-size: 14px; }
 .biz-card .meta { display: flex; gap: 6px; flex-wrap: wrap; }
 .biz-card .gaps { font-size: 13px; color: var(--warn); }
 .biz-card a.open { margin-top: 4px; }
-.new-card { display: grid; place-items: center; gap: 10px; padding: 32px 20px; border: 1px dashed var(--line-2); border-radius: var(--r-panel); color: var(--ink-2); text-align: center; min-height: 180px; }
+.new-card { display: grid; place-items: center; gap: 10px; padding: 32px 20px; border: 1px dashed var(--line-2); color: var(--ink-2); text-align: center; min-height: 180px; }
 .new-card:hover { border-color: var(--accent); color: var(--ink); }
 .new-card b { font-size: 16px; color: var(--ink); }
-.new-card .plus { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-deep); font-size: 22px; }
-.account-card { display: grid; gap: 12px; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); }
+.new-card .plus { display: grid; place-items: center; width: 40px; height: 40px; background: var(--accent-soft); color: var(--accent-deep); font-size: 22px; }
+.account-card { display: grid; gap: 12px; padding: 20px; background: var(--surface); border: 1px solid var(--line); }
 .account-card .row { gap: 12px; }
 
 /* auth */
 .auth-main { width: min(100% - 32px, 440px); margin: 48px auto 64px; display: grid; gap: 16px; flex: 1; }
-.auth-card { display: grid; gap: 16px; padding: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); }
+.auth-card { display: grid; gap: 16px; padding: 28px; background: var(--surface); border: 1px solid var(--line); }
 .auth-card h1 { font-size: 26px; }
 .auth-card form { display: grid; gap: 14px; }
 .auth-card form[hidden] { display: none; }

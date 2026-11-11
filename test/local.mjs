@@ -83,7 +83,8 @@ export async function startSite({ port = 0, api } = {}) {
     for (const c of candidates) {
       const abs = path.join(root, c);
       if (!abs.startsWith(root + path.sep)) continue;
-      if (existsSync(abs) && !abs.includes(`${path.sep}.`)) { file = abs; break; }
+      // No dot file of the site is served; the checkout itself may live under a dot folder (a worktree).
+      if (existsSync(abs) && !c.split('/').some(part => part.startsWith('.'))) { file = abs; break; }
     }
     let response;
     if (file) {

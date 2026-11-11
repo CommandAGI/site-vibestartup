@@ -47,10 +47,11 @@ After success the page goes to `?next=` or `/home/`.
 | what | selector |
 |---|---|
 | the rail | `.rail a[data-tab="chat|dashboard|analytics|tasks|email|products|orders|customers|ads|studio|outbound|social|files|legal|settings|activity"]`; the current one `[aria-current=page]` |
+| the rail on a phone | the same `.rail`, a drawer: `#rail-toggle` (top bar) and `#more` (bottom bar) open it (`body[data-rail=open]`), `#rail-close`, `#rail-scrim`, Escape or a chosen tab close it; `#bottombar a[data-tab]` are the four tabs that stay |
 | the account menu | `#account-menu` (opens billing, profile, share, sign out: `[data-page=billing]`, `[data-page=profile]`, `[data-page=share]`, `#signout`) |
 | search | `#search` (⌘K opens it), `#search input` |
-| the content | `#main`, with `#main[data-tab]` |
-| chat | `.chat`, each message `.msg` (`.msg.me`, `.msg.cofounder`, `.msg.system`), `#composer`, `#send`, approval cards `.approval` with `[data-approve]`, `[data-reject]`, `[data-reasoning]`; a milestone `.milestone`; the briefing `.briefing` |
+| the content | `#main`, with `#main[data-tab]`; a visit's view is `#main > .view`, which holds `.loading` (a spinner; `[data-retry]` after 10 s) until the tab paints, or `.empty` with `[data-retry]` when it failed |
+| chat | `.chat`, each message `.msg` (`.msg.me`, `.msg.cofounder`, `.msg.system`), `#composer`, `#send`, the suggested questions `#prompts [data-prompt]` (a chip writes into the composer), approval cards `.approval` with `[data-approve]`, `[data-reject]`, `[data-reasoning]`; a milestone `.milestone`; the briefing `.briefing` |
 | the right panel | `#building` (the site's state `[data-site-state]`, the brand kit `[data-brand]`, needs you `[data-needs]`) |
 | dashboard | `#launch-week li[data-day]` (the current one `.today`), `#needs-call`, `#money .kpi`, `#autopilot` (a switch) |
 | tasks | `#approvals .task`, `#in-progress .task`, `#done .task`, `#routines .routine` with `[data-pause]`, `[data-resume]`, `[data-run]`, `[data-edit]`, `[data-cancel]`; `#new-routine` |
@@ -69,6 +70,8 @@ After success the page goes to `?next=` or `/home/`.
 | billing | `#credits-balance`, `#packs [data-buy]` (a credit pack's checkout), `#plans article` (the listings; each says "set at launch"), `#plan-current`, `#credits-history tr`, `#dispute` |
 | profile | `#profile-name`, `#profile-email`, `#notif-push`, `#notif-email`, `#signout`, `#delete-account` |
 | share | `#referral-link`, `#copy-referral` |
+
+A table (`table.table`) reflows on a phone: `console.js` writes each cell's column name into `td[data-label]`.
 
 Every destructive act is a trash icon with a tooltip, never red text. Every provider stop is a `.note.warn` that
 says which provider and that nothing was sent.
