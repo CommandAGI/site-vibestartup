@@ -53,6 +53,9 @@ Businesses/<slug>/
   studio/                   everything the Studio made (files from POST /generate, and the videos put together here)
   studio/jobs/<id>.json     one video render: its spec, its step, its clips, the credits before and after
   Tasks/                    the tasks and approvals (the tasks API, dir = this folder)
+  legal/                    the Legal tab's documents: <template>.pdf (Save to Files), terms.html, privacy.html,
+                            refunds.html (Use on my storefront: the storefront's publish reads them), fields.json (the
+                            values the founder typed that differ from the business record)
   settings.json             autonomy, briefing, members' notes
 ```
 
@@ -76,7 +79,7 @@ The co-founder's thread, triggers and site are CommandAGI objects whose ids `bus
 | studio | `POST /generate { modelId, inputs, name: "Businesses/<slug>/studio/<file>" }` → a Drive file (the route keeps a name's folders; it has no `path` field). Pictures: `text-to-image.flux-schnell`. Video: `image-to-video.kling` (§ studio video). Brand book from `brand/` |
 | outbound | leads file + sequence drafts; a send is `POST /email/addresses/:id/compose` after the founder approves |
 | social | `GET /integrations` (connectors with a social category), `POST /integrations/:id/oauth/start { redirectUri }`, `POST /integrations/:id/call`; otherwise "post by hand" with the prepared caption and image |
-| legal | formation proposed at traction (3 real sales or $100), computed from `orders.jsonl` (test orders excluded); terms and privacy pages in the site folder |
+| legal | formation proposed at traction (3 real sales or $100), computed from `orders.jsonl` (test orders excluded); terms and privacy pages in the site folder. Documents: nine starter templates (`lib/legal-docs.js`: terms, privacy, refunds, freelancer agreement, mutual NDA, co-founder agreement, single-member LLC operating agreement, invoice, formation checklist) filled from `business.json` and the founder's fields, set as a PDF in the browser by `lib/pdf.js` (no dependency: standard Helvetica, the brand's colour and mark) and written with `POST /drive/upload` into `legal/`. Templates, not legal advice: the tab says so once, beside the buttons |
 | members | folder shares on the business folder: `POST /drive/folder-share { path, email, capability: "view" \| "edit" }`, `GET`, `DELETE` |
 | activity | `GET /threads/:id/events?limit=` newest first |
 | billing | `GET /me/credits`, `GET /me/credits/history`, `GET /me/subscription` |
@@ -139,6 +142,7 @@ undeclared input today, and `generationQuote` already prices `inputs.duration`),
 | `app/` | the console (`console.js`, one file per tab in `app/tabs/`, `console.css`) |
 | `lib/api.js` | the CommandAGI client: token, refresh, REST, MCP, drive, threads, tasks, sites, email |
 | `lib/business.js` | the business record, its creation sequence and the co-founder's charter |
+| `lib/legal-docs.js`, `lib/pdf.js` | the Legal tab's templates (as blocks, and as HTML), and the PDF writer that sets them |
 | `lib/ui.js` | the shared UI: icons, toast, dialog, menu, formatting |
 | `style.css` | the tokens and base components every page shares |
 | `storefront/` | the storefront files VibeStartup writes into a business's site folder |

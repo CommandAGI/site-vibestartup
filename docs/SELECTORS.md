@@ -66,7 +66,7 @@ After success the page goes to `?next=` or `/home/`.
 | outbound | `#leads-upload` (file input), `#leads tbody tr`, `#outbound-campaigns .campaign` |
 | social | `#social-accounts .account` with `[data-connect]`, `#compose-post`, `#posts .post`, `#social-view [data-view="calendar|list"]` |
 | files | `#file-search`, `#file-groups .group`, `.file-row` with `[data-open]`, `[data-copy]`, `#file-upload`, `#file-preview` |
-| legal | `#formation` (its state and the numbers), `#legal-pages a` |
+| legal | `#formation` (its state and the numbers), `#legal-pages a`; documents: `#legal-docs [data-doc=terms|privacy|refunds|contractor|nda|founders|llc|invoice|formation]` (the chosen one `[aria-pressed=true]`), `#legal-form` (each field `#legal-f-<key>`, e.g. `#legal-f-state`), `#legal-missing`, `#legal-pdf`, `#legal-save`, `#legal-use` (the storefront's three only), `#legal-status` ("Downloaded …", "Saved to Files: legal/<file>.pdf.", "Written to legal/<page>.html. …"), `#legal-preview` |
 | settings | `#autonomy` (a switch), `#briefing` (a select), `#plan`, `#domain-form` with `[name=hostname]`, `#secrets` with `#secret-name`, `#secret-value`, `#secret-save`, `#secret-list .secret`, `#runtime`, `#built-estimate`, `#members` with `#member-email`, `#member-role`, `#member-invite`, `.member` and `[data-revoke]`, `#delete-business` |
 | activity | `#activity .event` |
 | billing | `#credits-balance`, `#packs [data-buy]` (a credit pack's checkout), `#plans article` (the listings; each says "set at launch"), `#plan-current`, `#credits-history tr`, `#dispute` |
