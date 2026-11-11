@@ -1,6 +1,6 @@
 // Sign in and create account: the founder's CommandAGI token for this brand (lib/api.js: the password grant and
 // POST /oauth/signup of the platform-owned `vibestartup` client). Afterwards, to ?next= (a same-origin path) or home.
-import { signIn, signUp, signedIn, setProfile, ApiError } from '/lib/api.js';
+import { signIn, signUp, signedIn, setProfile, ApiError, API } from '/lib/api.js';
 import { $, $$, oops } from '/lib/ui.js';
 
 const params = new URLSearchParams(location.search);
@@ -39,8 +39,21 @@ async function submit(form, act) {
     button.disabled = false; button.textContent = was;
   }
 }
+// Turnstile (Cloudflare's bot check, invisible unless it is unsure) on the sign-up form, on the hosts the platform's
+// widget lists; elsewhere (localhost, a preview) no token is sent and the door takes the sign-up without one.
+const TURNSTILE_HOSTS = new Set(['vibestartup.pro', 'www.vibestartup.pro', 'vibestartup.us', 'www.vibestartup.us', 'vibestartup.commandagi.app', 'vibestartup--dev.commandagi.app']);
+let turnstileId = null;
+if (TURNSTILE_HOSTS.has(location.hostname)) {
+  fetch(`${API}/signup/config`).then(r => r.json()).then(cfg => {
+    const key = cfg?.turnstile?.siteKey; if (!key) return;
+    window.onTurnstileLoad = () => { turnstileId = window.turnstile.render('#turnstile', { sitekey: key, action: cfg.turnstile.action ?? 'signup', appearance: 'interaction-only' }); };
+    const sc = document.createElement('script'); sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad'; sc.async = true; document.head.append(sc);
+  }).catch(() => null);
+}
+const turnstileToken = () => { try { return turnstileId != null ? window.turnstile.getResponse(turnstileId) || null : null; } catch { return null; } };
 signup.addEventListener('submit', e => { e.preventDefault(); submit(signup, async d => {
-  await signUp({ name: String(d.name).trim(), email: d.email, password: d.password });
+  try { await signUp({ name: String(d.name).trim(), email: d.email, password: d.password, turnstileToken: turnstileToken() }); }
+  finally { try { if (turnstileId != null) window.turnstile.reset(turnstileId); } catch { /* a token is single-use */ } }
   // The date of birth is set once on the CommandAGI account (immutable there); a failure to set it is not a failed sign-up.
   await setProfile({ birthdate: d.birthdate }).catch(() => null);
 }); });
