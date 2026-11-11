@@ -43,3 +43,22 @@ Test: `node edge/subdomains.test.mjs` (fetch faked at the lookup and at the orig
    `https://<that slug>.vibestartup.pro/` serves the storefront.
 
 Until that deploy, the lookup is 404 for every label, so every name is the 404 page: safe to deploy first.
+
+## deployed (2026-11-11)
+
+`vibestartup-subdomains` runs in the account `0567858d4f4b91fac9e3b0a73414f3be` (Hello@vibestartup.pro's), version
+`9796b6af-118d-4f8b-85e6-5e77a5e301d6`, workers.dev and previews off. The zone's route `*.vibestartup.pro/*` (id
+`b0d3e5295e1d4764b0af82c8c7a9ec41`) was moved to it from `vibestartup-api-production`; the routes of `api`, `dev-api`,
+`notion-api`, `dev-notion-api` and `www` are unchanged (more specific, or on a DNS-only record). Checked: an unknown
+name answers the branded 404; the apex and `www` still serve the site.
+
+To deploy again without the dashboard editor (it is a cross-origin frame), with a token of this account only, kept
+apart from any other wrangler login and revoked after:
+
+```
+export XDG_CONFIG_HOME=$(mktemp -d); unset CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
+wrangler login --scopes account:read user:read workers:write workers_scripts:write workers_routes:write zone:read
+#   (in the consent page select only Hello@vibestartup.pro's Account)
+cd edge && wrangler deploy subdomains.js --name vibestartup-subdomains --compatibility-date 2026-11-01 --no-bundle
+wrangler logout
+```
