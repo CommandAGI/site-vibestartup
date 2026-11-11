@@ -3,7 +3,7 @@
 // founder's own CommandAGI token does everything (docs/ARCHITECTURE.md).
 import { signedIn, whoami, user, credits, signOut, auth, BRAND } from '/lib/api.js';
 import { listBusinesses, readBusiness, approvals } from '/lib/business.js';
-import { $, $$, esc, icon, toast, menu, initial, oops } from '/lib/ui.js';
+import { $, $$, esc, icon, toast, menu, modal, initial, oops } from '/lib/ui.js';
 
 export const GROUPS = [
   { name: 'Home', tabs: [['chat', 'Chat', 'chat'], ['dashboard', 'Dashboard', 'dashboard'], ['analytics', 'Analytics', 'analytics']] },
@@ -15,6 +15,8 @@ export const GROUPS = [
 export const TABS = GROUPS.flatMap(g => g.tabs.map(([id, label, ico]) => ({ id, label, icon: ico, group: g.name })));
 export const PAGES = [{ id: 'billing', label: 'Billing', icon: 'card' }, { id: 'profile', label: 'Profile', icon: 'user' }, { id: 'share', label: 'Share & earn', icon: 'gift' }];
 const PHONE_TABS = ['chat', 'dashboard', 'tasks', 'files'];
+// G, then a letter, opens a tab (the letter is shown beside the tab in search and in the shortcuts list).
+const GO = { chat: 'C', dashboard: 'D', analytics: 'N', tasks: 'T', email: 'E', files: 'F', products: 'P', orders: 'O', customers: 'U', ads: 'A', studio: 'S', outbound: 'B', social: 'L', legal: 'G', settings: 'I', activity: 'Y' };
 
 export const state = { me: null, founder: null, biz: null, businesses: [], tab: 'chat', page: null, credits: null, cleanup: null, needs: 0, visit: 0 };
 // How long a view may wait before the page offers to try again.
@@ -39,7 +41,7 @@ function renderSignedOut() {
 
 function renderRail() {
   const tabs = $('#tabs');
-  tabs.innerHTML = GROUPS.map(g => `<div class="group">${esc(g.name)}</div>${g.tabs.map(([id, label, ico]) => `<a href="${tabHref(id)}" data-tab="${id}" ${state.tab === id && !state.page ? 'aria-current="page"' : ''}>${icon(ico)}<span>${esc(label)}</span>${id === 'tasks' && state.needs ? `<span class="count">${state.needs}</span>` : ''}</a>`).join('')}`).join('');
+  tabs.innerHTML = GROUPS.map(g => `<div class="group">${esc(g.name)}</div>${g.tabs.map(([id, label, ico]) => `<a href="${tabHref(id)}" data-tab="${id}" title="${esc(label)} (G then ${GO[id]})" ${state.tab === id && !state.page ? 'aria-current="page"' : ''}>${icon(ico)}<span>${esc(label)}</span>${id === 'tasks' && state.needs ? `<span class="count">${state.needs}</span>` : ''}</a>`).join('')}`).join('');
   $('.search-ico').innerHTML = icon('search', 16);
   $('.credits-ico').innerHTML = icon('bolt', 16);
   $('#rail-toggle').innerHTML = icon('menu');
@@ -100,13 +102,13 @@ function bindChrome() {
   const fill = () => {
     const q = input.value.trim().toLowerCase();
     items = [
-      ...TABS.map(t => ({ label: t.label, kind: 'Tab', icon: t.icon, go: () => openTab(t.id) })),
+      ...TABS.map(t => ({ label: t.label, kind: 'Tab', icon: t.icon, keys: `G ${GO[t.id]}`, go: () => openTab(t.id) })),
       ...PAGES.map(p => ({ label: p.label, kind: 'Account', icon: p.icon, go: () => { location.hash = `page=${p.id}`; } })),
       ...state.businesses.map(b => ({ label: b.name, kind: 'Business', icon: 'store', go: () => { location.href = tabHref('chat', b.slug); } })),
       { label: 'New business', kind: 'Start', icon: 'plus', go: () => { location.href = '/start/'; } },
     ].filter(i => !q || i.label.toLowerCase().includes(q) || i.kind.toLowerCase().includes(q));
     sel = 0;
-    list.innerHTML = items.map((i, k) => `<li role="option" aria-selected="${k === sel}">${icon(i.icon, 16)}<span>${esc(i.label)}</span><small>${esc(i.kind)}</small></li>`).join('') || '<li class="muted">Nothing matches</li>';
+    list.innerHTML = items.map((i, k) => `<li role="option" aria-selected="${k === sel}">${icon(i.icon, 16)}<span>${esc(i.label)}</span><small>${esc(i.kind)}</small>${i.keys ? `<kbd>${esc(i.keys)}</kbd>` : ''}</li>`).join('') || '<li class="muted">Nothing matches</li>';
     $$('li', list).forEach((li, k) => li.onclick = () => { dlg.close(); items[k]?.go(); });
   };
   input.oninput = fill;
@@ -117,9 +119,35 @@ function bindChrome() {
   $('#search-open').onclick = open;
   dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
   document.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); dlg.open ? dlg.close() : open(); } });
+  // Keys, when the founder is not typing: G then a letter opens a tab, [ and ] step through the tabs, / searches,
+  // ? lists the keys.
+  let g = 0;
+  document.addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.target.closest?.('input, textarea, select, [contenteditable]') || document.querySelector('dialog[open]')) return;
+    const key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+    if (g && Date.now() - g < 1500) {
+      g = 0;
+      const tab = Object.keys(GO).find(id => GO[id] === key);
+      if (tab) { e.preventDefault(); openTab(tab); }
+      return;
+    }
+    if (key === 'G') { g = Date.now(); return; }
+    if (key === '/') { e.preventDefault(); open(); return; }
+    if (key === '?') { e.preventDefault(); showKeys(); return; }
+    if (key === '[' || key === ']') {
+      const at = TABS.findIndex(t => t.id === state.tab);
+      openTab(TABS[(Math.max(0, at) + (key === ']' ? 1 : TABS.length - 1)) % TABS.length].id);
+    }
+  });
   // "ask your co-founder" links anywhere
   document.addEventListener('click', e => { const a = e.target.closest('[data-ask]'); if (a) { e.preventDefault(); ask(a.dataset.ask); } });
   addEventListener('hashchange', route);
+}
+
+function showKeys() {
+  const row = (what, keys) => `<span>${esc(what)}</span><span>${keys.map(k => `<kbd>${esc(k)}</kbd>`).join(' ')}</span>`;
+  const m = modal(`<h2>Keyboard</h2><div class="keys">${row('Search and jump', ['⌘K', '/'])}${row('Next tab, previous tab', [']', '['])}${TABS.map(t => row(t.label, ['G', GO[t.id]])).join('')}${row('This list', ['?'])}</div><div class="modal-actions"><button type="button" class="btn quiet" data-close>Close</button></div>`, { label: 'Keyboard shortcuts' });
+  $('[data-close]', m.el).onclick = () => m.close();
 }
 
 async function refreshCredits() { state.credits = await credits().catch(() => null); renderIdentity(); }
@@ -130,11 +158,14 @@ async function refreshNeeds() {
 }
 
 /**
- * On a phone a table's row is a block and each cell a line that names its column (console.css). A cell learns its
- * column's name here, whenever a tab writes a table.
+ * What every tab's markup gets, whenever a tab writes into the content. On a phone a table's row is a block and each
+ * cell a line that names its column (console.css): a cell learns its column's name here.
  */
 function labelCells() {
   const label = () => {
+    // The top bar already says the tab's name: a page head that repeats it keeps it for screen readers only.
+    const h = $('#main .page-head h2');
+    if (h && !h.classList.contains('sr-only') && h.textContent.trim() === $('#tab-title').textContent.trim()) h.classList.add('sr-only');
     for (const table of $$('#main table.table')) {
       const heads = $$('thead th', table).map(th => th.textContent.trim());
       for (const tr of $$('tbody tr', table)) [...tr.children].forEach((td, i) => { if (td.dataset.label !== (heads[i] ?? '')) td.dataset.label = heads[i] ?? ''; });
@@ -164,7 +195,7 @@ async function route() {
   const own = id => { const was = $('#' + id); const el = was.cloneNode(false); was.replaceWith(el); return el; };
   const actions = own('actions'); const panel = own('building'); panel.hidden = state.tab !== 'chat';
   const view = document.createElement('div'); view.className = 'view';
-  view.innerHTML = '<div class="loading" role="status"><span class="spin"></span><span>Loading…</span></div>';
+  view.innerHTML = '<div class="skeleton" role="status" aria-label="Loading"><i class="title"></i><i></i><i class="short"></i><i class="block"></i><i class="block"></i></div>';
   main.replaceChildren(view);
   const failed = e => {
     view.innerHTML = `<div class="empty"><h3>This tab could not load</h3><p>${esc(e ? oops(e) : 'It answered with nothing to show.')}</p><button type="button" class="btn quiet" data-retry>Try again</button></div>`;
@@ -172,9 +203,9 @@ async function route() {
     $('[data-retry]', view).onclick = route;
   };
   const slow = setTimeout(() => {
-    const row = $(':scope > .loading', view); if (!current() || !row) return;
-    row.innerHTML = '<span class="spin"></span><span>Still loading. CommandAGI is slow to answer.</span><button type="button" class="btn sm quiet" data-retry>Try again</button>';
-    $('[data-retry]', row).onclick = route;
+    const bars = $(':scope > .skeleton', view); if (!current() || !bars) return;
+    bars.insertAdjacentHTML('beforebegin', '<div class="loading"><span class="spin"></span><span>Still loading. CommandAGI is slow to answer.</span><button type="button" class="btn sm quiet" data-retry>Try again</button></div>');
+    $('[data-retry]', view).onclick = route;
   }, SLOW_MS);
   const name = state.page ?? state.tab;
   let out;
@@ -186,7 +217,7 @@ async function route() {
       businesses: state.businesses,
     };
     out = await mod.render(ctx);
-    if (current() && (!view.childElementCount || $(':scope > .loading', view))) failed(null);
+    if (current() && (!view.childElementCount || $(':scope > .skeleton', view))) failed(null);
   } catch (e) {
     if (current()) { console.error(e); failed(e); }
   } finally { clearTimeout(slow); }
@@ -206,7 +237,7 @@ async function init() {
   const bizP = slug ? readBusiness(slug).then(b => ({ b }), e => ({ e })) : null;
   const listP = listBusinesses().catch(() => []);
   refreshCredits();
-  $('#main').innerHTML = '<div class="loading" role="status"><span class="spin"></span><span>Opening your console…</span></div>';
+  $('#main').innerHTML = '<div class="skeleton" role="status" aria-label="Opening your console"><i class="title"></i><i></i><i class="short"></i><i class="block"></i></div>';
   try {
     state.me = await meP;
     if (state.me?.exists === false) { await signOut().catch(() => null); return renderSignedOut(); }

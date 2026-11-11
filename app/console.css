@@ -11,12 +11,14 @@ body.console { background: var(--canvas); font-size: 14px; display: grid; grid-t
 .biz-name small { color: var(--ink-3); font-size: 12px; }
 .search-btn { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 16px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink-3); font-size: 13px; text-align: left; flex: none; }
 .search-btn:hover { background: var(--surface-2); color: var(--ink-2); }
-.search-btn kbd { margin-left: auto; font: 500 11px var(--sans); color: var(--ink-3); border: 1px solid var(--line); padding: 1px 5px; }
+.search-btn kbd { margin-left: auto; }
 .search-ico, .credits-ico { width: 16px; height: 16px; flex: none; }
 .tabs { display: grid; padding-bottom: 8px; }
 .tabs .group { padding: 14px 16px 6px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
 .tabs a { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 16px; color: var(--ink-2); font-weight: 500; position: relative; }
 .tabs a svg { width: 18px; height: 18px; flex: none; }
+/* a band's focus ring stays inside the band */
+.tabs a:focus-visible, .biz-switch:focus-visible, .search-btn:focus-visible, .credits:focus-visible, .account:focus-visible, .bottombar a:focus-visible, .bottombar button:focus-visible, .menu button:focus-visible, .subtabs button:focus-visible, .mail-folders button:focus-visible { outline-offset: -2px; }
 .tabs a:hover { background: var(--surface-2); color: var(--ink); }
 .tabs a[aria-current="page"] { background: var(--accent-soft); color: var(--accent-deep); box-shadow: inset 2px 0 0 var(--accent); }
 .tabs a .count { margin-left: auto; min-width: 20px; padding: 0 5px; background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 600; text-align: center; line-height: 18px; }
@@ -180,6 +182,12 @@ dialog.search { width: min(100% - 32px, 560px); margin-top: 10vh; }
 .search-results li:hover { background: var(--surface-2); }
 .search-results li[aria-selected="true"] { background: var(--accent-soft); color: var(--accent-deep); box-shadow: inset 2px 0 0 var(--accent); }
 .search-results li small { margin-left: auto; color: var(--ink-3); }
+.search-results li kbd { margin-left: 8px; }
+.search-foot { display: flex; gap: 16px; flex-wrap: wrap; padding: 10px 18px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 12px; }
+.keys { display: grid; grid-template-columns: 1fr auto; gap: 8px 24px; align-items: center; font-size: 14px; }
+.keys span { color: var(--ink-2); }
+/* in the console a toast sits in the corner, clear of the composer and the bottom bar */
+body.console .toasts { left: auto; right: 20px; transform: none; }
 
 /* signed out */
 .signed-out { min-height: 100vh; display: grid; place-items: center; padding: 24px; grid-column: 1 / -1; }
@@ -210,6 +218,9 @@ dialog.search { width: min(100% - 32px, 560px); margin-top: 10vh; }
   body[data-rail="open"] .rail { transform: none; visibility: visible; box-shadow: var(--shadow-modal); transition: transform .22s var(--ease); }
   .biz-switch { padding-right: 60px; }
   .rail-close { display: inline-grid; position: absolute; top: 6px; right: 8px; }
+  body[data-rail="open"] { overflow: hidden; }
+  body.console .toasts { left: 16px; right: 16px; width: auto; bottom: calc(68px + env(safe-area-inset-bottom)); }
+  .search-foot { display: none; }
   .tabs a, .credits, .search-btn { min-height: 44px; }
   .tabs a { font-size: 15px; }
   .frame { grid-template-rows: 52px 1fr; }

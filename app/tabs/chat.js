@@ -11,7 +11,7 @@ const PROMPTS = ['What should I do today?', 'What needs my call?', 'Change the s
 export async function render(ctx) {
   const { biz, founder, el, panel, actions } = ctx;
   const cof = biz.cofounder ?? {};
-  el.innerHTML = `<div class="chat-wrap"><div class="chat" id="chat" aria-label="Conversation"></div>
+  el.innerHTML = `<div class="chat-wrap"><div class="chat" id="chat" aria-label="Conversation"><div class="skeleton" role="status" aria-label="Loading the conversation" style="max-width:520px"><i class="short"></i><i></i><i class="short"></i></div></div>
     <div class="composer"><div class="prompts" id="prompts" aria-label="Suggested questions">${PROMPTS.map(p => `<button type="button" class="chip" data-prompt>${esc(p)}</button>`).join('')}</div><form id="compose-form"><label class="sr-only" for="composer">Message ${esc(cof.name ?? 'your co-founder')}</label><textarea id="composer" rows="1" placeholder="Message ${esc(cof.name ?? 'your co-founder')}…"></textarea><button type="submit" class="btn icon send" id="send" aria-label="Send" data-tip="Send">${icon('send')}</button></form><p class="hint">${esc(cof.name ?? 'Your co-founder')} is an AI agent. Big decisions come to you as approval cards.</p></div></div>`;
   actions.innerHTML = `<button type="button" class="btn icon" id="chat-refresh" aria-label="Refresh" data-tip="Refresh">${icon('refresh')}</button>`;
   const chat = $('#chat', el);
