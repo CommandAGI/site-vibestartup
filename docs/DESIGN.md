@@ -97,9 +97,8 @@ CommandAGI `docs/regions.md` § one edge, square corners).
 - **A view never stays blank** (owner, 2026-11-11: Billing "did not load at first"). A tab shows grey bars
   (`.skeleton`) where its words will be; a part of a tab that waits on its own call shows bars or a spinner
   (`bars()` in `app/tabs/_shared.js`, `.loading`). After 10 s a banner says CommandAGI is slow and offers Try again,
-  whatever the tab has painted. Then the tab's content, or what went wrong and Try again. A page whose words need no
-  answer (Billing: the plans) paints at once and fills each number when its own call answers. A tab that answers
-  after the founder left it writes into nothing (`route()` in `app/console.js`).
+  whatever the tab has painted. Then the tab's content, or what went wrong and Try again. A tab that answers after the
+  founder left it writes into nothing: each visit renders into elements of its own (`route()` in `app/console.js`).
 - **One title.** The top bar names the tab; a tab's page head that repeats the name keeps it for screen readers only
   and shows its one-line description. The Dashboard's head is the business's name, so it stays.
 - **An empty state names the next step**: a bordered surface with what the place is for and one button or link that

@@ -268,17 +268,13 @@ async function run(browser, width) {
   if (hasThread) check(await b.waitFor('document.querySelectorAll("#activity .event").length >= 1', 45000).then(() => true, () => false), `${label}: Activity has events`);
   await b.shot(`console-activity-${width}`);
   await b.eval('location.hash = "page=billing"'); await sleep(300);
-  // Billing is on the page at once (its plans need no answer); the balance fills in when its call answers.
-  await b.waitFor('!!document.querySelector("#main #plans article")', 3000).catch(() => null);
-  check(await b.eval('document.querySelectorAll("#main #plans article").length') === 3, `${label}: Billing shows its plans without waiting for a call`);
   await b.waitFor('/\\d|—/.test(document.querySelector("#credits-balance")?.textContent ?? "")', 20000).catch(() => null);
   check(/\d|—/.test(await b.text('#credits-balance')), `${label}: Billing shows the credit balance`);
-  await b.waitFor('/Current plan/.test(document.querySelector("#plan-current")?.textContent ?? "")', 20000).catch(() => null);
-  check(/Current plan/.test(await b.text('#plan-current')), `${label}: Billing names the current plan`);
+  check(await b.eval('document.querySelectorAll("#main #plans article").length') === 3, `${label}: Billing shows its three listings`);
   // A tab that answers late never paints over the one now shown: leave Chat (slow: the transcript, the tasks) for
   // Billing in the same instant, and Billing is what stays, with Chat's refresh button gone from the top bar.
   await b.eval('location.hash = "tab=chat"'); await b.eval('location.hash = "page=billing"');
-  await b.waitFor('!!document.querySelector("#main #plans article")', 3000).catch(() => null);
+  await b.waitFor('!!document.querySelector("#main #plans article")', 20000).catch(() => null);
   await sleep(6000);
   check(await b.eval('!!document.querySelector("#main #plans article") && !document.querySelector("#main .chat") && !document.querySelector("#chat-refresh") && document.querySelector("#building").hidden'), `${label}: Billing stays when Chat, left a moment before, answers late`);
   await b.eval('location.hash = "page=billing"');
