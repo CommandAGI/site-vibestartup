@@ -97,6 +97,7 @@ body.console[data-panel="1"] .frame { grid-template-columns: 1fr 320px; }
 .msg.system { grid-template-columns: 1fr; max-width: none; }
 .msg.system .text { background: transparent; border: 0; padding: 0; color: var(--ink-3); font-size: 13px; }
 .msg.system.composing .text::after { content: "…"; animation: blink 1.2s steps(3, end) infinite; }
+.msg.cofounder.streaming .text::after { content: "\258D"; margin-left: 2px; color: var(--ink-3); animation: blink 1s steps(2, end) infinite; }
 @keyframes blink { 50% { opacity: .2; } }
 .approval, .milestone, .briefing { max-width: 760px; margin-left: 42px; }
 .approval { border: 1px solid var(--line); box-shadow: inset 3px 0 0 var(--accent); background: var(--surface); padding: 14px 16px 14px 18px; display: grid; gap: 8px; }

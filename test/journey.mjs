@@ -146,9 +146,11 @@ async function run(browser, width) {
   }
   const hasThread = !gaps.some(g => g.startsWith('cofounder'));
   if (!flag('no-chat') && hasThread) {
-    // The co-founder reads its files first (a dozen tool calls) and then says hello.
-    const greeted = await b.waitFor('document.querySelectorAll(".msg.cofounder").length >= 1', 150000).catch(() => false);
-    check(greeted, `${label}: the co-founder greeted within 150 s`);
+    // The co-founder says hello before any tool call, and its thread starts while the storefront deploys.
+    const greetedAt = Date.now();
+    const greeted = await b.waitFor('document.querySelectorAll(".msg.cofounder").length >= 1', 30000).catch(() => false);
+    check(greeted, `${label}: the co-founder greeted within 30 s of the console opening`);
+    if (greeted) console.log(`${label}: greeted ${((Date.now() - greetedAt) / 1000).toFixed(1)} s after the chat was up`);
     if (greeted) { const first = await b.eval('document.querySelector(".msg.cofounder .text")?.innerText ?? ""'); check(first.length > 20, `${label}: the greeting has words (${first.slice(0, 60).replace(/\n/g, ' ')}…)`); }
   } else check(hasThread || gaps.length > 0, `${label}: the co-founder's thread is missing and no gap says why`);
   // The panel fills after the chat's first read.
@@ -162,8 +164,11 @@ async function run(browser, width) {
     await b.fill('#composer', 'What should I do first today? Answer in two short lines.');
     await b.click('#send');
     check(await b.eval('document.querySelectorAll(".msg.me").length >= 1'), `${label}: the sent message shows at once`);
+    const askedAt = Date.now();
+    // A reply waits on the platform's turn (about 8 s before the agent starts and 8 s of its step, 2026-11-11).
     const replied = await b.waitFor(`document.querySelectorAll(".msg.cofounder").length > ${before}`, 90000).catch(() => false);
     check(replied, `${label}: the co-founder answered within 90 s`);
+    if (replied) console.log(`${label}: answered ${((Date.now() - askedAt) / 1000).toFixed(1)} s after the message`);
   }
 
   // 4b. An approval: the one the co-founder made, else one made through the tasks API; approve it.

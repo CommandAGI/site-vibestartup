@@ -72,10 +72,15 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   `--files` that one file); production's Drive does not, so production has no listing rows: run
   `node scripts/seed/run.mjs org-specs prod --apply --files <a list naming that file>` before the launch.
 
-- **The co-founder's first answer is slow** (over 90 s at some widths). Measured 2026-11-11 on production with a one-line
-  prompt: `POST /threads` 4 s, the thread's first lifecycle event 9 s later, the turn done at +20 s. The real opening
-  reads about ten files and makes two tasks, each tool call 2 to 4 s, so the first answer lands past 90 s. Shorter: an
-  opening that answers before it reads, the files in one call, or a faster tool path in the platform.
+- **The co-founder's first answer** (2026-11-11, `node test/cofounder-speed.mjs --api https://api.commandagi.com`):
+  before, the first words 17.8 s after the console opened and no day-one card within 150 s (15 file reads, 8
+  failed); after (GPT-6 Luna, the thread started during the deploy, a greeting before any tool, the brief in the
+  charter), the first words 4.2 to 5.1 s after the console opened and the first approval card at 13.5 to 22.5 s
+  (three runs). The words stream token by token once CommandAGI deploys its streamed goal step (013f5c0cf85, "A goal
+  step's words stream…"); until then a message arrives whole. A reply to the founder took 18.5 s (a probe over the
+  socket): about 8 s before the agent's turn starts and 8 s of its step, whatever the model, so the journey's reply
+  check stays at 90 s. The journey of 2026-11-11 15:09 greeted 1.3 s after the chat was up; production was overloaded
+  then (a build refused "D1 DB is overloaded", Files "still loading"), and its reply and Files checks failed.
 - **One probe account is left on production:** `journey-firstturn-<base36>@example.com` (password in `test/journey.mjs`),
   made 2026-11-11 by a probe whose run was killed before its erase; its exact address was lost. Harmless (no business,
   200 promotional credits); erase it if an admin listing finds it.
