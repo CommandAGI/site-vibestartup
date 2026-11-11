@@ -129,6 +129,46 @@ CommandAGI `docs/regions.md` § one edge, square corners).
   square cards and buttons, hairlines, a sticky 56 px header, one column of products until 600 px, 48 px targets,
   16 px fields. The generated mark is a square.
 
+## guides (the first-run tour)
+
+Owner, 2026-11-11: a guided first run, as CommandAGI's shell has (`packages/appkit/workbench/guides.js`). One
+mechanism, `lib/guides.js`; each guide is data: `{ id, version, surface, ready, steps: [{ at, title, text }] }`.
+
+- **A callout beside a real control**, with a square accent ring around the control. The callout floats, so it has the
+  14 px corner and the float shadow. On a phone it is a sheet at the foot of the screen, over the bottom bar; at the top
+  when the control is in the lower half.
+- **Never blocking.** It is not modal and takes no focus; the page under it works. Escape, a press outside it, Skip
+  and the last step's "Got it" close it, and each counts as seen. It waits while a dialog, a menu or the phone's
+  drawer is open. A polite live region says each step.
+- **A step whose control is not on screen is left out** (the rail's rows on a phone), so a guide never points at
+  nothing.
+- **Seen is kept per account** in this browser (`vs_guides:<account id>`, a map of id to version). A version bump
+  shows a guide again. The account menu's **Replay the tour** forgets what was seen and opens the chat.
+- **A driven browser sees no guide** (`navigator.webdriver`; the journey's Chrome says so) unless it asks:
+  `?guides=1`, or `vs_guides_ask` = "1" in localStorage.
+- **The guides**: the wizard's first step; the console's first visit (the composer, the suggested questions, approvals,
+  the menu, Products, Settings for payouts, credits); Products; Studio; Tasks.
+- **The copy speaks to a first-time founder** (owner: "'founder' kids", keep them excited). Warm, concrete, second
+  person, short. One action a step. Celebrate what is done ("Your storefront is selling it now. Go show someone!").
+  Never talk down, no jargon, no exclamation on every line.
+
+## soon
+
+Owner, 2026-11-11: "coming soon" instead of broken. A feature that is not open yet reads as on its way, never as an
+error or an apology.
+
+- **One component**: `soon()` in `lib/ui.js` is the pill (`.badge.soon`: the accent, small capitals), and
+  `soonButton(label, classes, attrs)` is the control with its real label, not pressable, with the pill. The control
+  keeps its place and its id, so the day it opens only its handler changes.
+- **What is around it still works**: Ads' plan and readiness save; a post goes on the calendar; a subscription takes
+  orders by email.
+- **"Notify me"** is a chip beside a Soon control (`notifyChip`, `bindNotify` in `app/tabs/_shared.js`). It records
+  the founder's interest in the business's `settings.json` (`notify: { <feature>: true }`).
+- **Soon today**: Ads' Launch (`ads-launch`); Social's automatic publishing (`social-auto`) and Reddit; the checkout
+  of subscriptions, services and courses ("checkout soon" in the type picker and on the product's row); a second
+  business's own email address (`email-address`); Legal's "File my company" (`company-filing`).
+- The words: "Soon", "on its way", "opens with Launch". Never "not available", "not supported", "sorry".
+
 ## motion
 
 Short and physical: 160 ms ease-out for hover and open, 220 ms for the drawer, `@starting-style` fades for new rows.

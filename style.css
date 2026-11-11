@@ -152,6 +152,9 @@ img, svg, video { display: block; max-width: 100%; }
 .badge.bad { background: var(--bad-soft); color: var(--bad); }
 .badge.accent { background: var(--accent-soft); color: var(--accent-deep); }
 .badge.cofounder { background: var(--cofounder-soft); color: var(--cofounder); }
+/* on its way: the pill of a control that opens soon (lib/ui.js soon()), and the control that waits with it */
+.badge.soon { background: var(--accent-soft); color: var(--accent-deep); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.btn.is-soon, .btn.is-soon[disabled] { opacity: 1; background: var(--surface-2); border-color: var(--line); color: var(--ink-2); cursor: default; }
 .table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--surface); border: 1px solid var(--line); }
 .table th { text-align: left; font-weight: 500; color: var(--ink-2); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; padding: 8px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
 .table td { padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -205,6 +208,25 @@ dialog.modal .modal-actions { display: flex; gap: 8px; justify-content: flex-end
 .toast { padding: 10px 14px; border-radius: var(--r-tip); background: var(--ink); color: var(--bg); font-size: 14px; box-shadow: var(--shadow-float); pointer-events: auto; }
 .toast.bad { background: var(--bad); color: #fff; }
 .toast.ok { background: var(--ok); color: #fff; }
+/* first-run guides (lib/guides.js): a callout beside a real control. The layer takes no presses, so the page under it
+   works as usual; the callout floats, so it is rounded and carries the float shadow; the ring around the control is square. */
+.guide-layer { position: fixed; inset: 0; z-index: 65; pointer-events: none; }
+.guide-ring { position: fixed; border: 2px solid var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); pointer-events: none; }
+.guide { position: fixed; width: min(320px, calc(100vw - 32px)); padding: 16px 16px 12px; pointer-events: auto; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--r-float); box-shadow: var(--shadow-float); font-size: 14px; line-height: 1.45; text-align: left; }
+.guide-title { font-size: 16px; margin-bottom: 4px; }
+.guide-text { color: var(--ink-2); }
+.guide-foot { display: flex; align-items: center; gap: 6px; margin-top: 14px; }
+.guide-dots { display: inline-flex; gap: 5px; }
+.guide-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line-2); }
+.guide-dots i.on { background: var(--accent); }
+/* a phone, or a step with no control: a sheet at the foot of the screen, clear of the bottom bar; at the top when the control is low */
+.guide.guide-sheet { left: 16px; right: 16px; width: auto; }
+.guide.guide-sheet[data-side="bottom"] { bottom: calc(72px + env(safe-area-inset-bottom)); }
+.guide.guide-sheet[data-side="top"] { top: 64px; }
+@media (prefers-reduced-motion: no-preference) {
+  .guide { animation: guide-in .16s var(--ease); }
+  @keyframes guide-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+}
 kbd { font: 500 11px var(--sans); color: var(--ink-3); border: 1px solid var(--line-2); padding: 1px 5px; white-space: nowrap; }
 [data-tip] { position: relative; }
 [data-tip]:hover::after, [data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); padding: 4px 8px; border-radius: var(--r-tip); background: var(--ink); color: var(--bg); font-size: 12px; white-space: nowrap; z-index: 30; pointer-events: none; }

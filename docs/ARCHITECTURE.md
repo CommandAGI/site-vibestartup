@@ -169,8 +169,9 @@ grants the credits); before the launch it checks the disabled state instead.
 | `app/` | the console (`console.js`, one file per tab in `app/tabs/`, `console.css`) |
 | `lib/api.js` | the CommandAGI client: token, refresh, REST, MCP, drive, threads, tasks, sites, email |
 | `lib/business.js` | the business record, its creation sequence and the co-founder's charter |
+| `lib/ui.js` | the shared UI: icons, toast, dialog, menu, formatting, the Soon pill |
 | `lib/legal-docs.js`, `lib/pdf.js` | the Legal tab's templates (as blocks, and as HTML), and the PDF writer that sets them |
-| `lib/ui.js` | the shared UI: icons, toast, dialog, menu, formatting |
+| `lib/guides.js` | the first-run guides (docs/DESIGN.md § guides) |
 | `style.css` | the tokens and base components every page shares |
 | `storefront/` | the storefront files VibeStartup writes into a business's site folder |
 | `test/local.mjs`, `test/journey.mjs`, `test/browser.mjs` | the local run (static files + a local CommandAGI platform) and the journey |

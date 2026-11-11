@@ -4,8 +4,8 @@
 // storefront's three, written there as HTML pages the storefront's publish picks up (lib/legal-docs.js).
 import { drive } from '/lib/api.js';
 import { folderOf, markSvg } from '/lib/business.js';
-import { $, $$, esc, icon, money, toast, oops, busy } from '/lib/ui.js';
-import { head, section, ordersOf, realSales, askLink } from './_shared.js';
+import { $, $$, esc, icon, money, toast, oops, busy, soonButton } from '/lib/ui.js';
+import { head, section, ordersOf, realSales, askLink, settingsOf, notifyChip, bindNotify } from './_shared.js';
 import { renderPdf } from '/lib/pdf.js';
 import { TEMPLATES, FIELDS, US_STATES, defaults, fill, missing, blocksToHtml, storefrontPage } from '/lib/legal-docs.js';
 
@@ -68,11 +68,13 @@ export async function render(ctx) {
     drive.readPath(`${folderOf(biz.slug)}/brand`, 'logo.svg').catch(() => null),
   ]);
   const s = realSales(orders);
+  const settings = await settingsOf(biz).catch(() => ({}));
   const ready = s.count >= 3 || s.revenue >= 100;
   el.innerHTML = head('Legal', 'Formation, the pages your storefront needs, and documents you can fill in and download.')
-    + section('Company formation', `<div id="formation" class="panel stack"><div class="row"><span class="badge ${ready ? 'ok' : ''}">${ready ? 'ready to propose' : 'not yet'}</span><span class="muted">Proposed when the business has traction: about three real sales or $100 of revenue, because formation costs recur.</span></div><div class="grid-2"><div class="kpi"><b>${esc(String(s.count))}</b><span>real sales</span><small>of 3</small></div><div class="kpi"><b>${esc(money(s.revenue))}</b><span>revenue</span><small>of $100</small></div></div><p class="muted">${ready ? `Your co-founder can now propose a formation through Charter House (CommandAGI's formation service): ${askLink('Propose the company formation now: what entity, where, what it costs, and what I sign.', 'ask for the proposal')}.` : `Want it sooner? ${askLink('I want to form the company before traction. Propose it: what entity, where, what it costs, and what I sign.', 'Ask your co-founder')}. Filing needs your signature and a fee; nothing is filed without them.`}</p>${s.test ? `<p class="hint">${s.test} test ${s.test === 1 ? 'order does' : 'orders do'} not count.</p>` : ''}</div>`)
-    + section('The storefront\'s pages', biz.site?.url ? `<div id="legal-pages" class="row"><a class="btn quiet" href="${esc(biz.site.url)}/terms.html" target="_blank" rel="noopener">${icon('external', 14)} Terms</a><a class="btn quiet" href="${esc(biz.site.url)}/privacy.html" target="_blank" rel="noopener">${icon('external', 14)} Privacy</a></div><p class="hint" style="margin-top:8px">Plain starting drafts written by VibeStartup; replace them in Files (the site folder) when you have your own.</p>` : '<div id="legal-pages" class="note">No storefront yet, so no pages.</div>')
+    + section('Company formation', `<div id="formation" class="panel stack"><div class="row"><span class="badge ${ready ? 'ok' : ''}">${ready ? 'ready to propose' : 'not yet'}</span><span class="muted">Proposed when the business has traction: about three real sales or $100 of revenue, because formation costs recur.</span></div><div class="grid-2"><div class="kpi"><b>${esc(String(s.count))}</b><span>real sales</span><small>of 3</small></div><div class="kpi"><b>${esc(money(s.revenue))}</b><span>revenue</span><small>of $100</small></div></div><p class="muted">${ready ? `Your co-founder can now propose a formation through Charter House (CommandAGI's formation service): ${askLink('Propose the company formation now: what entity, where, what it costs, and what I sign.', 'ask for the proposal')}.` : `Want it sooner? ${askLink('I want to form the company before traction. Propose it: what entity, where, what it costs, and what I sign.', 'Ask your co-founder')}. Filing needs your signature and a fee; nothing is filed without them.`}</p>${s.test ? `<p class="hint">${s.test} test ${s.test === 1 ? 'order does' : 'orders do'} not count.</p>` : ''}<div class="row">${soonButton('File my company', 'btn primary', 'id="file-company"')}${notifyChip('company-filing', settings.notify?.['company-filing'])}</div></div>`)
+    + section('The storefront\'s pages', biz.site?.url ? `<div id="legal-pages" class="row"><a class="btn quiet" href="${esc(biz.site.url)}/terms.html" target="_blank" rel="noopener">${icon('external', 14)} Terms</a><a class="btn quiet" href="${esc(biz.site.url)}/privacy.html" target="_blank" rel="noopener">${icon('external', 14)} Privacy</a></div>` : '<div id="legal-pages" class="note">No storefront yet, so no pages.</div>')
     + section('Documents', `<style>${CSS}</style><div id="legal-docs"><div class="legal-lib"><div role="group" aria-label="Templates">${TEMPLATES.map(t => `<button type="button" data-doc="${t.id}" aria-pressed="${t.id === chosen}"><b>${esc(t.title)}${t.storefront ? ' <span class="badge">storefront</span>' : ''}</b><small>${esc(t.about)}</small></button>`).join('')}</div></div><div id="legal-editor" class="legal-edit"></div></div>`);
+  bindNotify(el, biz);
 
   // The business's own values first (the record may have changed), then what the founder typed and saved.
   const base = defaults(biz, founder);

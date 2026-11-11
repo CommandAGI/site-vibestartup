@@ -12,6 +12,20 @@ export const iconBtn = (name, label, attrs = '') => `<button type="button" class
 export const askLink = (question, label = 'ask your co-founder') => `<a href="#" data-ask="${esc(question)}">${esc(label)}</a>`;
 /** A feature that needs the founder's own provider account stops here, and says so. */
 export const providerStop = (provider, what) => `<div class="note warn"><b>Connect ${esc(provider)} first.</b> ${esc(what)} Nothing was sent or charged.</div>`;
+/**
+ * "Notify me" beside a control that opens soon: a chip that records the founder's interest in the business's
+ * settings.json (`notify: { <feature>: true }`). `on` is what the file says now.
+ */
+export const notifyChip = (feature, on) => `<button type="button" class="chip" data-notify="${esc(feature)}" aria-pressed="${on ? 'true' : 'false'}">${on ? 'We will tell you' : 'Notify me'}</button>`;
+export function bindNotify(root, biz) {
+  for (const b of root.querySelectorAll('[data-notify]')) b.onclick = async () => {
+    const on = b.getAttribute('aria-pressed') !== 'true';
+    const show = v => { b.setAttribute('aria-pressed', String(v)); b.textContent = v ? 'We will tell you' : 'Notify me'; };
+    show(on);
+    try { const s = await settingsOf(biz); await writeSettings(biz, { ...s, notify: { ...(s.notify ?? {}), [b.dataset.notify]: on } }); }
+    catch { show(!on); }
+  };
+}
 /** Grey bars where a part of a tab will be, while its call runs. */
 export const bars = (blocks = 2) => `<div class="skeleton" role="status" aria-label="Loading"><i></i><i class="short"></i>${'<i class="block"></i>'.repeat(blocks)}</div>`;
 /** Nothing here yet: what the place is for (`text`, HTML) and the next step (`extra`, a button or a link). */

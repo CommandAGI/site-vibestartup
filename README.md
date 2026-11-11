@@ -32,8 +32,9 @@ what is open, and what is left).
 | `app/` | the console |
 | `lib/api.js` | the CommandAGI client: the token (the `vibestartup` OAuth client's password grant and `/oauth/signup`), refresh, REST, MCP tools, Drive, threads, tasks, sites, email |
 | `lib/business.js` | the business record, its creation sequence, the co-founder's charter, the memory files, the brand generator, the storefront files |
-| `lib/ui.js` | icons, toasts, dialogs, menus, formatting |
+| `lib/ui.js` | icons, toasts, dialogs, menus, formatting, the Soon pill |
 | `lib/legal-docs.js`, `lib/pdf.js` | the Legal tab's document templates, and a PDF writer with no dependency (Helvetica, wrapping, lists, tables, signature lines, page breaks, the brand's mark) |
+| `lib/guides.js` | the first-run guides: callouts beside real controls, seen once per account (docs/DESIGN.md § guides) |
 | `style.css` | the tokens and base components |
 | `fonts/` | Instrument Sans and Instrument Serif (SIL Open Font License 1.1) |
 | `wordmark.svg`, `wordmark-dark.svg`, `mark.svg`, `touch-icon.png`, `og.png`, `brand/` | the wordmark (light and dark), the favicon, the touch icon, the share image, and the HTML + script that render the last two |

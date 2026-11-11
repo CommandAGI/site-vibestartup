@@ -3,12 +3,15 @@
 // and return to the storefront. Any other kind is ordered by email from the storefront.
 import { publishStorefront } from '/lib/business.js';
 import { payments, goods } from '/lib/api.js';
-import { $, $$, esc, icon, toast, modal, confirm, money, oops, busy } from '/lib/ui.js';
+import { $, $$, esc, icon, toast, modal, confirm, money, oops, busy, soon } from '/lib/ui.js';
 import { head, section, productsOf, writeProducts, ordersOf, iconBtn, empty, swatch } from './_shared.js';
 
 const TYPES = ['digital', 'service', 'subscription', 'physical', 'hardware', 'course', 'other'];
 /** The kinds the checkout sells now: shipped goods, which a buyer pays for without an account. */
 const SHIPPED = new Set(['physical', 'hardware']);
+/** The kinds whose checkout opens soon; they take orders by email today. A recurring price is a subscription. */
+const CHECKOUT_SOON = new Set(['subscription', 'service', 'course']);
+const checkoutSoon = p => CHECKOUT_SOON.has(p.type) || !!p.recurring;
 
 export async function render(ctx) {
   const { biz, el, actions } = ctx;
@@ -45,13 +48,13 @@ export async function render(ctx) {
       republishLater = true;
     }
     const subs = products.filter(p => p.recurring && p.status === 'active');
-    const sold = p => p.goodId && p.goodKind !== 'digital' ? (p.goodStatus === 'active' ? '<span class="badge ok">checkout</span>' : '<span class="badge warn">checkout after payouts</span>') : '<span class="badge">order by email</span>';
+    const sold = p => p.goodId && p.goodKind !== 'digital' ? (p.goodStatus === 'active' ? '<span class="badge ok">checkout</span>' : '<span class="badge warn">checkout after payouts</span>') : `<span class="badge">order by email</span>${checkoutSoon(p) ? ' ' + soon('checkout soon') : ''}`;
     const checkoutHref = p => biz.site?.url ? `${biz.site.url.replace(/\/+$/, '')}/checkout.html?p=${encodeURIComponent(p.id)}` : null;
     el.innerHTML = head('Products', 'What your storefront sells. Every change publishes the storefront again.')
       + (ready ? '' : `<div class="note warn" id="payments-needed"><b>Connect payouts to take payment.</b> Your customers pay through the checkout into your own Stripe account. Until you connect it in <a href="${esc(ctx.tabHref('settings'))}">Settings</a>, the storefront takes orders by email. Nothing is charged.</div>`)
       + (products.length ? `<div id="product-list" class="list">${products.map(p => `<div class="product" data-id="${esc(p.id)}">${swatch(biz.brand)}<div><b>${esc(p.name)}</b> <span class="badge ${p.status === 'active' ? 'ok' : ''}">${esc(p.status)}</span> ${sold(p)}<div class="meta">${[`${p.priceLabel ?? ''}${p.recurring ? ` / ${p.interval}` : ''}`, p.type ?? (p.goodKind === 'digital' ? 'digital' : ''), p.description ?? p.tagline ?? ''].filter(Boolean).map(esc).join(' · ')}</div></div><div class="acts">${p.goodStatus === 'active' && checkoutHref(p) ? `<a class="btn sm quiet" data-open-checkout target="_blank" rel="noopener" href="${esc(checkoutHref(p))}">Open checkout</a>` : ''}${p.status === 'active' ? iconBtn('pause', 'Archive', 'data-archive') : iconBtn('play', 'Activate', 'data-activate')}${iconBtn('trash', 'Remove', 'data-remove')}</div></div>`).join('')}</div>` : `<div id="product-list">${empty('No products yet', 'Add the first offer. The storefront shows it the moment it is active.', '<button type="button" class="btn primary" data-press="#add-product">Add your first product</button>')}</div>`)
       + section('Subscriptions', `<div class="grid-4">${[['Active', subs.length, 'recurring products'], ['Orders', orders.length, 'all time'], ['Needs attention', 0, ''], ['Ending soon', 0, '']].map(([l, v, s]) => `<div class="kpi"><b>${esc(String(v))}</b><span>${esc(l)}</span>${s ? `<small>${esc(s)}</small>` : ''}</div>`).join('')}</div>`)
-      + `<p class="hint">A physical product sells through the checkout: the buyer pays on Stripe's page, the money goes to your Stripe account less a 0.5% fee, and the buyer comes back to your storefront. Other kinds take orders by email. On a test stack, Stripe's test card pays.</p>`;
+      + `<p class="hint">A physical product sells through the checkout: the buyer pays on Stripe's page, the money goes to your Stripe account less a 0.5% fee, and the buyer comes back to your storefront. Subscriptions, services and courses take orders by email today; their checkout is on its way. On a test stack, Stripe's test card pays.</p>`;
     const byId = id => products.find(p => p.id === id);
     const setStatus = async (p, status) => { p.status = status; await syncGood(p, status === 'active' ? 'active' : 'archived', ready); await writeProducts(biz, products); await paint(); await republish(); };
     $$('[data-archive]', el).forEach(b => b.onclick = () => setStatus(byId(b.closest('.product').dataset.id), 'archived'));
@@ -60,11 +63,16 @@ export async function render(ctx) {
     return ready;
   };
   $('#add-product').onclick = () => {
-    const m = modal(`<h2>Add a product</h2><form id="pf" class="stack"><label class="field"><span>Name</span><input id="p-name" name="name" required></label><label class="field"><span>Description</span><textarea id="p-desc" name="description" rows="2"></textarea></label><div class="grid-2"><label class="field"><span>Price (USD)</span><input id="p-price" name="price" type="number" min="0" step="0.01" required></label><label class="field"><span>Type</span><input id="p-type" name="type" list="p-types" value="physical"><datalist id="p-types">${TYPES.map(t => `<option value="${t}">`).join('')}</datalist></label></div><label class="field" id="p-shipping-wrap"><span>Shipping in the US (USD)</span><input id="p-shipping" name="shipping" type="number" min="0" step="0.01" value="0"></label><label class="check"><input id="p-recurring" name="recurring" type="checkbox"> Recurring</label><label class="field" id="p-interval-wrap" hidden><span>Every</span><select id="p-interval" name="interval"><option value="month">month</option><option value="year">year</option><option value="week">week</option></select></label><label class="check"><input name="active" type="checkbox" checked> Active (shown on the storefront)</label><p class="hint">A physical product sells through the checkout. Other kinds, and recurring prices, take orders by email.</p><div class="modal-actions"><button type="button" class="btn quiet" id="pf-cancel">Cancel</button><button class="btn primary" type="submit" id="create-product">Add product</button></div></form>`, { label: 'Add a product' });
+    const m = modal(`<h2>Add a product</h2><form id="pf" class="stack"><label class="field"><span>Name</span><input id="p-name" name="name" required></label><label class="field"><span>Description</span><textarea id="p-desc" name="description" rows="2"></textarea></label><div class="grid-2"><label class="field"><span>Price (USD)</span><input id="p-price" name="price" type="number" min="0" step="0.01" required></label><label class="field"><span>Type <span id="p-type-soon" hidden>${soon('checkout soon')}</span></span><select id="p-type" name="type">${TYPES.map(t => `<option value="${t}"${t === 'physical' ? ' selected' : ''}>${t[0].toUpperCase() + t.slice(1)}${CHECKOUT_SOON.has(t) ? ' · checkout soon' : ''}</option>`).join('')}</select></label></div><label class="field" id="p-shipping-wrap"><span>Shipping in the US (USD)</span><input id="p-shipping" name="shipping" type="number" min="0" step="0.01" value="0"></label><label class="check"><input id="p-recurring" name="recurring" type="checkbox"> Recurring</label><label class="field" id="p-interval-wrap" hidden><span>Every</span><select id="p-interval" name="interval"><option value="month">month</option><option value="year">year</option><option value="week">week</option></select></label><label class="check"><input name="active" type="checkbox" checked> Active (shown on the storefront)</label><p class="hint" id="p-how"></p><div class="modal-actions"><button type="button" class="btn quiet" id="pf-cancel">Cancel</button><button class="btn primary" type="submit" id="create-product">Add product</button></div></form>`, { label: 'Add a product' });
     const f = $('#pf', m.el);
     const shippedNow = () => SHIPPED.has(f.type.value.trim()) && !f.recurring.checked;
-    const toggle = () => { $('#p-interval-wrap', m.el).hidden = !f.recurring.checked; $('#p-shipping-wrap', m.el).hidden = !shippedNow(); };
-    f.recurring.onchange = toggle; f.type.oninput = toggle;
+    const toggle = () => {
+      const later = checkoutSoon({ type: f.type.value, recurring: f.recurring.checked });
+      $('#p-interval-wrap', m.el).hidden = !f.recurring.checked; $('#p-shipping-wrap', m.el).hidden = !shippedNow();
+      $('#p-type-soon', m.el).hidden = !later;
+      $('#p-how', m.el).textContent = shippedNow() ? 'Buyers pay by card at your checkout.' : later ? 'Buyers order by email today. Card checkout for this kind is on its way.' : 'Buyers order by email.';
+    };
+    f.recurring.onchange = toggle; f.type.oninput = toggle; toggle();
     $('#pf-cancel', m.el).onclick = () => m.close();
     f.onsubmit = async e => {
       e.preventDefault();
