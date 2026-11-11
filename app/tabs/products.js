@@ -21,6 +21,8 @@ export async function render(ctx) {
     if (p.goodStatus === status) return;
     try { p.goodStatus = (await goods.update(p.goodId, { status })).status ?? status; } catch (e) { toast(`${p.name}: ${oops(e)}`, 'bad'); }
   };
+  // A republish the first paint owes runs after the tab is drawn: the founder sees the products, then the toast.
+  let republishLater = false;
   const paint = async () => {
     const [products, orders, readiness] = await Promise.all([productsOf(biz), ordersOf(biz), payments.readiness().catch(() => ({ ready: false, blocks: ['unreadable'] }))]);
     const ready = !!readiness.ready;
@@ -34,20 +36,20 @@ export async function render(ctx) {
         const g = all.find(g => g.file && bare(g.file) === bare(p.file));
         if (g) { Object.assign(p, { goodId: g.id, variantId: g.variants?.[0]?.id ?? null, goodStatus: g.status, goodKind: g.kind }); linked++; }
       }
-      if (linked) { await writeProducts(biz, products); if (!(ready && products.some(p => p.goodId && p.status === 'active' && p.goodStatus !== 'active'))) await republish(); }
+      if (linked) { await writeProducts(biz, products); if (!(ready && products.some(p => p.goodId && p.status === 'active' && p.goodStatus !== 'active'))) republishLater = true; }
     }
     const pending =products.filter(p => p.goodId && p.status === 'active' && p.goodStatus !== 'active');
     if (ready && pending.length) {
       for (const p of pending) await syncGood(p, 'active', ready);
       await writeProducts(biz, products);
-      await republish();
+      republishLater = true;
     }
     const subs = products.filter(p => p.recurring && p.status === 'active');
     const sold = p => p.goodId && p.goodKind !== 'digital' ? (p.goodStatus === 'active' ? '<span class="badge ok">checkout</span>' : '<span class="badge warn">checkout after payouts</span>') : '<span class="badge">order by email</span>';
     const checkoutHref = p => biz.site?.url ? `${biz.site.url.replace(/\/+$/, '')}/checkout.html?p=${encodeURIComponent(p.id)}` : null;
     el.innerHTML = head('Products', 'What your storefront sells. Every change publishes the storefront again.')
       + (ready ? '' : `<div class="note warn" id="payments-needed"><b>Connect payouts to take payment.</b> Your customers pay through the checkout into your own Stripe account. Until you connect it in <a href="${esc(ctx.tabHref('settings'))}">Settings</a>, the storefront takes orders by email. Nothing is charged.</div>`)
-      + (products.length ? `<div id="product-list" class="list">${products.map(p => `<div class="product" data-id="${esc(p.id)}">${swatch(biz.brand)}<div><b>${esc(p.name)}</b> <span class="badge ${p.status === 'active' ? 'ok' : ''}">${esc(p.status)}</span> ${sold(p)}<div class="meta">${esc(p.priceLabel)}${p.recurring ? ` / ${esc(p.interval)}` : ''} · ${esc(p.type)} · ${esc(p.description ?? '')}</div></div><div class="acts">${p.goodStatus === 'active' && checkoutHref(p) ? `<a class="btn sm quiet" data-open-checkout target="_blank" rel="noopener" href="${esc(checkoutHref(p))}">Open checkout</a>` : ''}${p.status === 'active' ? iconBtn('pause', 'Archive', 'data-archive') : iconBtn('play', 'Activate', 'data-activate')}${iconBtn('trash', 'Remove', 'data-remove')}</div></div>`).join('')}</div>` : `<div id="product-list">${empty('No products yet', 'Add the first offer. The storefront shows it the moment it is active.')}</div>`)
+      + (products.length ? `<div id="product-list" class="list">${products.map(p => `<div class="product" data-id="${esc(p.id)}">${swatch(biz.brand)}<div><b>${esc(p.name)}</b> <span class="badge ${p.status === 'active' ? 'ok' : ''}">${esc(p.status)}</span> ${sold(p)}<div class="meta">${[`${p.priceLabel ?? ''}${p.recurring ? ` / ${p.interval}` : ''}`, p.type ?? (p.goodKind === 'digital' ? 'digital' : ''), p.description ?? p.tagline ?? ''].filter(Boolean).map(esc).join(' · ')}</div></div><div class="acts">${p.goodStatus === 'active' && checkoutHref(p) ? `<a class="btn sm quiet" data-open-checkout target="_blank" rel="noopener" href="${esc(checkoutHref(p))}">Open checkout</a>` : ''}${p.status === 'active' ? iconBtn('pause', 'Archive', 'data-archive') : iconBtn('play', 'Activate', 'data-activate')}${iconBtn('trash', 'Remove', 'data-remove')}</div></div>`).join('')}</div>` : `<div id="product-list">${empty('No products yet', 'Add the first offer. The storefront shows it the moment it is active.')}</div>`)
       + section('Subscriptions', `<div class="grid-4">${[['Active', subs.length, 'recurring products'], ['Orders', orders.length, 'all time'], ['Needs attention', 0, ''], ['Ending soon', 0, '']].map(([l, v, s]) => `<div class="kpi"><b>${esc(String(v))}</b><span>${esc(l)}</span>${s ? `<small>${esc(s)}</small>` : ''}</div>`).join('')}</div>`)
       + `<p class="hint">A physical product sells through the checkout: the buyer pays on Stripe's page, the money goes to your Stripe account less a 0.5% fee, and the buyer comes back to your storefront. Other kinds take orders by email. On a test stack, Stripe's test card pays.</p>`;
     const byId = id => products.find(p => p.id === id);
@@ -91,4 +93,5 @@ export async function render(ctx) {
     };
   };
   await paint();
+  if (republishLater) { republishLater = false; republish(); }
 }
