@@ -24,14 +24,26 @@ export async function render(ctx) {
   const paint = async () => {
     const [products, orders, readiness] = await Promise.all([productsOf(biz), ordersOf(biz), payments.readiness().catch(() => ({ ready: false, blocks: ['unreadable'] }))]);
     const ready = !!readiness.ready;
-    const pending = products.filter(p => p.goodId && p.status === 'active' && p.goodStatus !== 'active');
+    // A product the co-founder wrote as a product file (`file`) is linked to the good the Drive indexed from it.
+    const unlinked = products.filter(p => p.file && !p.goodId);
+    if (unlinked.length) {
+      const bare = s => String(s ?? '').replace(/^\/+/, '');
+      const all = await goods.list().catch(() => []);
+      let linked = 0;
+      for (const p of unlinked) {
+        const g = all.find(g => g.file && bare(g.file) === bare(p.file));
+        if (g) { Object.assign(p, { goodId: g.id, variantId: g.variants?.[0]?.id ?? null, goodStatus: g.status, goodKind: g.kind }); linked++; }
+      }
+      if (linked) { await writeProducts(biz, products); if (!(ready && products.some(p => p.goodId && p.status === 'active' && p.goodStatus !== 'active'))) await republish(); }
+    }
+    const pending =products.filter(p => p.goodId && p.status === 'active' && p.goodStatus !== 'active');
     if (ready && pending.length) {
       for (const p of pending) await syncGood(p, 'active', ready);
       await writeProducts(biz, products);
       await republish();
     }
     const subs = products.filter(p => p.recurring && p.status === 'active');
-    const sold = p => p.goodId ? (p.goodStatus === 'active' ? '<span class="badge ok">checkout</span>' : '<span class="badge warn">checkout after payouts</span>') : '<span class="badge">order by email</span>';
+    const sold = p => p.goodId && p.goodKind !== 'digital' ? (p.goodStatus === 'active' ? '<span class="badge ok">checkout</span>' : '<span class="badge warn">checkout after payouts</span>') : '<span class="badge">order by email</span>';
     const checkoutHref = p => biz.site?.url ? `${biz.site.url.replace(/\/+$/, '')}/checkout.html?p=${encodeURIComponent(p.id)}` : null;
     el.innerHTML = head('Products', 'What your storefront sells. Every change publishes the storefront again.')
       + (ready ? '' : `<div class="note warn" id="payments-needed"><b>Connect payouts to take payment.</b> Your customers pay through the checkout into your own Stripe account. Until you connect it in <a href="${esc(ctx.tabHref('settings'))}">Settings</a>, the storefront takes orders by email. Nothing is charged.</div>`)
