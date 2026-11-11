@@ -60,9 +60,9 @@ After success the page goes to `?next=` or `/home/`.
 | the right panel | `#building` (the site's state `[data-site-state]`, the brand kit `[data-brand]`, needs you `[data-needs]`) |
 | dashboard | `#launch-week li[data-day]` (the current one `.today`), `#needs-call`, `#money .kpi`, `#autopilot` (a switch) |
 | tasks | `#approvals .task`, `#in-progress .task`, `#done .task`, `#routines .routine` with `[data-pause]`, `[data-resume]`, `[data-run]`, `[data-edit]`, `[data-cancel]`; `#new-routine` |
-| products | `#add-product`, `#p-name`, `#p-desc`, `#p-price`, `#p-type` (a select; subscription, service and course say "checkout soon"), `#p-how` (how buyers pay for the chosen type), `#p-recurring`, `#create-product`, `#product-list .product` with `[data-activate]`, `[data-archive]`, `[data-test-buy]`; the checkout `#checkout-dialog` (a `dialog`) with `[name=email]`, `[name=card]`, `[name=exp]`, `[name=cvc]`, `button[value=pay]`, `#copy-card` |
+| products | `#add-product`, `#p-name`, `#p-desc`, `#p-price`, `#p-type` (a select; subscription, service and course say "checkout soon"), `#p-how` (how buyers pay for the chosen type), `#p-recurring`, `#p-file` (a digital product's file), `#p-pictures .pick[data-path]` (a picture to choose, `[aria-pressed=true]` when chosen), `.pick-upload`, `#create-product`, `#product-list .product` with `[data-images]` (its pictures), `[data-open-page]`, `[data-open-checkout]`, `[data-activate]`, `[data-archive]`, `[data-test-buy]`; the checkout `#checkout-dialog` (a `dialog`) with `[name=email]`, `[name=card]`, `[name=exp]`, `[name=cvc]`, `button[value=pay]`, `#copy-card` |
 | orders | `#orders tbody tr` (a test order carries `.test` and the word Test) |
-| customers | `#customers tbody tr` |
+| customers | `#customers tbody tr` (a storefront sign-up's From cell says `updates`), `#signups-state` (why no sign-ups were read) |
 | email | `#claim` (no address yet), `#mail-soon` (a second business: its own address is Soon, `[data-notify=email-address]`), `#mail-address`, `#mail-folders [data-folder]`, `#mail-list .thread`, `#mail-thread`, `#mail-reply`, `#mail-compose` |
 | ads | `#ads-plan` (the form), `#ads-readiness li[data-ok]`, `#ads-recheck`, `#ads-ask`, `#ads-launch` (disabled, says Soon), `[data-notify=ads-launch]` |
 | studio | `#studio-tabs [data-view="make|month|library|brand|formats"]`, `#make-format`, `#make-prompt`, `#make-count`, `#make-go`, `#library .piece`, `#brand-book`; video formats (`short`, `clip`, `film`): `#make-aspect [data-aspect="9:16|1:1|16:9"]`, `#make-still` (clip, short), `#make-stills input[type=checkbox]` (film), `#make-still-upload`, `#make-caption` (short), `#make-endcard` (film), `#make-credits`; the renders `#studio-jobs .job[data-id][data-state="rendering|done|failed|interrupted"]` with `[data-step]`, `[data-elapsed]`, `[data-player] [data-play]` → `video`, `[data-retry]`; a video in the library: `#library .piece [data-play]` |
@@ -70,7 +70,7 @@ After success the page goes to `?next=` or `/home/`.
 | social | `#social-accounts .account` with `[data-connect]` (`.account[data-id=reddit]` says Soon), `#social-auto` (automatic publishing: Soon, `[data-notify=social-auto]`), `#compose-post`, `#posts .post`, `#social-view [data-view="calendar|list"]` |
 | files | `#file-search`, `#file-groups .group`, `.file-row` with `[data-open]`, `[data-copy]`, `#file-upload`, `#file-preview` |
 | legal | `#formation` (its state and the numbers), `#file-company` (disabled, says Soon), `[data-notify=company-filing]`, `#legal-pages a`; documents: `#legal-docs [data-doc=terms|privacy|refunds|contractor|nda|founders|llc|invoice|formation]` (the chosen one `[aria-pressed=true]`), `#legal-form` (each field `#legal-f-<key>`, e.g. `#legal-f-state`), `#legal-missing`, `#legal-pdf`, `#legal-save`, `#legal-use` (the storefront's three only), `#legal-status` ("Downloaded …", "Saved to Files: legal/<file>.pdf.", "Written to legal/<page>.html. …"), `#legal-preview` |
-| settings | `#autonomy` (a switch), `#briefing` (a select), `#plan`, `#domain-form` with `[name=hostname]`, `#secrets` with `#secret-name`, `#secret-value`, `#secret-save`, `#secret-list .secret`, `#runtime`, `#built-estimate`, `#members` with `#member-email`, `#member-role`, `#member-invite`, `.member` and `[data-revoke]`, `#delete-business` |
+| settings | `#autonomy` (a switch), `#briefing` (a select), `#plan`, `#brand-address` (the `<slug>.vibestartup.pro` address, once connected), `#domain-form` with `[name=hostname]`, `#secrets` with `#secret-name`, `#secret-value`, `#secret-save`, `#secret-list .secret`, `#runtime`, `#built-estimate`, `#members` with `#member-email`, `#member-role`, `#member-invite`, `.member` and `[data-revoke]`, `#delete-business` |
 | activity | `#activity .event` |
 | billing | `#credits-balance`, `#packs [data-buy]` (a credit pack's checkout), `#plans article[data-listing][data-open="1"|"0"]` (the listings; each shows its price "/ 30 days"; one not open says "opens December 8" and wears `.pill.soon`), `[data-hire=<listing id>]` (disabled until the listing is open), the confirm sheet `dialog#hire-sheet` with `#hire-terms`, `#hire-short [data-buy]` (short of credits) and `#hire-confirm`, `#plan-current`, `#contracts .contract[data-contract][data-status]` with `[data-sign]`, `[data-cancel]`, `[data-renew]`, `[data-accept]`, `[data-dispute]`, `#contracts-past`, `#credits-history tr`, `#dispute` |
 | profile | `#profile-name`, `#profile-email`, `#notif-push`, `#notif-email`, `#signout`, `#delete-account` |
@@ -84,3 +84,13 @@ A table (`table.table`) reflows on a phone: `console.js` writes each cell's colu
 
 Every destructive act is a trash icon with a tooltip, never red text. Every provider stop is a `.note.warn` that
 says which provider and that nothing was sent.
+
+## the storefront (`<site>/`, written by `lib/storefront.js`)
+
+| what | selector |
+|---|---|
+| a product | `#products .product` with `.media img` (its first picture, `srcset`, `loading=lazy`), `h2 a` (its page), `.buy` |
+| get updates | `#signup` with `[name=email]`, `[name=name]`, `[name=consent]`, `[name=website]` (a trap for bots), `.error`; `#updates .said` when it went through |
+| a product's page | `product/<id>.html`: `.gallery img`, `.thumbs a`, `.pp h1`, `.pp .price`, `.pp .buy`, `.fine` |
+| checkout | `#line`, `#pay` with `[name=email]` and `#ship` (the address; hidden for a download), `#error`, `#by-mail` |
+| the pages | `terms.html`, `privacy.html`, `refunds.html`, linked from every footer |
