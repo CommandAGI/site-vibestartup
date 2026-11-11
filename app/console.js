@@ -141,6 +141,8 @@ function bindChrome() {
   });
   // "ask your co-founder" links anywhere
   document.addEventListener('click', e => { const a = e.target.closest('[data-ask]'); if (a) { e.preventDefault(); ask(a.dataset.ask); } });
+  // An empty state's next step presses the control that does it (`data-press` names it).
+  document.addEventListener('click', e => { const b = e.target.closest('[data-press]'); if (b) $(b.dataset.press)?.click(); });
   addEventListener('hashchange', route);
 }
 
@@ -203,9 +205,9 @@ async function route() {
     $('[data-retry]', view).onclick = route;
   };
   const slow = setTimeout(() => {
-    const bars = $(':scope > .skeleton', view); if (!current() || !bars) return;
-    bars.insertAdjacentHTML('beforebegin', '<div class="loading"><span class="spin"></span><span>Still loading. CommandAGI is slow to answer.</span><button type="button" class="btn sm quiet" data-retry>Try again</button></div>');
-    $('[data-retry]', view).onclick = route;
+    if (!current()) return;
+    view.insertAdjacentHTML('afterbegin', '<div class="loading slow"><span class="spin"></span><span>Still loading. CommandAGI is slow to answer.</span><button type="button" class="btn sm quiet" data-retry>Try again</button></div>');
+    $('.slow [data-retry]', view).onclick = route;
   }, SLOW_MS);
   const name = state.page ?? state.tab;
   let out;
@@ -220,7 +222,7 @@ async function route() {
     if (current() && (!view.childElementCount || $(':scope > .skeleton', view))) failed(null);
   } catch (e) {
     if (current()) { console.error(e); failed(e); }
-  } finally { clearTimeout(slow); }
+  } finally { clearTimeout(slow); if (current()) $(':scope > .slow', view)?.remove(); }
   // A visit the founder already left stops what it started (a poll, a listener) at once.
   if (typeof out === 'function') { if (current()) state.cleanup = out; else out(); }
   if (current()) main.focus({ preventScroll: true });

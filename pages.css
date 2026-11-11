@@ -38,5 +38,7 @@
 
 @media (max-width: 600px) {
   .page-main { margin: 24px auto 48px; }
+  .page-head { padding: 0 16px; }
+  .page-head #who { display: none; }
   .auth-card { padding: 20px; }
 }

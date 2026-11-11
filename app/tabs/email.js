@@ -2,7 +2,7 @@
 import { email, threads } from '/lib/api.js';
 import { writeBusiness } from '/lib/business.js';
 import { $, $$, esc, icon, toast, modal, ago, when, oops, busy, slugify } from '/lib/ui.js';
-import { head, section, empty, iconBtn } from './_shared.js';
+import { head, section, empty, iconBtn, bars } from './_shared.js';
 
 const FOLDERS = [['all', 'All'], ['inbox', 'Inbox'], ['unread', 'Unread'], ['sent', 'Sent'], ['drafts', 'Drafts']];
 
@@ -42,7 +42,7 @@ export async function render(ctx) {
   const openThread = async tid => {
     state.open = tid;
     const box = $('#mail-thread', el);
-    box.innerHTML = '<p class="hint">Loading…</p>';
+    box.innerHTML = bars(1);
     try {
       const r = await email.thread(biz.email.id, tid);
       email.read(biz.email.id, tid).catch(() => null);

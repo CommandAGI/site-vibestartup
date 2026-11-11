@@ -3,7 +3,7 @@
 import { drive, generate } from '/lib/api.js';
 import { folderOf, readBizJson } from '/lib/business.js';
 import { $, $$, esc, icon, toast, oops, busy, ago, bytes } from '/lib/ui.js';
-import { head, section, productsOf, settingsOf, writeSettings, empty, iconBtn } from './_shared.js';
+import { head, section, productsOf, settingsOf, writeSettings, empty, iconBtn, bars } from './_shared.js';
 
 const FORMATS = [
   { id: 'offer', name: 'Offer image', about: 'A branded image with your offer, sized for every placement.', sizes: '9:16, 4:5, 1:1, 2:3, 1.91:1', takes: 'about a minute', low: 3, high: 5, ready: true },
@@ -24,7 +24,7 @@ export async function render(ctx) {
   const studioPath = `${folderOf(biz.slug)}/studio`;
   const paint = async () => {
     el.innerHTML = head('Studio', 'Everything your co-founder makes for you, and everything you make yourself.')
-      + `<div class="subtabs" id="studio-tabs">${VIEWS.map(([id, l]) => `<button type="button" data-view="${id}" aria-pressed="${state.view === id}">${l}</button>`).join('')}</div><div id="studio-view"><p class="hint">Loading…</p></div>`;
+      + `<div class="subtabs" id="studio-tabs">${VIEWS.map(([id, l]) => `<button type="button" data-view="${id}" aria-pressed="${state.view === id}">${l}</button>`).join('')}</div><div id="studio-view">${bars(1)}</div>`;
     $$('[data-view]', el).forEach(b => b.onclick = () => { state.view = b.dataset.view; paint(); });
     const v = $('#studio-view', el);
     if (state.view === 'make') await make(v); else if (state.view === 'month') await month(v); else if (state.view === 'library') await library(v); else if (state.view === 'brand') await brand(v); else formats(v);
@@ -63,7 +63,7 @@ export async function render(ctx) {
   };
   const library = async v => {
     const files = (await drive.list(studioPath).catch(() => [])).filter(f => f.type !== 'folder').sort((a, b) => (b.updatedAt ?? b.createdAt ?? 0) - (a.updatedAt ?? a.createdAt ?? 0));
-    v.innerHTML = files.length ? `<div class="grid-auto" id="library">${files.map(f => `<div class="piece card" data-id="${esc(f.id)}"><div class="pic"></div><b>${esc(f.name)}</b><small class="hint">${esc(ago(f.updatedAt ?? f.createdAt ?? Date.now()))}${f.size ? ` · ${esc(bytes(f.size))}` : ''}</small><div class="row">${iconBtn('download', 'Download', 'data-download')}</div></div>`).join('')}</div>` : `<div id="library">${empty('Nothing made yet', 'Make something, or ask your co-founder for an offer image.')}</div>`;
+    v.innerHTML = files.length ? `<div class="grid-auto" id="library">${files.map(f => `<div class="piece card" data-id="${esc(f.id)}"><div class="pic"></div><b>${esc(f.name)}</b><small class="hint">${esc(ago(f.updatedAt ?? f.createdAt ?? Date.now()))}${f.size ? ` · ${esc(bytes(f.size))}` : ''}</small><div class="row">${iconBtn('download', 'Download', 'data-download')}</div></div>`).join('')}</div>` : `<div id="library">${empty('Nothing made yet', 'Make something, or ask your co-founder for an offer image.', '<button type="button" class="btn quiet" data-press="#studio-tabs [data-view=make]">Make something</button>')}</div>`;
     for (const p of $$('.piece', v)) {
       const f = files.find(x => x.id === p.dataset.id);
       if (/^image\//.test(f.contentType ?? '')) { const url = await drive.blobUrl(f.id); if (url) $('.pic', p).innerHTML = `<img src="${url}" alt="">`; }

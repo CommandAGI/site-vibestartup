@@ -12,6 +12,9 @@ export const iconBtn = (name, label, attrs = '') => `<button type="button" class
 export const askLink = (question, label = 'ask your co-founder') => `<a href="#" data-ask="${esc(question)}">${esc(label)}</a>`;
 /** A feature that needs the founder's own provider account stops here, and says so. */
 export const providerStop = (provider, what) => `<div class="note warn"><b>Connect ${esc(provider)} first.</b> ${esc(what)} Nothing was sent or charged.</div>`;
+/** Grey bars where a part of a tab will be, while its call runs. */
+export const bars = (blocks = 2) => `<div class="skeleton" role="status" aria-label="Loading"><i></i><i class="short"></i>${'<i class="block"></i>'.repeat(blocks)}</div>`;
+/** Nothing here yet: what the place is for (`text`, HTML) and the next step (`extra`, a button or a link). */
 export const empty = (title, text, extra = '') => `<div class="empty"><h3>${esc(title)}</h3><p>${text}</p>${extra}</div>`;
 
 // ---------- the business's files ----------

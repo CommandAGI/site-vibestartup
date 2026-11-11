@@ -27,9 +27,9 @@ body.console { background: var(--canvas); font-size: 14px; display: grid; grid-t
 .credits:hover { background: var(--surface-2); color: var(--ink); }
 .credits[aria-current] { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
 .credits b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
-.account { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 0 16px; border: 0; border-top: 1px solid var(--line); background: transparent; text-align: left; }
+.rail .account { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 0 16px; border: 0; border-top: 1px solid var(--line); background: transparent; text-align: left; }
 .rail-close { display: none; }
-.account:hover { background: var(--surface-2); }
+.rail .account:hover { background: var(--surface-2); }
 .me-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .frame { display: grid; grid-template-rows: 56px 1fr; grid-template-columns: 1fr; min-width: 0; min-height: 100vh; }
@@ -134,12 +134,23 @@ body.console[data-panel="1"] .frame { grid-template-columns: 1fr 320px; }
 .file-row .name { font-weight: 500; }
 .file-row .meta { color: var(--ink-3); font-size: 12px; }
 .file-row .acts { display: flex; gap: 2px; }
+#file-groups { display: grid; gap: 16px; align-content: start; }
+#file-groups .group { background: var(--surface); border: 1px solid var(--line); }
+#file-groups .group h4 { padding: 8px 12px; background: var(--surface-2); border-bottom: 1px solid var(--line); font-size: 13px; }
+#file-groups .group .file-row:last-child { border-bottom: 0; }
 #file-preview { white-space: pre-wrap; font-family: var(--mono); font-size: 13px; max-height: 480px; overflow: auto; }
 #file-preview img { max-height: 420px; width: auto; }
 .files-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
 
 /* mail */
 .mail-layout { display: grid; grid-template-columns: 160px minmax(0, 1fr) minmax(0, 1.4fr); gap: 16px; min-height: 420px; }
+.mail-folders { background: var(--surface); border: 1px solid var(--line); align-self: start; }
+.mail-folders .field { padding: 8px; }
+#mail-list { background: var(--surface); border: 1px solid var(--line); align-self: start; }
+#mail-list .empty, #mail-thread .empty { border: 0; }
+.routine .row { flex-wrap: nowrap; }
+.routine .row b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#social-accounts .account { display: grid; gap: 6px; justify-items: start; align-content: start; }
 .mail-folders button { display: block; width: 100%; min-height: 36px; text-align: left; padding: 8px 12px; border: 0; background: transparent; color: var(--ink-2); }
 .mail-folders button:hover { background: var(--surface-2); color: var(--ink); }
 .mail-folders button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-deep); box-shadow: inset 2px 0 0 var(--accent); }
@@ -165,7 +176,7 @@ body.console[data-panel="1"] .frame { grid-template-columns: 1fr 320px; }
 .event .meta { color: var(--ink-3); }
 .event .text { white-space: pre-wrap; overflow-wrap: anywhere; }
 .plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.plans article { padding: 20px; display: grid; gap: 10px; }
+.plans article { padding: 20px; display: grid; gap: 10px; align-content: start; grid-template-rows: auto auto auto 1fr auto; }
 .plans .price { font-size: 20px; font-weight: 600; }
 .plans ul { margin: 0; padding-left: 18px; color: var(--ink-2); display: grid; gap: 4px; }
 .calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
@@ -207,7 +218,7 @@ body.console .toasts { left: auto; right: 20px; transform: none; }
 @media (min-width: 761px) and (max-width: 900px) {
   body.console { grid-template-columns: 64px 1fr; }
   .biz-name, .search-btn span, .search-btn kbd, .tabs .group, .tabs a span, .credits span, .me-name { display: none; }
-  .biz-switch, .search-btn, .tabs a, .credits, .account { justify-content: center; padding: 0; }
+  .biz-switch, .search-btn, .tabs a, .credits, .rail .account { justify-content: center; padding: 0; }
   .tabs a { min-height: 44px; }
   .tabs a .count { position: absolute; top: 4px; right: 8px; margin: 0; }
 }
@@ -250,7 +261,7 @@ body.console .toasts { left: auto; right: 20px; transform: none; }
   /* a table reflows: each row is a block, each cell a line that names its column (console.js labels the cells) */
   .table, .table tbody, .table tr, .table td { display: block; }
   .table thead { display: none; }
-  .table tr { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .table tr { padding: 10px 14px; border-bottom: 1px solid var(--line); }
   .table tr:last-child { border-bottom: 0; }
   .table td, .table tr:last-child td { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 12px; padding: 3px 0; border: 0; overflow-wrap: anywhere; }
   .table td::before { content: attr(data-label); color: var(--ink-3); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; padding-top: 2px; }
@@ -261,7 +272,10 @@ body.console .toasts { left: auto; right: 20px; transform: none; }
   .file-row { grid-template-columns: 20px minmax(0, 1fr) auto; }
   .file-row .name { overflow-wrap: anywhere; white-space: normal; }
   .kpi b { font-size: 20px; }
-  .mail-folders { display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+  .mail-folders { display: flex; flex-wrap: wrap; }
+  .routine .row { flex-wrap: wrap; }
+  .routine .row b { flex: 1 1 100%; white-space: normal; }
+  .routine .row .right { display: none; }
   .mail-folders button { white-space: nowrap; width: auto; min-height: 44px; }
   .mail-folders button[aria-pressed="true"] { box-shadow: inset 0 -2px 0 var(--accent); }
   .mail-folders .field { flex: 1 0 100%; margin-top: 0 !important; }

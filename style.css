@@ -148,9 +148,9 @@ img, svg, video { display: block; max-width: 100%; }
 .badge.bad { background: var(--bad-soft); color: var(--bad); }
 .badge.accent { background: var(--accent-soft); color: var(--accent-deep); }
 .badge.cofounder { background: var(--cofounder-soft); color: var(--cofounder); }
-.table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.table th { text-align: left; font-weight: 500; color: var(--ink-2); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; padding: 8px 10px; border-bottom: 1px solid var(--line); }
-.table td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--surface); border: 1px solid var(--line); }
+.table th { text-align: left; font-weight: 500; color: var(--ink-2); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; padding: 8px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.table td { padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .table tr:last-child td { border-bottom: 0; }
 .table tbody tr:hover td { background: var(--surface-2); }
 .table .num { text-align: right; font-variant-numeric: tabular-nums; }
@@ -161,7 +161,10 @@ img, svg, video { display: block; max-width: 100%; }
 .avatar { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--surface-2); color: var(--ink-2); font-weight: 600; font-size: 13px; flex: none; }
 .avatar.cofounder { background: var(--cofounder-soft); color: var(--cofounder); box-shadow: 0 0 0 2px var(--cofounder); }
 .avatar.lg { width: 44px; height: 44px; font-size: 16px; }
-.empty { padding: 40px 20px; text-align: center; color: var(--ink-2); display: grid; gap: 10px; justify-items: center; }
+/* nothing here yet: what this place is for, and the one next step */
+.empty { padding: 40px 20px; text-align: center; color: var(--ink-2); display: grid; gap: 10px; justify-items: center; background: var(--surface); border: 1px solid var(--line); }
+.empty p { max-width: 52ch; }
+.empty .btn { margin-top: 6px; }
 .empty h3 { color: var(--ink); }
 .kpi { display: grid; gap: 4px; padding: 16px; border: 1px solid var(--line); background: var(--surface); }
 .kpi b { font-size: 24px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
