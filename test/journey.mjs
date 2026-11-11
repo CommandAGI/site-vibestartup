@@ -34,6 +34,15 @@ if (!base) {
   console.log(`site ${base} · API ${local.api}`);
 }
 
+/** The wizard's build ends in the console. Over 2 minutes is a problem to fix (production took 3 to 6 on 2026-11-11),
+ *  but the journey waits up to 7 so the steps after it are still checked. */
+async function built(b, label) {
+  const t0 = Date.now();
+  await b.waitFor('location.pathname === "/app/" && location.search.includes("b=")', 420000);
+  const s = Math.round((Date.now() - t0) / 1000);
+  check(s <= 120, `${label}: the business was built in ${s} s (over 120 s)`);
+}
+
 async function run(browser, width) {
   const label = `@${width}`;
   const email = `journey-${stamp}-${width}@example.com`;
@@ -108,7 +117,7 @@ async function run(browser, width) {
   await b.waitFor('document.querySelector("#wizard")?.dataset.step === "building"', 10000);
   await b.waitFor('document.querySelectorAll("#building li[data-done]").length >= 1', 60000);
   await b.shot(`building-${width}`);
-  await b.waitFor('location.pathname === "/app/" && location.search.includes("b=")', 180000);
+  await built(b, label);
 
   // 4. The console: the co-founder says hello (a real model reply), and the right panel reports the build.
   await b.waitFor('!!document.querySelector(".chat")', 30000);
@@ -343,7 +352,7 @@ async function run(browser, width) {
   for (let i = 0; i < 7; i++) { await b.click('#continue'); await sleep(250); }
   await b.waitFor('document.querySelector("#wizard")?.dataset.step === "updates"', 10000);
   await b.click('#continue');
-  await b.waitFor('location.pathname === "/app/" && location.search.includes("b=")', 180000);
+  await built(b, label);
   await b.goto(`${base}/home/`);
   await b.waitFor('document.querySelectorAll(".biz-card[data-slug]").length >= 2', 30000);
   check(await b.eval('document.querySelectorAll(".biz-card[data-slug]").length') >= 2, `${label}: home shows two businesses`);
