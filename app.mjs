@@ -34,7 +34,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === '/brand.js') {
       return new Response(brandScript(url.host, env), {
-        headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-store' },
+        headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=300' },
       });
     }
     // A console address with a query, or a folder path, is a static page: site hosting serves the files first, so

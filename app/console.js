@@ -151,27 +151,36 @@ async function route() {
 async function init() {
   if (!signedIn()) return renderSignedOut();
   bindChrome();
+  // Every first read starts at once: the account, the founder, the credits and the business in the address. The
+  // whole list (the switcher, search) loads behind it; the console waits on it only when no business is named.
+  const slug = params().get('b');
+  const uid = auth()?.userId;
+  const meP = whoami(), founderP = uid ? user(uid).catch(() => null) : null;
+  const bizP = slug ? readBusiness(slug).then(b => ({ b }), e => ({ e })) : null;
+  const listP = listBusinesses().catch(() => []);
+  refreshCredits();
   try {
-    state.me = await whoami();
+    state.me = await meP;
     if (state.me?.exists === false) { await signOut().catch(() => null); return renderSignedOut(); }
   } catch (e) {
     if (e.status === 401 || !auth()) return renderSignedOut();
     $('#main').innerHTML = `<div class="empty"><h3>CommandAGI did not answer</h3><p>${esc(oops(e))}</p><button class="btn quiet" id="retry">Try again</button></div>`;
     $('#retry').onclick = init; return;
   }
-  state.founder = await user(state.me.id).catch(() => ({ id: state.me.id, name: '', email: '' }));
-  refreshCredits();
-  state.businesses = await listBusinesses().catch(() => []);
-  const slug = params().get('b');
+  state.founder = (await (founderP && uid === state.me.id ? founderP : user(state.me.id).catch(() => null))) ?? { id: state.me.id, name: '', email: '' };
+  state.businesses = [];
+  listP.then(list => { state.businesses = list; renderIdentity(); });
   if (!slug) {
-    if (!state.businesses.length) { location.replace('/start/'); return; }
-    location.replace(tabHref(hashParams().get('tab') || 'chat', state.businesses[0].slug)); return;
+    const list = await listP;
+    if (!list.length) { location.replace('/start/'); return; }
+    location.replace(tabHref(hashParams().get('tab') || 'chat', list[0].slug)); return;
   }
-  try { state.biz = state.businesses.find(b => b.slug === slug) ?? await readBusiness(slug); }
-  catch (e) {
-    $('#main').innerHTML = `<div class="empty"><h3>That business is not in your account</h3><p>${esc(oops(e))}</p><a class="btn quiet" href="/home/">Your businesses</a></div>`;
+  const got = await bizP;
+  if (got.e) {
+    $('#main').innerHTML = `<div class="empty"><h3>That business is not in your account</h3><p>${esc(oops(got.e))}</p><a class="btn quiet" href="/home/">Your businesses</a></div>`;
     renderRail(); renderIdentity(); return;
   }
+  state.biz = got.b;
   renderIdentity();
   refreshNeeds();
   await route();
