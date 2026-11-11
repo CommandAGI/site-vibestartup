@@ -2,3 +2,7 @@
 node_modules/
 redesign/raw/
 .wrangler/
+# Secrets and account facts: the .env cascade, never committed (.env.example lists the names).
+.env
+.env.*
+!.env.example
