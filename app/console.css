@@ -317,3 +317,6 @@ body.console .toasts { left: auto; right: 20px; transform: none; }
 @media (max-width: 340px) {
   .week, .grid-4 { grid-template-columns: 1fr; }
 }
+
+/* A secret is typed masked in a text field: a password field draws the browser's saved logins into it. */
+.masked { -webkit-text-security: disc; text-security: disc; }
