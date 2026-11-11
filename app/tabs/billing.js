@@ -24,7 +24,7 @@ const usd = n => `$${num(n)}`;
 export async function render(ctx) {
   const { el, founder } = ctx;
   const [balance, history] = await Promise.all([credits().catch(() => null), creditsHistory().catch(() => ({ entries: [] }))]);
-  const entries = history.entries ?? history.history ?? [];
+  const entries = history?.entries ?? history?.history ?? [];
   const back = new URLSearchParams(location.search);
   el.innerHTML = head('Billing', `Signed in as ${esc(founder?.email ?? '')}. Your customers pay you through your own Stripe account; this page is what you pay for your co-founder's work.`)
     + (back.get('checkout') ? `<div class="note ok">Thank you. Your credits arrive as soon as Stripe confirms the payment.</div>` : '')
