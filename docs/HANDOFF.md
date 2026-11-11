@@ -14,9 +14,20 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
 - The look is CommandAGI's shape language (2026-11-11, owner): square controls, wall-to-wall selection bands, only
   floats rounded, a phone drawer and bottom bar (`docs/DESIGN.md`; `test/edges.mjs` checks it at every screenshot).
 - Payments: a founder's customers pay through CommandAGI's Connect checkout (Settings → Payments onboards a Stripe
-  Express account). A physical product is a good; a digital good is ordered by email until the checkout sells digital
-  goods to guests. The co-founder adds products as product files (`productsRule` in `lib/business.js`); the Products
-  tab links them to their goods.
+  Express account). A physical product is a good, and so is a digital product with its file (`products/files/`). What a
+  guest can buy is read at run time (`guestCheckout`, `lib/storefront.js`): the platform's `store` flag (off on
+  production for visitors: every good is ordered by email until it is on, below), and whether the checkout sells a
+  download to a guest (`email_required` vs `account_required`). The storefront is written from the answer, and its
+  checkout falls back to email on either refusal. The co-founder adds products as product files (`productsRule` in
+  `lib/business.js`); the Products tab links them to their goods.
+- The storefront (`lib/storefront.js`), 2026-11-11 against production's API with a throwaway account (erased): product
+  pictures chosen in Products from the Studio library, made into 480/960/1600 px WebP in the browser and served with
+  `srcset` and `loading=lazy`; a page per product (`product/<id>.html`: gallery, thumbnails, description, price, buy);
+  "Get updates" recorded by the storefront's own server module in the site's KV with the consent words, then listed in
+  Customers and copied into `customers/customers.json`; the business's own `legal/terms.html` published in place of
+  the default, default privacy and refunds pages otherwise; no sideways scroll at 390 and 1440. The checkout stopped
+  at "order by email" (the `store` flag is off, and a new account's goods are drafts until payouts), so Stripe's page
+  was not reached.
 - Billing sells CommandAGI's credit packs through Stripe Checkout and hires the three listings (Co-founder $39, Growth
   $29, Studio $29 for 30 days) through a service contract proposed from the business's co-founder thread
   (`docs/ARCHITECTURE.md` § hiring). Until a listing is open (2026-12-08) its Hire button is disabled with a Soon pill.
@@ -32,9 +43,9 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
 
 - **CommandAGI, started 2026-11-11 by the VibeStartup session's agent:** a brand's own origin for checkout, portal and
   Connect onboarding returns (today a pack's checkout returns to commandagi.com: Billing asks for this origin and falls
-  back), and a guest's paid digital good delivered by an emailed download link. When it reaches production: Billing's
-  fallback goes, Settings → Payments passes this origin, and the storefront sells digital goods through the checkout
-  (`storefrontFiles` `sellable`, `app/tabs/products.js` `sold`).
+  back), and a guest's paid digital good delivered by an emailed download link (github/main 46c73e0). When it reaches
+  production: Billing's fallback goes and Settings → Payments passes this origin. The storefront needs no change for
+  downloads: the console reads the API's answer (`guestCheckout`) and publishes the storefront again when it changes.
 
 ## left to do
 
@@ -74,6 +85,15 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
 - **Existing storefronts keep their rounded stylesheet** until they are published again (any product change in the
   console publishes it).
 - `brand/og.html` and `og.png` still show the rounded look; the storefront falls back to the system font.
+- **The storefront's checkout has not reached Stripe's page** on any stack since it was written: on production the
+  `store` flag refuses a visitor's cart (`feature_off`). Once the owner turns it on (below), a run with a founder whose
+  payouts are ready should buy a physical good to Stripe's page, and a download with only an email once 46c73e0 is
+  deployed.
+- **The brand address is ready in the app, not in DNS** (below). Until the record exists nothing is offered; the
+  storefront's own address stays `<slug>.commandagi.app`.
+- **Sign-ups have no unsubscribe link yet.** The consent says "I can stop them at any time"; today that is a reply to
+  the business address and the founder removing the row (`DELETE /api/signups?email=` on the storefront, with the
+  read key, is there; no button calls it). Sending updates is Outbound's job and should carry the link.
 - `lib/api.js` has no fetch timeout; a hung call shows the tab's "still loading, Try again" banner after 10 s.
 
 ## for the owner
@@ -89,6 +109,31 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   pnpm commandagi sites env vibestartup rm COFOUNDER_MODEL
   ```
 
+- **Open the store to guests.** CommandAGI's `store` flag (`/commerce/*`, `packages/domain/world/flags.js`) is off on
+  production, so every storefront's checkout answers `feature_off` to its buyers and the storefronts take orders by
+  email. It is a money decision, so it is yours: `node scripts/release/flags.mjs --env prod set store on` in a
+  CommandAGI checkout (`docs/feature-flags.md` § changing a flag). The storefronts follow at their next publish (the
+  console publishes again when it sees the change).
+- **`<slug>.vibestartup.pro` for every storefront.** CommandAGI's site hosting serves a custom hostname per site
+  (Cloudflare for SaaS on the `commandagi.app` zone, `POST /sites/:id/domains`); one record in the vibestartup.pro zone
+  routes every name at once. The app is ready: at a publish or a Settings visit it asks public DNS whether
+  `<site slug>.vibestartup.pro` CNAMEs to `*.commandagi.app`, adds that hostname to the site, and Settings shows it
+  (`#brand-address`) with its state; once it is active the storefront's links use it. Two steps, in this order:
+  1. **First, a guard in CommandAGI** (not built: this session could not change CommandAGI). With the wildcard in
+     place, Cloudflare validates any custom hostname under vibestartup.pro by HTTP, so any CommandAGI account could
+     put its own site at `anything.vibestartup.pro`. `addCustomDomain` (`api-worker src/routes/sites.ts`) should
+     refuse a hostname under a brand's zone unless the caller's token is that brand's platform-owned client
+     (`vibestartup`) and the label is the site's own slug, with a boundary test (another account, another client, a
+     label that is not the slug).
+  2. **Then the record**, in the Cloudflare account that holds vibestartup.pro (DNS → Records → Add record):
+
+     | Type | Name | Target | Proxy status | TTL |
+     |---|---|---|---|---|
+     | CNAME | `*` | `cname.commandagi.app` | DNS only (grey cloud) | Auto |
+
+     It changes nothing else: the apex, `www` and every name that has a record of its own (the mail's MX, SPF, DKIM,
+     DMARC, Resend's `send`, Email Routing) keep theirs, because a wildcard answers only names with no record. Check:
+     `dig +short CNAME anything.vibestartup.pro` answers `cname.commandagi.app.`; then open a business's Settings.
 - **vibestartup.us** now shows this app too: its domain was already on the site. Its Google Workspace mail is
   unchanged.
 - **Prices, the paid providers and the launch.** The pages say "set at launch". Payments, ads, social posting and
