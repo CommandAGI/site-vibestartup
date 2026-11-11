@@ -175,5 +175,4 @@ grants the credits); before the launch it checks the disabled state instead.
 | `storefront/` | the storefront files VibeStartup writes into a business's site folder |
 | `test/local.mjs`, `test/journey.mjs`, `test/browser.mjs` | the local run (static files + a local CommandAGI platform) and the journey |
 | `test/studio-video.mjs` | a real short video from a fresh account (one paid Kling clip), the tab left and the page reloaded, the library's player, the film's stitch; the account erased |
-
 | `test/hire.mjs` | hiring the co-founder from a blank account (§ hiring) |
