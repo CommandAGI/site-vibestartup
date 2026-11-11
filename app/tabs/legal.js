@@ -21,7 +21,7 @@ const CSS = `
 .legal-edit form{padding:16px}
 .legal-edit .field input,.legal-edit .field select,.legal-edit .field textarea{font-size:14px}
 .legal-acts{display:grid;gap:8px;margin-top:4px}
-.legal-paper{--brand:#333;background:#fff;color:#17161a;border:1px solid var(--line);padding:0 40px 40px;font-family:Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;max-height:calc(100vh - 120px);overflow:auto;position:sticky;top:72px;border-top:5px solid var(--brand)}
+.legal-paper{--brand:#333;background:#fff;color:#17161a;border:1px solid var(--line);padding:0 40px 40px;font-family:'Times New Roman',Times,Georgia,serif;font-size:13px;line-height:1.5;max-height:calc(100vh - 120px);overflow:auto;position:sticky;top:72px;border-top:5px solid var(--brand)}
 .legal-paper .paper-head{display:flex;align-items:center;gap:10px;padding:18px 0 14px;border-bottom:1px solid #e3e1dc;margin-bottom:28px}
 .legal-paper .paper-head img{width:24px;height:24px}
 .legal-paper .paper-head b{font-size:13px}
