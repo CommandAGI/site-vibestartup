@@ -92,14 +92,15 @@ export async function reject(biz, t, why = '') {
 export const everyWords = s => s >= 604800 ? 'weekly' : s >= 86400 ? 'daily' : s >= 43200 ? 'every 12 hours' : s >= 21600 ? 'every 6 hours' : s >= 3600 ? 'hourly' : s >= 1800 ? 'every 30 minutes' : `every ${s} s`;
 export const INTERVALS = [['1800', 'Every 30 minutes'], ['3600', 'Hourly'], ['21600', 'Every 6 hours'], ['43200', 'Every 12 hours'], ['86400', 'Daily'], ['604800', 'Weekly']];
 
-/** The site's state, read once per tab render. */
+/** The site's state, read once per tab render. `url` is where the storefront answers: its vibestartup.pro address
+ *  (`site.brandUrl`) when CommandAGI names one, else its commandagi.app address. */
 export async function siteState(biz) {
   if (!biz.site?.id) return { live: false, gap: biz.gaps?.find(g => g.what === 'site')?.why ?? 'The storefront was not created yet.' };
   try {
     const r = await sites.get(biz.site.id);
     const deployments = r.deployments ?? [];
     const live = r.site?.live ?? r.site?.liveDeploymentId ?? null;
-    return { live: !!live || deployments.some(d => d.target === 'production' && (d.status === 'live' || d.status === 'ready' || d.status === 'succeeded')), site: r.site, deployments, domains: r.domains ?? [], env: r.env ?? [], url: r.site?.url ?? biz.site.url };
+    return { live: !!live || deployments.some(d => d.target === 'production' && (d.status === 'live' || d.status === 'ready' || d.status === 'succeeded')), site: r.site, deployments, domains: r.domains ?? [], env: r.env ?? [], url: r.site?.brandUrl ?? r.site?.url ?? biz.site.brandUrl ?? biz.site.url };
   } catch (e) { return { live: false, gap: e.message }; }
 }
 

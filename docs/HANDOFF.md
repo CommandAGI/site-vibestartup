@@ -114,26 +114,15 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   email. It is a money decision, so it is yours: `node scripts/release/flags.mjs --env prod set store on` in a
   CommandAGI checkout (`docs/feature-flags.md` § changing a flag). The storefronts follow at their next publish (the
   console publishes again when it sees the change).
-- **`<slug>.vibestartup.pro` for every storefront.** CommandAGI's site hosting serves a custom hostname per site
-  (Cloudflare for SaaS on the `commandagi.app` zone, `POST /sites/:id/domains`); one record in the vibestartup.pro zone
-  routes every name at once. The app is ready: at a publish or a Settings visit it asks public DNS whether
-  `<site slug>.vibestartup.pro` CNAMEs to `*.commandagi.app`, adds that hostname to the site, and Settings shows it
-  (`#brand-address`) with its state; once it is active the storefront's links use it. Two steps, in this order:
-  1. **First, a guard in CommandAGI** (not built: this session could not change CommandAGI). With the wildcard in
-     place, Cloudflare validates any custom hostname under vibestartup.pro by HTTP, so any CommandAGI account could
-     put its own site at `anything.vibestartup.pro`. `addCustomDomain` (`api-worker src/routes/sites.ts`) should
-     refuse a hostname under a brand's zone unless the caller's token is that brand's platform-owned client
-     (`vibestartup`) and the label is the site's own slug, with a boundary test (another account, another client, a
-     label that is not the slug).
-  2. **Then the record**, in the Cloudflare account that holds vibestartup.pro (DNS → Records → Add record):
-
-     | Type | Name | Target | Proxy status | TTL |
-     |---|---|---|---|---|
-     | CNAME | `*` | `cname.commandagi.app` | DNS only (grey cloud) | Auto |
-
-     It changes nothing else: the apex, `www` and every name that has a record of its own (the mail's MX, SPF, DKIM,
-     DMARC, Resend's `send`, Email Routing) keep theirs, because a wildcard answers only names with no record. Check:
-     `dig +short CNAME anything.vibestartup.pro` answers `cname.commandagi.app.`; then open a business's Settings.
+- **`<slug>.vibestartup.pro` for every storefront** (owner decision 2026-11-11). CommandAGI records a site made
+  through VibeStartup's sign-in as VibeStartup's (`sites.brand`) and answers the public `GET /sites/brand/:slug`;
+  the edge Worker `edge/subdomains.js`, in the Cloudflare account that holds vibestartup.pro, proxies
+  `<slug>.vibestartup.pro` to `<slug>.commandagi.app` for such a site only, and answers every other name with the
+  branded 404. The console shows `site.brandUrl` and the storefront's canonical links name it. Two steps are
+  yours: CommandAGI's next production deploy (it carries the lookup), and the Worker in the dashboard
+  (`edge/README.md` § deploy: the Worker `vibestartup-subdomains`, the route `*.vibestartup.pro/*`, no binding;
+  remove today's "no startup here yet" Worker's route). Deploying the Worker first is safe: until the lookup is on
+  production it answers 404 for every label.
 - **vibestartup.us** now shows this app too: its domain was already on the site. Its Google Workspace mail is
   unchanged.
 - **Prices, the paid providers and the launch.** The pages say "set at launch". Payments, ads, social posting and

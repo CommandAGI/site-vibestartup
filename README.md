@@ -43,6 +43,7 @@ what is open, and what is left).
 | `test/legal-pdf.mjs` | every Legal template as a PDF from a sample business, to open and check (`pdfinfo`, `pdftotext`, `pdftoppm`) |
 | `test/journey.mjs`, `test/browser.mjs` | the journey from a blank account, in Chrome over the DevTools protocol |
 | `test/hire.mjs` | hiring the co-founder from a blank account (docs/ARCHITECTURE.md § hiring) |
+| `edge/subdomains.js`, `edge/README.md` | the Worker of the vibestartup.pro zone that serves every business at `<site slug>.vibestartup.pro`, and its deploy steps |
 | `site.json` | the site's manifest |
 
 ## running it here
@@ -52,6 +53,7 @@ node test/local.mjs --api https://api-dev.commandagi.com --port 4180   # the pag
 COMMANDAGI_ROOT=<a CommandAGI checkout> COMMANDAGI_ENV_ROOT=<the checkout with .env> node test/local.mjs --port 4180
                                                                        # the pages against a local platform it starts
 node test/journey.mjs                                                  # the journey, against a local platform
+node edge/subdomains.test.mjs                                          # the edge Worker, its lookup and origin faked
 node test/legal-pdf.mjs [dir] [--blank]                                # every Legal template as a PDF (.test-results/legal)
 node test/journey.mjs --url https://vibestartup.commandagi.app         # the same journey, deployed
 VS_ADMIN_KEY=<a staff key of dev> node test/hire.mjs --api https://api-dev.commandagi.com

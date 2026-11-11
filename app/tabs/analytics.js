@@ -22,7 +22,7 @@ export async function render(ctx) {
       + (quiet ? section('It is quiet', `<div class="note">Your site is quiet. Two ways to change that: <button type="button" class="btn sm quiet" id="share-link">Share your link</button> or <a class="btn sm quiet" href="${esc(ctx.tabHref('ads'))}">plan a small ad test</a>.</div>`) : '')
       + section('Recent activity', `<div class="list">${(a?.series ?? a?.buckets ?? []).slice(-14).map(b => `<div class="row"><span class="mono">${esc(when(b.at ?? b.t ?? b.time ?? Date.now()))}</span><span>${esc(num(b.requests ?? b.count ?? 0))} requests</span>${b.errors ? `<span class="badge bad">${esc(num(b.errors))} errors</span>` : ''}</div>`).join('') || '<p class="muted">No activity in the window.</p>'}</div>`)
       + section('The site', `<p class="muted">${st.gap ? esc(st.gap) : `<a href="${esc(st.url)}" target="_blank" rel="noopener">${esc(st.url)}</a> ${st.live ? '<span class="badge ok">live</span>' : '<span class="badge warn">not live</span>'}`}</p>`);
-    $('#share-link', el)?.addEventListener('click', () => copy(biz.site.url, 'Link copied'));
+    $('#share-link', el)?.addEventListener('click', () => copy(st.url ?? biz.site.url, 'Link copied'));
   };
   $('#an-refresh').onclick = paint;
   await paint();
