@@ -66,7 +66,7 @@ After success the page goes to `?next=` or `/home/`.
 | legal | `#formation` (its state and the numbers), `#legal-pages a` |
 | settings | `#autonomy` (a switch), `#briefing` (a select), `#plan`, `#domain-form` with `[name=hostname]`, `#secrets` with `#secret-name`, `#secret-value`, `#secret-save`, `#secret-list .secret`, `#runtime`, `#built-estimate`, `#members` with `#member-email`, `#member-role`, `#member-invite`, `.member` and `[data-revoke]`, `#delete-business` |
 | activity | `#activity .event` |
-| billing | `#plan-current`, `#plans article`, `#credits-balance`, `#credits-history tr`, `#dispute` |
+| billing | `#credits-balance`, `#packs [data-buy]` (a credit pack's checkout), `#plans article` (the listings; each says "set at launch"), `#plan-current`, `#credits-history tr`, `#dispute` |
 | profile | `#profile-name`, `#profile-email`, `#notif-push`, `#notif-email`, `#signout`, `#delete-account` |
 | share | `#referral-link`, `#copy-referral` |
 
