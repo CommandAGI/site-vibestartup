@@ -21,7 +21,7 @@ export async function startChrome(profile, started) {
   const port = 9500 + Math.floor(Math.random() * 400);
   const child = spawn(binary(), [
     '--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`,
-    '--no-first-run', '--no-default-browser-check', '--disable-gpu', '--hide-scrollbars',
+    '--no-first-run', '--no-default-browser-check', '--disable-gpu', '--hide-scrollbars', '--enable-automation',
     '--window-size=1440,900', 'about:blank',
   ], { stdio: 'ignore', detached: true });
   started.push(child);

@@ -4,6 +4,7 @@
 import { signedIn, whoami, user, credits, signOut, auth, BRAND } from '/lib/api.js';
 import { listBusinesses, readBusiness, approvals } from '/lib/business.js';
 import { $, $$, esc, icon, toast, menu, modal, initial, oops } from '/lib/ui.js';
+import { startGuides, replayGuides } from '/lib/guides.js';
 
 export const GROUPS = [
   { name: 'Home', tabs: [['chat', 'Chat', 'chat'], ['dashboard', 'Dashboard', 'dashboard'], ['analytics', 'Analytics', 'analytics']] },
@@ -87,6 +88,8 @@ function bindChrome() {
     { label: 'Billing', icon: 'card', onClick: () => { location.hash = 'page=billing'; } },
     { label: 'Profile', icon: 'user', onClick: () => { location.hash = 'page=profile'; } },
     { label: 'Share & earn', icon: 'gift', onClick: () => { location.hash = 'page=share'; } },
+    // The tour starts where a founder starts: the chat.
+    { label: 'Replay the tour', icon: 'sparkle', onClick: () => { openTab('chat'); replayGuides(); } },
     'hr',
     { label: 'Sign out', icon: 'logout', onClick: doSignOut },
   ]);
@@ -267,6 +270,7 @@ async function init() {
   renderIdentity();
   refreshNeeds();
   await route();
+  startGuides(state.me.id);
 }
 
 init().catch(e => { console.error(e); toast(oops(e), 'bad'); });

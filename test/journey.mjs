@@ -261,9 +261,8 @@ async function run(browser, width) {
   // 9. Ads: the launch stops at the provider. Analytics, Studio, Email, Social, Outbound, Legal render.
   await hash('ads');
   await b.waitFor('!!document.querySelector("#ads-launch")', 20000);
-  await b.click('#ads-launch');
-  await b.waitFor('!!document.querySelector("#ads-stop .note.warn")', 10000).catch(() => null);
-  check(/Connect .* first|blocker/i.test(await b.text('#ads-stop')), `${label}: the ad launch stops at the provider and says so`);
+  check(await b.eval('document.querySelector("#ads-launch").disabled') && /Soon/i.test(await b.text('#ads-launch')), `${label}: the ad launch is not pressable and says Soon`);
+  check(await b.eval('!document.querySelector(".guide")'), `${label}: a driven browser sees no first-run guide`);
   await b.shot(`console-ads-${width}`);
   for (const t of ['analytics', 'studio', 'email', 'social', 'outbound', 'legal']) {
     await hash(t);

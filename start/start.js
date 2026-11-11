@@ -1,7 +1,8 @@
 // The new-business wizard: one question per screen, the suggestions made by a script from the founder's words
 // (lib/business.js), then the creation sequence against CommandAGI (createBusiness), each step shown as it finishes.
-import { requireSignIn, setNotificationPref, settleReferral, ApiError } from '/lib/api.js';
+import { requireSignIn, setNotificationPref, settleReferral, ApiError, auth } from '/lib/api.js';
 import { $, $$, esc, oops } from '/lib/ui.js';
+import { startGuides } from '/lib/guides.js';
 import { IDEA_STARTERS, suggestBlueprints, suggestNames, suggestTagline, VIBES, VOICES, PARTNERS, COFOUNDER_NAMES, brandFor, createBusiness } from '/lib/business.js';
 
 // A signed-out visitor is sent to /auth/ and this page does nothing more (no thrown error: the redirect is the answer).
@@ -137,4 +138,4 @@ async function build() {
   }
 }
 
-if (signedInHere) show();
+if (signedInHere) { show(); startGuides(auth()?.userId); }
