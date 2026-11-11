@@ -32,8 +32,13 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
 
 ## left to do
 
-- **The co-founder's first answer is slow** (over 90 s at some widths). Find where the first turn spends its time (the
-  thread's events) before changing the journey's wait.
+- **The co-founder's first answer is slow** (over 90 s at some widths). Measured 2026-11-11 on production with a one-line
+  prompt: `POST /threads` 4 s, the thread's first lifecycle event 9 s later, the turn done at +20 s. The real opening
+  reads about ten files and makes two tasks, each tool call 2 to 4 s, so the first answer lands past 90 s. Shorter: an
+  opening that answers before it reads, the files in one call, or a faster tool path in the platform.
+- **One probe account is left on production:** `journey-firstturn-<base36>@example.com` (password in `test/journey.mjs`),
+  made 2026-11-11 by a probe whose run was killed before its erase; its exact address was lost. Harmless (no business,
+  200 promotional credits); erase it if an admin listing finds it.
 - **Site hosting is slow.** A static file of this site takes 0.3 to 6 s to its first byte: the gateway is in the api
   worker, which Smart Placement runs near its database (`cf-placement: remote-ARN` seen from SJC). A gateway worker of
   its own at the visitor's edge would serve every tenant site from its PoP (CommandAGI `docs/site-hosting.md`).
