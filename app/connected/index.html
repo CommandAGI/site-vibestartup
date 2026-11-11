@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Connected · VibeStartup</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main style="max-width:420px;margin:15vh auto;padding:0 16px;text-align:center">
+  <h1 id="connected-title" style="font-size:22px">Finishing the connection…</h1>
+  <p class="muted" id="connected-note">This window closes by itself.</p>
+</main>
+<script type="module">
+// A provider's sign-in comes back here (the redirect URI the Ads tab registers). This page holds no token and calls
+// nothing: it gives the code and the state to the console that opened it, on this origin only, and closes. The
+// console checks the state and makes the exchange with the founder's own token.
+const q = new URLSearchParams(location.search);
+const message = { type: 'oauth', code: q.get('code'), state: q.get('state'), error: q.get('error'), error_description: q.get('error_description') || q.get('error_reason') };
+if (window.opener && !window.opener.closed) {
+  window.opener.postMessage(message, location.origin);
+  window.close();
+}
+document.getElementById('connected-title').textContent = message.error ? 'The connection was not made' : 'You can close this window';
+document.getElementById('connected-note').textContent = message.error ? (message.error_description || message.error) : 'Go back to the VibeStartup tab: it finishes there.';
+</script>
+</body>
+</html>

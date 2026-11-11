@@ -29,7 +29,7 @@ what is open, and what is left).
 | `index.html`, `landing.css`, `landing.js` | the landing and its sketch |
 | `start/` | the new-business wizard |
 | `home/`, `auth/`, `pages.css` | the businesses, sign in and create account |
-| `app/` | the console |
+| `app/` | the console; `app/connected/` is where a provider's sign-in window comes back (it hands the code to the console and closes) |
 | `lib/api.js` | the CommandAGI client: the token (the `vibestartup` OAuth client's password grant and `/oauth/signup`), refresh, REST, MCP tools, Drive, threads, tasks, sites, email |
 | `lib/business.js` | the business record, its creation sequence, the co-founder's charter, the memory files, the brand generator |
 | `lib/storefront.js` | the storefront: its files (shop, a page per product, checkout, terms, privacy, refunds, product pictures, the sign-ups' server module), what the checkout can sell, the brand address, the publish |
@@ -42,6 +42,7 @@ what is open, and what is left).
 | `test/local.mjs` | the app on this computer: the static files and `app.mjs`, pointed at a local CommandAGI platform it starts, or at an API you name |
 | `test/legal-pdf.mjs` | every Legal template as a PDF from a sample business, to open and check (`pdfinfo`, `pdftotext`, `pdftoppm`) |
 | `test/journey.mjs`, `test/browser.mjs` | the journey from a blank account, in Chrome over the DevTools protocol |
+| `test/meta-ads-walkthrough.mjs` | the Ads tab's Meta path at 1440 px as screenshots, for Meta's App Review (`docs/meta-app-review.md`) |
 | `test/hire.mjs` | hiring the co-founder from a blank account (docs/ARCHITECTURE.md § hiring) |
 | `edge/subdomains.js`, `edge/README.md` | the Worker of the vibestartup.pro zone that serves every business at `<site slug>.vibestartup.pro`, and its deploy steps |
 | `site.json` | the site's manifest |
