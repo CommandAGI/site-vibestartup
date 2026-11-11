@@ -8,10 +8,12 @@
 |---|---|
 | the idea box | `#idea` (textarea) |
 | the example chips | `#chips .chip` |
-| the sketch under the box | `#sketch` with `[data-f=name]`, `[data-f=tagline]`, `[data-f=product]`, `[data-f=day-1]` … and `#sketch-note` (says it is made by a script) |
+| the sketch under the box | `#sketch` with `[data-f=name]`, `[data-f=tagline]`, `[data-f=product]`, `[data-f=day-1]` … and `#sketch-note` (says it is a preview) |
 | start building | `#start` (a link to `/start/?idea=…`, its text names the sketched business) |
 | sign in | `a[href="/auth/"]` |
-| plans | `#plans article` (each says "set at launch") |
+| how it works | `#how .steps li` (an arrow after each but the last) |
+| what the co-founder does | `#what .cap-grid article` (each has a `.cap-icon`) |
+| plans | `#plans .plan-grid article` (the three listings; each shows its price "/ 30 days") |
 
 ## auth (`/auth/`)
 
@@ -69,7 +71,7 @@ After success the page goes to `?next=` or `/home/`.
 | legal | `#formation` (its state and the numbers), `#legal-pages a`; documents: `#legal-docs [data-doc=terms|privacy|refunds|contractor|nda|founders|llc|invoice|formation]` (the chosen one `[aria-pressed=true]`), `#legal-form` (each field `#legal-f-<key>`, e.g. `#legal-f-state`), `#legal-missing`, `#legal-pdf`, `#legal-save`, `#legal-use` (the storefront's three only), `#legal-status` ("Downloaded …", "Saved to Files: legal/<file>.pdf.", "Written to legal/<page>.html. …"), `#legal-preview` |
 | settings | `#autonomy` (a switch), `#briefing` (a select), `#plan`, `#domain-form` with `[name=hostname]`, `#secrets` with `#secret-name`, `#secret-value`, `#secret-save`, `#secret-list .secret`, `#runtime`, `#built-estimate`, `#members` with `#member-email`, `#member-role`, `#member-invite`, `.member` and `[data-revoke]`, `#delete-business` |
 | activity | `#activity .event` |
-| billing | `#credits-balance`, `#packs [data-buy]` (a credit pack's checkout), `#plans article[data-listing][data-open="1"|"0"]` (the listings; one not open says "set at launch" and "opens December 8" and wears `.pill.soon`), `[data-hire=<listing id>]` (disabled until the listing is open), the confirm sheet `dialog#hire-sheet` with `#hire-terms`, `#hire-short [data-buy]` (short of credits) and `#hire-confirm`, `#plan-current`, `#contracts .contract[data-contract][data-status]` with `[data-sign]`, `[data-cancel]`, `[data-renew]`, `[data-accept]`, `[data-dispute]`, `#contracts-past`, `#credits-history tr`, `#dispute` |
+| billing | `#credits-balance`, `#packs [data-buy]` (a credit pack's checkout), `#plans article[data-listing][data-open="1"|"0"]` (the listings; each shows its price "/ 30 days"; one not open says "opens December 8" and wears `.pill.soon`), `[data-hire=<listing id>]` (disabled until the listing is open), the confirm sheet `dialog#hire-sheet` with `#hire-terms`, `#hire-short [data-buy]` (short of credits) and `#hire-confirm`, `#plan-current`, `#contracts .contract[data-contract][data-status]` with `[data-sign]`, `[data-cancel]`, `[data-renew]`, `[data-accept]`, `[data-dispute]`, `#contracts-past`, `#credits-history tr`, `#dispute` |
 | profile | `#profile-name`, `#profile-email`, `#notif-push`, `#notif-email`, `#signout`, `#delete-account` |
 | share | `#referral-link`, `#copy-referral`, `#share-referral` (the phone's share sheet, where the browser has one), `#referral-rewards`; on an API without referrals `#referral-soon` (the "Soon" pill); with them `#referral-rule`, `#referral-count`, `#referral-earned`, `#referral-list tr`, and for a referred founder `#referral-unlock` with `#confirm-email` |
 

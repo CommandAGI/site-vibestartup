@@ -11,7 +11,6 @@
 .wiz-sub { font-size: 16px; }
 .wiz-body { display: grid; gap: 12px; }
 .wiz-actions { display: flex; align-items: center; gap: 8px; padding-top: 8px; }
-.wiz-foot { text-align: center; }
 
 #idea { min-height: 96px; font-size: 18px; }
 .starters { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -22,9 +21,9 @@
 .choice b { font-size: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .choice p { font-size: 14px; color: var(--ink-2); }
 .choice .traits { display: flex; gap: 6px; flex-wrap: wrap; }
-.choice .traits span { font-size: 12px; padding: 2px 8px; background: var(--surface-2); color: var(--ink-2); }
+.choice .traits span { font-size: 12px; padding: 2px 8px; border-radius: var(--r-pill); background: var(--surface-2); color: var(--ink-2); }
 .choice[aria-pressed="true"] .traits span { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent-deep); }
-.choice.suggested b::after { content: "Suggested"; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; padding: 2px 8px; background: var(--accent-soft); color: var(--accent-deep); }
+.choice.suggested b::after { content: "Suggested"; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; padding: 2px 8px; border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent-deep); }
 .choice .sample { font-style: italic; color: var(--ink-2); font-size: 14px; }
 .own { display: grid; gap: 6px; }
 .own input { min-height: 44px; }

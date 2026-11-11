@@ -1,7 +1,8 @@
 // The shape rules of docs/DESIGN.md § shape and depth, checked in the page on its final cascade. It answers JSON.
 //
-// 1. Square shapes. Only what floats over the page is rounded (a dialog, a menu), and the few things that are round by
-//    nature (a person's avatar, a switch, a spinner, a status dot). Any other rounded element is a problem.
+// 1. Square shapes. What floats over the page is rounded (a dialog, a menu), a chip, a badge and a tag are pills, and a
+//    few things are round by nature (a person's avatar, a switch, a spinner, a status dot). Any other rounded element
+//    is a problem: a button, a field, a card, a panel and a row stay square.
 // 2. One edge, square corners. On the rounded things that remain, a corner fails when the lines of its two edges differ
 //    (a border, or an inset shadow line offset to one edge): a line on one edge curves up at its ends on a rounded
 //    corner. Everything else is square, so a one-edge line (the rail's current-tab bar, a tab's underline, a notice's
@@ -9,8 +10,8 @@
 function shapes() {
   const out = [];
   const name = el => el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + [...el.classList].map(c => '.' + c).join('') + (el.getAttribute('aria-pressed') ? `[aria-pressed=${el.getAttribute('aria-pressed')}]` : '');
-  // What may be rounded: floats, and the round by nature.
-  const ROUNDED = 'dialog, .menu, .top-menu, .toast, .avatar, .switch i, .spin, .dot, #building li i';
+  // What may be rounded: floats, pills, and the round by nature.
+  const ROUNDED = 'dialog, .menu, .top-menu, .toast, .chip, .badge, .eyebrow, .traits span, .avatar, .switch i, .spin, .dot, #building li i';
   const SIDES = ['Top', 'Right', 'Bottom', 'Left'];
   // Corner → its two edges, as indexes into SIDES.
   const CORNERS = { TopLeft: [0, 3], TopRight: [0, 1], BottomRight: [2, 1], BottomLeft: [2, 3] };

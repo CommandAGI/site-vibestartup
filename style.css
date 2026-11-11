@@ -1,6 +1,6 @@
 /* VibeStartup: the tokens and base components every page shares (docs/DESIGN.md). Instrument Sans for text, the
-   serif italic only in the wordmark; one accent; square shapes, hairlines separate; only what floats over the page
-   (a menu, a dialog, a toast, a tooltip) is rounded and carries a shadow. */
+   serif italic only in the wordmark; one accent; square shapes, hairlines separate; what floats over the page
+   (a menu, a dialog, a toast, a tooltip) is rounded and carries a shadow; a chip, a badge and a tag are pills. */
 @font-face { font-family: "Instrument Sans"; font-style: italic; font-weight: 400 700; font-stretch: 75% 100%; font-display: swap; src: url("/fonts/InstrumentSans-italic-latin-ext.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
 @font-face { font-family: "Instrument Sans"; font-style: italic; font-weight: 400 700; font-stretch: 75% 100%; font-display: swap; src: url("/fonts/InstrumentSans-italic-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: "Instrument Sans"; font-style: normal; font-weight: 400 700; font-stretch: 75% 100%; font-display: swap; src: url("/fonts/InstrumentSans-normal-latin-ext.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
@@ -36,6 +36,7 @@
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --r-float: 14px;
   --r-tip: 8px;
+  --r-pill: 999px;
   --shadow-float: 0 1px 2px rgba(23, 22, 26, .06), 0 12px 32px rgba(23, 22, 26, .10);
   --shadow-modal: 0 24px 80px rgba(23, 22, 26, .28), 0 2px 8px rgba(23, 22, 26, .10);
   --ease: cubic-bezier(.2, .7, .2, 1);
@@ -91,7 +92,8 @@ img, svg, video { display: block; max-width: 100%; }
 .small { font-size: 13px; } .tabular { font-variant-numeric: tabular-nums; }
 .mono { font-family: var(--mono); font-size: 13px; }
 .wrap { width: min(100% - 32px, 1120px); margin-inline: auto; }
-.stack { display: grid; gap: 12px; } .stack-lg { display: grid; gap: 24px; }
+/* align-content: a card stretched to its row's height keeps its lines at the top, on the same lines as its neighbours */
+.stack { display: grid; gap: 12px; align-content: start; } .stack-lg { display: grid; gap: 24px; align-content: start; }
 .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .grow { flex: 1 1 auto; min-width: 0; }
 .right { margin-left: auto; }
@@ -140,10 +142,11 @@ img, svg, video { display: block; max-width: 100%; }
 /* cards, chips, badges, tables */
 .card { background: var(--surface); border: 1px solid var(--line); padding: 16px; }
 .panel { background: var(--surface); border: 1px solid var(--line); padding: 20px; }
-.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--line-2); background: var(--surface); font-size: 13px; color: var(--ink-2); cursor: pointer; transition: border-color .16s var(--ease), color .16s var(--ease); }
+/* a chip (a choice or a suggestion), a badge (a state or a count) and a tag are pills; what acts or holds stays square */
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: var(--r-pill); background: var(--surface); font-size: 13px; color: var(--ink-2); cursor: pointer; transition: border-color .16s var(--ease), color .16s var(--ease); }
 .chip:hover { border-color: var(--ink-3); color: var(--ink); }
 .chip[aria-pressed="true"], .chip.on { border-color: var(--accent); color: var(--accent-deep); background: var(--accent-soft); }
-.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; font-size: 12px; font-weight: 500; background: var(--surface-2); color: var(--ink-2); white-space: nowrap; }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--r-pill); font-size: 12px; font-weight: 500; background: var(--surface-2); color: var(--ink-2); white-space: nowrap; }
 .badge.ok { background: var(--ok-soft); color: var(--ok); }
 .badge.warn { background: var(--warn-soft); color: var(--warn); }
 .badge.bad { background: var(--bad-soft); color: var(--bad); }
@@ -167,7 +170,7 @@ img, svg, video { display: block; max-width: 100%; }
 .empty p { max-width: 52ch; }
 .empty .btn { margin-top: 6px; }
 .empty h3 { color: var(--ink); }
-.kpi { display: grid; gap: 4px; padding: 16px; border: 1px solid var(--line); background: var(--surface); }
+.kpi { display: grid; gap: 4px; align-content: start; padding: 16px; border: 1px solid var(--line); background: var(--surface); }
 .kpi b { font-size: 24px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .kpi span { font-size: 13px; color: var(--ink-2); }
 .kpi small { font-size: 12px; color: var(--ink-3); }

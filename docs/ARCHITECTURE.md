@@ -154,7 +154,7 @@ grants the credits); before the launch it checks the disabled state instead.
 2. A feature that needs a provider the founder has not connected says so where it stops, and records nothing as sent.
 3. A secret's value is never shown again after it is set.
 4. The co-founder is an AI agent and says so. When the model gives no answer, the page says so.
-5. Prices are set at launch; every plan says so until they are.
+5. The prices are the listings' (`app/tabs/billing.js`); the landing's plans show the same ones.
 6. A reward is shown only where the API grants it: the Share page reads the rule from `GET /me/referrals`, and says "Soon" where the API has none.
 
 ## files of this repository
