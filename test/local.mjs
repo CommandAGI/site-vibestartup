@@ -53,7 +53,9 @@ async function serviceBindings() {
  * `signup.dailyCap` in global settings.json) counts them, so a journey's sign-ups would be refused `signup_capped`.
  */
 async function globalDirWithCap(stateDir) {
-  const source = path.join(COMMANDAGI_ROOT, 'seed/user-commandagi/global');
+  // The seeded copy where a seed run made one, else the checkout's own `global/` (a clean checkout has no seed/).
+  const seeded = path.join(COMMANDAGI_ROOT, 'seed/user-commandagi/global');
+  const source = existsSync(seeded) ? seeded : path.join(COMMANDAGI_ROOT, 'global');
   const target = path.join(stateDir, 'global');
   if (!existsSync(target)) cpSync(source, target, { recursive: true });
   const file = path.join(target, 'settings.json');
