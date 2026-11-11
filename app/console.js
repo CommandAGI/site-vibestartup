@@ -182,6 +182,8 @@ function labelCells() {
  * went elsewhere) writes into nothing: it cannot paint over the tab now shown, or leave its actions in the top bar.
  */
 async function route() {
+  // The address may change before the business is read (a back step while the console opens): init() routes then.
+  if (!state.biz) return;
   const visit = ++state.visit;
   const current = () => visit === state.visit;
   state.cleanup?.(); state.cleanup = null;

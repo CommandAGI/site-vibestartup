@@ -50,7 +50,9 @@ After success the page goes to `?next=` or `/home/`.
 | the rail on a phone | the same `.rail`, a drawer: `#rail-toggle` (top bar) and `#more` (bottom bar) open it (`body[data-rail=open]`), `#rail-close`, `#rail-scrim`, Escape or a chosen tab close it; `#bottombar a[data-tab]` are the four tabs that stay |
 | the account menu | `#account-menu` (opens billing, profile, share, sign out: `[data-page=billing]`, `[data-page=profile]`, `[data-page=share]`, `#signout`) |
 | search | `#search` (⌘K opens it), `#search input` |
-| the content | `#main`, with `#main[data-tab]`; a visit's view is `#main > .view`, which holds `.loading` (a spinner; `[data-retry]` after 10 s) until the tab paints, or `.empty` with `[data-retry]` when it failed |
+| the content | `#main`, with `#main[data-tab]`; a visit's view is `#main > .view`, which holds `.skeleton` (grey bars) until the tab paints, `.loading.slow` with `[data-retry]` when the tab takes over 10 s, or `.empty` with `[data-retry]` when it failed. A tab is ready when `#main .view` exists and `#main .skeleton` does not |
+| keys | `G` then a letter opens a tab (`GO` in `app/console.js`), `[` `]`, `/`, `?` (a `dialog.modal` labelled "Keyboard shortcuts") |
+| an empty state's next step | `.empty [data-press="<selector>"]` presses that control; or a link to a tab |
 | chat | `.chat`, each message `.msg` (`.msg.me`, `.msg.cofounder`, `.msg.system`), `#composer`, `#send`, the suggested questions `#prompts [data-prompt]` (a chip writes into the composer), approval cards `.approval` with `[data-approve]`, `[data-reject]`, `[data-reasoning]`; a milestone `.milestone`; the briefing `.briefing` |
 | the right panel | `#building` (the site's state `[data-site-state]`, the brand kit `[data-brand]`, needs you `[data-needs]`) |
 | dashboard | `#launch-week li[data-day]` (the current one `.today`), `#needs-call`, `#money .kpi`, `#autopilot` (a switch) |

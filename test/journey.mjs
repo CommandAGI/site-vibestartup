@@ -255,7 +255,7 @@ async function run(browser, width) {
   await b.shot(`console-ads-${width}`);
   for (const t of ['analytics', 'studio', 'email', 'social', 'outbound', 'legal']) {
     await hash(t);
-    await b.waitFor(`document.querySelector("#main")?.dataset.tab === "${t}" && !/^Loading/.test(document.querySelector("#main")?.innerText ?? "")`, 30000).catch(() => null);
+    await b.waitFor(`document.querySelector("#main")?.dataset.tab === "${t}" && !!document.querySelector("#main .view") && !document.querySelector("#main .skeleton")`, 30000).catch(() => null);
     const txt = await tabText();
     check(txt.length > 40 && !/could not load/i.test(txt), `${label}: the ${t} tab rendered (${txt.slice(0, 50).replace(/\n/g, ' ')})`);
     await b.shot(`console-${t}-${width}`);

@@ -94,10 +94,25 @@ CommandAGI `docs/regions.md` § one edge, square corners).
   chat. A table reflows: each row is a block and each cell a line that names its column.
 - Mobile is designed first: 44 px targets, 16 px gutters, 16 px text in fields (no zoom on focus), no sideways scroll
   at 390 and 320, forms full width.
-- **A view never stays blank** (owner, 2026-11-11: Billing "did not load at first"). A tab shows a spinner and
-  "Loading…" at once; after 10 s the line offers Try again; then the tab's content, or what went wrong and Try again.
-  A page whose words need no answer (Billing: the plans) paints at once and fills each number when its own call
-  answers. A tab that answers after the founder left it writes into nothing (`route()` in `app/console.js`).
+- **A view never stays blank** (owner, 2026-11-11: Billing "did not load at first"). A tab shows grey bars
+  (`.skeleton`) where its words will be; a part of a tab that waits on its own call shows bars or a spinner
+  (`bars()` in `app/tabs/_shared.js`, `.loading`). After 10 s a banner says CommandAGI is slow and offers Try again,
+  whatever the tab has painted. Then the tab's content, or what went wrong and Try again. A page whose words need no
+  answer (Billing: the plans) paints at once and fills each number when its own call answers. A tab that answers
+  after the founder left it writes into nothing (`route()` in `app/console.js`).
+- **One title.** The top bar names the tab; a tab's page head that repeats the name keeps it for screen readers only
+  and shows its one-line description. The Dashboard's head is the business's name, so it stays.
+- **An empty state names the next step**: a bordered surface with what the place is for and one button or link that
+  fills it (`empty(title, text, extra)`; `data-press="<selector>"` presses the control that does it).
+- **Surfaces.** Rows that belong together sit on one bordered surface and run wall to wall: `.list`, `.table` (its
+  head a `--surface-2` band), a file group, the mail folders, the readiness list.
+- **Keys** (when the founder is not typing): ⌘K or `/` searches, `G` then a letter opens a tab (the letter shows in
+  search and in a rail row's tooltip), `[` and `]` step through the tabs, `?` lists every key.
+- **Toasts** sit in the console's bottom corner on a desktop and above the bottom bar on a phone, never over the
+  composer.
+- **The storefront** (`storefrontFiles` in `lib/business.js`) wears the business's colours on the same shapes:
+  square cards and buttons, hairlines, a sticky 56 px header, one column of products until 600 px, 48 px targets,
+  16 px fields. The generated mark is a square.
 
 ## motion
 

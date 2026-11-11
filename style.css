@@ -72,7 +72,8 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+::selection { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 body { margin: 0; font-family: var(--sans); font-size: 16px; line-height: 1.5; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
 h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: -.02em; line-height: 1.15; text-wrap: balance; }
 h1 { font-size: 32px; } h2 { font-size: 24px; } h3 { font-size: 18px; } h4 { font-size: 15px; }
