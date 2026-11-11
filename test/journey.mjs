@@ -140,6 +140,8 @@ async function run(browser, width) {
     check(greeted, `${label}: the co-founder greeted within 150 s`);
     if (greeted) { const first = await b.eval('document.querySelector(".msg.cofounder .text")?.innerText ?? ""'); check(first.length > 20, `${label}: the greeting has words (${first.slice(0, 60).replace(/\n/g, ' ')}…)`); }
   } else check(hasThread || gaps.length > 0, `${label}: the co-founder's thread is missing and no gap says why`);
+  // The panel fills after the chat's first read.
+  await b.waitFor('!!document.querySelector("#building [data-site-state]")', 30000).catch(() => null);
   check(!!await b.eval('document.querySelector("#building [data-site-state]")'), `${label}: the right panel reports the site's state`);
   await b.shot(`console-chat-${width}`);
 
@@ -213,7 +215,6 @@ async function run(browser, width) {
     await b.eval('document.querySelector("#rf [name=every]").value = "604800"');
     await b.click('#rf button[type=submit]');
     await b.waitFor('[...document.querySelectorAll("#routines .routine")].some(e => /Weekly stock check/.test(e.innerText))', 30000);
-    await b.clickText('#routines .routine', 'Weekly stock check').catch(() => null);
     const r = '[...document.querySelectorAll("#routines .routine")].find(e => /Weekly stock check/.test(e.innerText))';
     await b.eval(`${r}.querySelector("[data-pause]").click()`);
     await b.waitFor(`/paused/.test(${r}?.innerText ?? "")`, 20000);
