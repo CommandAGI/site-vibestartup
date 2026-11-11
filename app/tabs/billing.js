@@ -215,7 +215,8 @@ function hireSheet({ listing: l, biz, balance, renewing, buy, done }) {
         customerThreadId: thread,
         title: `${l.name} for ${biz.name}`.slice(0, 200),
         brief: `VibeStartup ${l.name} for 30 days, for the business "${biz.name}" (its folder Businesses/${biz.slug}, its co-founder thread ${thread}). ${l.features.join('. ')}.`,
-        deadline: end,
+        // Set at the confirm, not when the sheet opened: the listing signs only a 30-day term (CommandAGI 6c3f8548385).
+        deadline: Date.now() + TERM_DAYS * DAY_MS,
       });
       if (!contract?.id) throw new Error('The contract was not made. Try again.');
       try { await services.sign(contract.id); }
