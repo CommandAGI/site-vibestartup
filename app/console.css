@@ -184,6 +184,23 @@ body.console[data-panel="1"] .frame { grid-template-columns: 1fr 320px; }
 .plans.packs article { grid-template-rows: auto auto 1fr auto; }
 .plans .popular { border-color: var(--accent); }
 .plans ul { margin: 0; padding-left: 18px; color: var(--ink-2); display: grid; gap: 4px; }
+.plans h3 .pill.soon { display: inline-flex; vertical-align: middle; padding: 2px 6px; font-size: 12px; font-weight: 500; background: var(--surface-2); color: var(--ink-2); }
+.plans .btn[disabled] { opacity: .55; cursor: not-allowed; }
+.contract { display: grid; gap: 8px; }
+.contract-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+.contract-head h4 { display: flex; align-items: center; gap: 8px; margin: 0; }
+.contract .row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.usage { display: grid; gap: 4px; }
+.meter { height: 6px; background: var(--surface-2); }
+.meter i { display: block; height: 100%; background: var(--cofounder); }
+details.past summary { cursor: pointer; color: var(--ink-2); font-size: 13px; padding: 4px 0; }
+details.past .list { margin-top: 8px; }
+#hire-sheet .sheet-list { margin: 0; padding-left: 18px; color: var(--ink-2); display: grid; gap: 4px; }
+#hire-sheet .terms { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 0; font-size: 14px; }
+#hire-sheet .terms dt { color: var(--ink-3); }
+#hire-sheet .terms dd { margin: 0; }
+#hire-sheet .note .btn { white-space: normal; margin-top: 8px; text-align: left; }
+@media (max-width: 480px) { #hire-sheet .terms { grid-template-columns: 1fr; gap: 2px; } #hire-sheet .terms dd { margin-bottom: 8px; } }
 .calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .calendar .day { min-height: 72px; padding: 6px; border: 1px solid var(--line); background: var(--surface); font-size: 12px; }
 .calendar .day.pad { background: transparent; border-color: transparent; }

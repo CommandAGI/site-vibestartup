@@ -82,7 +82,8 @@ The co-founder's thread, triggers and site are CommandAGI objects whose ids `bus
 | legal | formation proposed at traction (3 real sales or $100), computed from `orders.jsonl` (test orders excluded); terms and privacy pages in the site folder. Documents: nine starter templates (`lib/legal-docs.js`: terms, privacy, refunds, freelancer agreement, mutual NDA, co-founder agreement, single-member LLC operating agreement, invoice, formation checklist) filled from `business.json` and the founder's fields, set as a PDF in the browser by `lib/pdf.js` (no dependency: standard Helvetica, the brand's colour and mark) and written with `POST /drive/upload` into `legal/`. Templates, not legal advice: the tab says so once, beside the buttons |
 | members | folder shares on the business folder: `POST /drive/folder-share { path, email, capability: "view" \| "edit" }`, `GET`, `DELETE` |
 | activity | `GET /threads/:id/events?limit=` newest first |
-| billing | `GET /me/credits`, `GET /me/credits/history`, `GET /me/subscription` |
+| billing | `GET /me/credits`, `GET /me/credits/history`, `GET /me/subscription`; a credit pack: `POST /billing/checkout { type: "pack", packId, origin, returnPath }` (`checkout` in `lib/api.js`: a stack that refuses the origin, `origin_not_registered` or `origin_mismatch`, gets the call again without it) |
+| hiring a listing | below, § hiring |
 | profile | `GET /me`, `GET /users/:id`, `POST /me/profile { name }`, `GET/POST /me/notification-prefs`, `POST /me/erase { confirm: true }` (the platform revokes the sign-ins before it erases the Drive, so an erase that fails late ends the session: the page asks for the password, signs in again and finishes it) |
 | share & earn | the link is `${BRAND.home}/?ref=<code>` (`GET /me/referrals` → `code`, the account's handle or id). Any page opened from it keeps `ref` in `localStorage` (`vs_ref`, `lib/api.js`); the sign-up sends it as `ref` on `POST /oauth/signup`, and when the answer has no `referral` the page names it at `POST /me/referrer { ref, client }` (right after the sign-up and again on `/start/`, within the day the platform allows). The platform grants both accounts the credit when the friend proves their login email (`POST /me/emails/:id/verify` and `…/confirm`; CommandAGI's `docs/billing.md` § referrals). The Share page shows the rule, the friends who joined, the credits earned and this month's count against the cap; a referred founder gets "Confirm my email". Where `GET /me/referrals` answers 404 (an API without referrals) the reward shows a "Soon" pill and promises nothing |
 | delete a business | the folder to the Trash (`DELETE /drive/:id`), `DELETE /sites/:id`, the triggers deleted; the thread is left (its run is a record) |
@@ -123,6 +124,30 @@ What a small API change would add (not made here): `duration` (`"5" | "10"`) as 
 undeclared input today, and `generationQuote` already prices `inputs.duration`), for 10-second shorts and clips; and a job form of `POST /generate` (submit, then
 `GET /generate/jobs/:id`, as `data/maker.ts` already does for its pictures), so a render survives the page.
 
+## hiring
+
+VibeStartup sells three listings of the org `org-vibestartup`, backed by its agent `agent-vibestartup-cofounder`
+(CommandAGI `docs/organization.md` § VibeStartup: prices, providers and launch): `listing-vibestartup-cofounder`
+(3,900 credits, $39), `-growth` and `-studio` (2,900 credits, $29), each one 30-day contract whose work stops at a cost
+ceiling of 2,400, 1,800 and 1,800 credits. Billing (`app/tabs/billing.js`, `services` in `lib/api.js`) hires one:
+
+| step | CommandAGI |
+|---|---|
+| is it open, at what price | `GET /listings/:id`: an open listing answers with `status: "active"`, its `plan` (credits) and `costCeilingMilli`. A draft answers 404 to a founder, and the card shows the declared price, a disabled Hire button, a Soon pill and "opens December 8". The page reads the listing's status, not the date: the listings open when `POST /admin/console/seed/vibestartup/launch` activates them on that stack |
+| the confirm sheet | what you get, the price in credits and dollars, the 30-day term, the ceiling, that nothing renews by itself, the founder's credits. Short of credits, it offers the pack that covers the price (the checkout returns to Billing) |
+| hire | `POST /services/contracts { listingId, customerThreadId, title, brief, deadline }` then `POST /services/contracts/:id/sign`. `customerThreadId` is the business's co-founder thread (`business.json` `cofounder.threadId`): the contract is proposed from it, the provider is invited into a coordination room beside it (never into it), and the brief names the business and its folder. `deadline` is the end of the 30 days |
+| VibeStartup signs | the platform wakes the provider agent to sign (`sign_contract`). When both have signed, escrow holds the price on the founder's credits (`402 insufficient_credits` when they do not cover it: the row says so and offers Sign again) and the provider's private work thread starts |
+| the contract | `GET /me/contracts`, the ones of the three listings: status, days left (to `deadline`), the ceiling (`costCeilingCredits`) and `ceilingReachedAt`; credits used when the contract carries `spentCredits` (not yet: see `docs/HANDOFF.md`). The page looks again every 10 s for 2 minutes while VibeStartup has not signed |
+| cancel, renew, accept, dispute | `POST /services/contracts/:id/cancel` (only while proposed: nothing is held), Renew opens the sheet for the next contract, `…/accept` when delivered (releases the escrow), `…/dispute { reason }` while active or delivered |
+
+The contract's work is what is spent in the provider's work thread (`contracts.provider_thread_id`; keys minted there
+carry `api_keys.work_thread_id`, CommandAGI `docs/billing.md` § a contract's cost ceiling). That thread is
+VibeStartup's, private to it. The business's co-founder thread is the founder's own and still draws on the founder's
+credits; `docs/HANDOFF.md` says what the platform lacks to make the business thread's work the contract's.
+
+`node test/hire.mjs --api <origin>` runs the hire from a blank account (`VS_ADMIN_KEY`, a staff key of that stack,
+grants the credits); before the launch it checks the disabled state instead.
+
 ## honesty rules the pages keep
 
 1. A number is what the API measured. A test order is marked `test` everywhere and never counts as a sale.
@@ -150,3 +175,5 @@ undeclared input today, and `generationQuote` already prices `inputs.duration`),
 | `storefront/` | the storefront files VibeStartup writes into a business's site folder |
 | `test/local.mjs`, `test/journey.mjs`, `test/browser.mjs` | the local run (static files + a local CommandAGI platform) and the journey |
 | `test/studio-video.mjs` | a real short video from a fresh account (one paid Kling clip), the tab left and the page reloaded, the library's player, the film's stitch; the account erased |
+
+| `test/hire.mjs` | hiring the co-founder from a blank account (§ hiring) |
