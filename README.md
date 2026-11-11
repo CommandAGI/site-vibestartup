@@ -40,6 +40,7 @@ what is open, and what is left).
 | `test/local.mjs` | the app on this computer: the static files and `app.mjs`, pointed at a local CommandAGI platform it starts, or at an API you name |
 | `test/legal-pdf.mjs` | every Legal template as a PDF from a sample business, to open and check (`pdfinfo`, `pdftotext`, `pdftoppm`) |
 | `test/journey.mjs`, `test/browser.mjs` | the journey from a blank account, in Chrome over the DevTools protocol |
+| `test/hire.mjs` | hiring the co-founder from a blank account (docs/ARCHITECTURE.md § hiring) |
 | `site.json` | the site's manifest |
 
 ## running it here
@@ -51,6 +52,8 @@ COMMANDAGI_ROOT=<a CommandAGI checkout> COMMANDAGI_ENV_ROOT=<the checkout with .
 node test/journey.mjs                                                  # the journey, against a local platform
 node test/legal-pdf.mjs [dir] [--blank]                                # every Legal template as a PDF (.test-results/legal)
 node test/journey.mjs --url https://vibestartup.commandagi.app         # the same journey, deployed
+VS_ADMIN_KEY=<a staff key of dev> node test/hire.mjs --api https://api-dev.commandagi.com
+                                                                       # hire the co-founder on dev (its listings open)
 python3 brand/render.py                                                # og.png and touch-icon.png again
 ```
 
