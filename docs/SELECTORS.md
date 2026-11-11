@@ -77,7 +77,8 @@ After success the page goes to `?next=` or `/home/`.
 | share | `#referral-link`, `#copy-referral`, `#share-referral` (the phone's share sheet, where the browser has one), `#referral-rewards`; on an API without referrals `#referral-soon` (the "Soon" pill); with them `#referral-rule`, `#referral-count`, `#referral-earned`, `#referral-list tr`, and for a referred founder `#referral-unlock` with `#confirm-email` |
 
 | soon | `.badge.soon` (the pill), `.btn.is-soon` (a control that opens soon), `[data-notify="<feature>"]` (`aria-pressed` says whether the founder asked) |
-| the account menu | `#account-menu`, then `.menu button`: Billing, Profile, Share & earn, Replay the tour, Sign out |
+| the account menu | `#account-menu`, then `.menu button`: Billing, Profile, Share & earn, Admin (only for an admin of the brand's org), Replay the tour, Sign out |
+| admin (`#page=admin`) | `#admin-kpis` with `#kpi-founders`, `#kpi-businesses`, `#kpi-sales`, `#kpi-credits`; `#admin-budget`, `#admin-test-mode` (a test-mode API), `#chart-signups`, `#chart-businesses`, `#chart-sales`, `#admin-watch` (a table, or a `.note.ok` when nothing needs a look), `#admin-founders tr[data-founder]`, `#admin-more`; on an API without the doors `#admin-soon` |
 | a first-run guide | `.guide[data-guide="wizard|console|products|studio|tasks"][data-step]`, `.guide-next`, `.guide-skip`, `.guide-ring`; `html[data-guide]` while one shows. Hidden from a driven browser unless `?guides=1` or localStorage `vs_guides_ask` = "1" |
 
 A table (`table.table`) reflows on a phone: `console.js` writes each cell's column name into `td[data-label]`.

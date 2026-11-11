@@ -1,7 +1,7 @@
 // The console's shell: one business (`?b=<slug>`), its tabs (`#tab=<name>`) and the account's pages
 // (`#page=billing|profile|share`). Every tab is a module in ./tabs/ that renders into #main with the API client. The
 // founder's own CommandAGI token does everything (docs/ARCHITECTURE.md).
-import { signedIn, whoami, user, credits, signOut, auth, BRAND } from '/lib/api.js';
+import { signedIn, whoami, user, credits, signOut, auth, BRAND, brandAdmin } from '/lib/api.js';
 import { listBusinesses, readBusiness, approvals } from '/lib/business.js';
 import { $, $$, esc, icon, toast, menu, modal, initial, oops } from '/lib/ui.js';
 import { startGuides, replayGuides } from '/lib/guides.js';
@@ -14,12 +14,12 @@ export const GROUPS = [
   { name: 'Company', tabs: [['legal', 'Legal', 'legal'], ['settings', 'Settings', 'settings'], ['activity', 'Activity', 'activity']] },
 ];
 export const TABS = GROUPS.flatMap(g => g.tabs.map(([id, label, ico]) => ({ id, label, icon: ico, group: g.name })));
-export const PAGES = [{ id: 'billing', label: 'Billing', icon: 'card' }, { id: 'profile', label: 'Profile', icon: 'user' }, { id: 'share', label: 'Share & earn', icon: 'gift' }];
+export const PAGES = [{ id: 'billing', label: 'Billing', icon: 'card' }, { id: 'profile', label: 'Profile', icon: 'user' }, { id: 'share', label: 'Share & earn', icon: 'gift' }, { id: 'admin', label: 'Admin', icon: 'shield' }];
 const PHONE_TABS = ['chat', 'dashboard', 'tasks', 'files'];
 // G, then a letter, opens a tab (the letter is shown beside the tab in search and in the shortcuts list).
 const GO = { chat: 'C', dashboard: 'D', analytics: 'N', tasks: 'T', email: 'E', files: 'F', products: 'P', orders: 'O', customers: 'U', ads: 'A', studio: 'S', outbound: 'B', social: 'L', legal: 'G', settings: 'I', activity: 'Y' };
 
-export const state = { me: null, founder: null, biz: null, businesses: [], tab: 'chat', page: null, credits: null, cleanup: null, needs: 0, visit: 0 };
+export const state = { me: null, founder: null, biz: null, businesses: [], tab: 'chat', page: null, credits: null, cleanup: null, needs: 0, visit: 0, admin: false };
 // How long a view may wait before the page offers to try again.
 const SLOW_MS = 10000;
 
@@ -88,6 +88,8 @@ function bindChrome() {
     { label: 'Billing', icon: 'card', onClick: () => { location.hash = 'page=billing'; } },
     { label: 'Profile', icon: 'user', onClick: () => { location.hash = 'page=profile'; } },
     { label: 'Share & earn', icon: 'gift', onClick: () => { location.hash = 'page=share'; } },
+    // An admin of the brand's org (GET /me/brands names this brand) reads its founders; nobody else sees the row.
+    ...(state.admin ? [{ label: 'Admin', icon: 'shield', onClick: () => { location.hash = 'page=admin'; } }] : []),
     // The tour starts where a founder starts: the chat.
     { label: 'Replay the tour', icon: 'sparkle', onClick: () => { openTab('chat'); replayGuides(); } },
     'hr',
@@ -106,7 +108,7 @@ function bindChrome() {
     const q = input.value.trim().toLowerCase();
     items = [
       ...TABS.map(t => ({ label: t.label, kind: 'Tab', icon: t.icon, keys: `G ${GO[t.id]}`, go: () => openTab(t.id) })),
-      ...PAGES.map(p => ({ label: p.label, kind: 'Account', icon: p.icon, go: () => { location.hash = `page=${p.id}`; } })),
+      ...PAGES.filter(p => p.id !== 'admin' || state.admin).map(p => ({ label: p.label, kind: 'Account', icon: p.icon, go: () => { location.hash = `page=${p.id}`; } })),
       ...state.businesses.map(b => ({ label: b.name, kind: 'Business', icon: 'store', go: () => { location.href = tabHref('chat', b.slug); } })),
       { label: 'New business', kind: 'Start', icon: 'plus', go: () => { location.href = '/start/'; } },
     ].filter(i => !q || i.label.toLowerCase().includes(q) || i.kind.toLowerCase().includes(q));
@@ -244,6 +246,8 @@ async function init() {
   const bizP = slug ? readBusiness(slug).then(b => ({ b }), e => ({ e })) : null;
   const listP = listBusinesses().catch(() => []);
   refreshCredits();
+  // Whether this account administers the brand: an API without the door, or any refusal, leaves the row hidden.
+  brandAdmin.mine().then(list => { state.admin = list.some(b => b.id === BRAND.client); }, () => { state.admin = false; });
   $('#main').innerHTML = '<div class="skeleton" role="status" aria-label="Opening your console"><i class="title"></i><i></i><i class="short"></i><i class="block"></i></div>';
   try {
     state.me = await meP;
