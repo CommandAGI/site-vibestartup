@@ -107,8 +107,8 @@ export async function render(ctx) {
     const subs = products.filter(p => p.recurring && p.status === 'active');
     const sold = p => {
       if (!p.goodId) return `<span class="badge">order by email</span>${checkoutSoon(p) ? ' ' + soon('checkout soon') : ''}`;
-      if (p.goodStatus !== 'active') return '<span class="badge warn">checkout after payouts</span>';
       if (can.store === false) return '<span class="badge" title="CommandAGI\'s checkout is not open to guests yet (its store is off): buyers order by email until it opens.">checkout not open · order by email</span>';
+      if (p.goodStatus !== 'active') return '<span class="badge warn">checkout after payouts</span>';
       if (p.goodKind === 'digital' && guestDigital !== true) return `<span class="badge" title="${esc(guestDigital === false ? 'CommandAGI\'s checkout does not sell downloads to guests yet: buyers order by email until it does.' : 'Not checked yet.')}">download · order by email</span>`;
       return `<span class="badge ok">checkout${p.goodKind === 'digital' ? ' · download' : ''}</span>`;
     };
