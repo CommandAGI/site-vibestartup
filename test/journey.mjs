@@ -296,6 +296,7 @@ async function run(browser, width) {
   await b.eval('location.hash = "page=share"'); await sleep(300);
   await b.waitFor('!!document.querySelector("#referral-link")', 20000);
   check(/vibestartup/.test(await b.eval('document.querySelector("#referral-link").value')), `${label}: the referral link is there`);
+  check(await b.eval('!!document.querySelector("#referral-rule") !== !!document.querySelector("#referral-soon")'), `${label}: the reward is either the API's rule or "Soon", never both and never neither`);
 
   // 11. ⌘K at desktop width, the bottom bar at phone width.
   if (width >= 900) {

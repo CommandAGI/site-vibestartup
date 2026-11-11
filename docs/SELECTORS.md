@@ -71,7 +71,7 @@ After success the page goes to `?next=` or `/home/`.
 | activity | `#activity .event` |
 | billing | `#credits-balance`, `#packs [data-buy]` (a credit pack's checkout), `#plans article` (the listings; each says "set at launch"), `#plan-current`, `#credits-history tr`, `#dispute` |
 | profile | `#profile-name`, `#profile-email`, `#notif-push`, `#notif-email`, `#signout`, `#delete-account` |
-| share | `#referral-link`, `#copy-referral` |
+| share | `#referral-link`, `#copy-referral`, `#share-referral` (the phone's share sheet, where the browser has one), `#referral-rewards`; on an API without referrals `#referral-soon` (the "Soon" pill); with them `#referral-rule`, `#referral-count`, `#referral-earned`, `#referral-list tr`, and for a referred founder `#referral-unlock` with `#confirm-email` |
 
 A table (`table.table`) reflows on a phone: `console.js` writes each cell's column name into `td[data-label]`.
 

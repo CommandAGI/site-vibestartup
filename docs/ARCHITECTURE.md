@@ -84,6 +84,7 @@ The co-founder's thread, triggers and site are CommandAGI objects whose ids `bus
 | activity | `GET /threads/:id/events?limit=` newest first |
 | billing | `GET /me/credits`, `GET /me/credits/history`, `GET /me/subscription` |
 | profile | `GET /me`, `GET /users/:id`, `POST /me/profile { name }`, `GET/POST /me/notification-prefs`, `POST /me/erase { confirm: true }` (the platform revokes the sign-ins before it erases the Drive, so an erase that fails late ends the session: the page asks for the password, signs in again and finishes it) |
+| share & earn | the link is `${BRAND.home}/?ref=<code>` (`GET /me/referrals` → `code`, the account's handle or id). Any page opened from it keeps `ref` in `localStorage` (`vs_ref`, `lib/api.js`); the sign-up sends it as `ref` on `POST /oauth/signup`, and when the answer has no `referral` the page names it at `POST /me/referrer { ref, client }` (right after the sign-up and again on `/start/`, within the day the platform allows). The platform grants both accounts the credit when the friend proves their login email (`POST /me/emails/:id/verify` and `…/confirm`; CommandAGI's `docs/billing.md` § referrals). The Share page shows the rule, the friends who joined, the credits earned and this month's count against the cap; a referred founder gets "Confirm my email". Where `GET /me/referrals` answers 404 (an API without referrals) the reward shows a "Soon" pill and promises nothing |
 | delete a business | the folder to the Trash (`DELETE /drive/:id`), `DELETE /sites/:id`, the triggers deleted; the thread is left (its run is a record) |
 
 Every request is the founder's own: the API's authority, key scopes, audit and billing run unchanged. Nothing here
@@ -129,6 +130,7 @@ undeclared input today, and `generationQuote` already prices `inputs.duration`),
 3. A secret's value is never shown again after it is set.
 4. The co-founder is an AI agent and says so. When the model gives no answer, the page says so.
 5. Prices are set at launch; every plan says so until they are.
+6. A reward is shown only where the API grants it: the Share page reads the rule from `GET /me/referrals`, and says "Soon" where the API has none.
 
 ## files of this repository
 
