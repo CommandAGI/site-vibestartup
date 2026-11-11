@@ -1,11 +1,13 @@
 // The new-business wizard: one question per screen, the suggestions made by a script from the founder's words
 // (lib/business.js), then the creation sequence against CommandAGI (createBusiness), each step shown as it finishes.
-import { requireSignIn, setNotificationPref, ApiError } from '/lib/api.js';
+import { requireSignIn, setNotificationPref, settleReferral, ApiError } from '/lib/api.js';
 import { $, $$, esc, oops } from '/lib/ui.js';
 import { IDEA_STARTERS, suggestBlueprints, suggestNames, suggestTagline, VIBES, VOICES, PARTNERS, COFOUNDER_NAMES, brandFor, createBusiness } from '/lib/business.js';
 
 // A signed-out visitor is sent to /auth/ and this page does nothing more (no thrown error: the redirect is the answer).
 const signedInHere = requireSignIn();
+// A shared link's ref that the sign-up could not hand over (an API without the door then) is named now, within its day.
+if (signedInHere) settleReferral();
 
 const STEPS = ['idea', 'blueprint', 'name', 'vibe', 'voice', 'partner', 'cofounder', 'updates'];
 const LABELS = { idea: 'Idea', blueprint: 'Blueprint', name: 'Name', vibe: 'Look', voice: 'Voice', partner: 'Partner', cofounder: 'Co-founder', updates: 'Updates' };
