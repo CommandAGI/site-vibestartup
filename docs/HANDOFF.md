@@ -1,4 +1,4 @@
-# handoff (2026-11-03)
+# handoff (2026-11-11)
 
 Where VibeStartup stands, what other sessions own, and what is left. Update this file when an item closes, and delete an
 item when it is done; history stays in the git log and in CommandAGI's `docs/verification.md`.
@@ -6,54 +6,41 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
 ## live and verified
 
 - Production: vibestartup.pro, www.vibestartup.pro, vibestartup.us and www.vibestartup.us serve this repository
-  (deployed with `commandagi sites deploy <export of HEAD> --prod`, as the host account that owns the site
-  `vibestartup`). The API is `https://api.commandagi.com` (`/brand.js`).
-- The journey passes on production, at 1440 and 390 px, for the whole flow:
-  - sign-up, the wizard and the co-founder's reply;
-  - an approval, the files and the launch week;
-  - a product, a test buy and the storefront (`<slug>.commandagi.app`);
-  - a secret, a domain record, a routine and Activity;
-  - a second business, and the account deleted through the page.
-
-  Each run erases its own accounts (`--keep` keeps them). Run it with:
-
-  ```
-  node test/journey.mjs --url https://vibestartup.pro
-  ```
-
-- The journey checks the shape rules at every screenshot: square shapes, rounded floats only, one edge on square
-  corners (`test/edges.mjs`, `docs/DESIGN.md` § shape and depth).
-- The platform side: the `vibestartup` OAuth client and `POST /oauth/signup` (CommandAGI 74f5c66, migration 0708);
-  the sign-up cap is 500 a day on production and 200 on dev (CommandAGI 5503606; live since 2026-11-03 through a
-  workbench-only deploy of c73b803 with only the settings changed).
+  (deployed with `pnpm commandagi sites deploy <git archive of HEAD> --prod` from a CommandAGI checkout, as the host
+  account that owns the site `vibestartup`; never deploy `.`, which would carry `.test-results/`). The API is
+  `https://api.commandagi.com` (`/brand.js`).
+- 2026-11-11, at 55b16e5: the journey passes against production's API at 1440 and 390 px (`node test/journey.mjs --api
+  https://api.commandagi.com`), every step, with one problem left: the co-founder's first answer can take over 90 s.
+- The look is CommandAGI's shape language (2026-11-11, owner): square controls, wall-to-wall selection bands, only
+  floats rounded, a phone drawer and bottom bar (`docs/DESIGN.md`; `test/edges.mjs` checks it at every screenshot).
+- Payments: a founder's customers pay through CommandAGI's Connect checkout (Settings → Payments onboards a Stripe
+  Express account). A physical product is a good; a digital good is ordered by email until the checkout sells digital
+  goods to guests. The co-founder adds products as product files (`productsRule` in `lib/business.js`); the Products
+  tab links them to their goods.
+- Billing sells CommandAGI's credit packs through Stripe Checkout and shows the three listings at their prices (Co-founder
+  $39, Growth $29, Studio $29 for 30 days), opening on 2026-12-08.
+- Speed: the console opens in about 2 s (parallel first reads, a file read by path in one call); a business is built in
+  under 2 minutes (its folders and files made at once).
 
 ## owned by other sessions
 
-The CommandAGI driver session (`commandagi-95`, the gate and the deploys) took these on 2026-11-03:
-
-- **Deploy CommandAGI main.** It carries the caps from the repository and the erase fix (1afd25356ba): erasure now
-  revokes the caller's sign-ins last and deletes in bounded batches. Production was still on c73b803 when this was
-  written.
-- **Dev, after its next dev deploy:**
-  - Retry the erase of the two journey accounts stuck there, `journey-mw1avsed-390@example.com` and
-    `journey-mw1avsed-1440@example.com` (password `correct horse battery`). Dev's D1 answered `D1 DB is overloaded` to
-    every erase.
-  - Publish this site on dev (it still serves 13648e0), from a CommandAGI checkout whose gitlink is current:
-
-    ```
-    node scripts/seed/run.mjs sites-org-vibestartup dev --apply
-    ```
+- **CommandAGI, started 2026-11-11 by the VibeStartup session's agent:** a brand's own origin for checkout, portal and
+  Connect onboarding returns (today a pack's checkout returns to commandagi.com: Billing asks for this origin and falls
+  back), and a guest's paid digital good delivered by an emailed download link. When it reaches production: Billing's
+  fallback goes, Settings → Payments passes this origin, and the storefront sells digital goods through the checkout
+  (`storefrontFiles` `sellable`, `app/tabs/products.js` `sold`).
 
 ## left to do
 
-- **After the production deploy of CommandAGI main:** run the journey once against production (the command above), to
-  see the new erase order with this site's accounts. The page's "enter your password to finish" step stays as a
-  fallback and should no longer appear.
-- **The co-founder's first answer is slow.** It took more than 90 s in three of six widths on production on
-  2026-11-03, and the journey reports it as a problem. Find where the first turn spends its time (the thread's events)
-  before changing the journey's wait.
-- **A late erase failure on production.** Production's erase answered `D1 DB is overloaded` once on 2026-11-03, and a
-  retry succeeded. The erase fix above should cover it; the journey after the deploy shows whether it does.
+- **The co-founder's first answer is slow** (over 90 s at some widths). Find where the first turn spends its time (the
+  thread's events) before changing the journey's wait.
+- **Site hosting is slow.** A static file of this site takes 0.3 to 6 s to its first byte: the gateway is in the api
+  worker, which Smart Placement runs near its database (`cf-placement: remote-ARN` seen from SJC). A gateway worker of
+  its own at the visitor's edge would serve every tenant site from its PoP (CommandAGI `docs/site-hosting.md`).
+- **Existing storefronts keep their rounded stylesheet** until they are published again (any product change in the
+  console publishes it).
+- `brand/og.html` and `og.png` still show the rounded look; the storefront falls back to the system font.
+- `lib/api.js` has no fetch timeout; a hung call shows the tab's "still loading, Try again" banner after 10 s.
 
 ## for the owner
 
