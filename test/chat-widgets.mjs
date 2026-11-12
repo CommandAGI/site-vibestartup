@@ -42,8 +42,9 @@ const result = { site, api, email, checks: [] };
 let failure = null;
 const check = (ok, what) => { result.checks.push(`${ok ? 'ok' : 'FAIL'} ${what}`); if (!ok) throw Error(what); };
 try {
+  const signIn = async () => { for (let i = 0; ; i++) { const x = await fetch(`${api}/oauth/token`, { method: 'POST', body: new URLSearchParams({ grant_type: 'password', client_id: 'vibestartup', username: email, password, scope: '*' }) }); if (x.status < 500 || i >= 4) return x; await sleep(3000 * (i + 1)); } };
   const r = kept
-    ? await fetch(`${api}/oauth/token`, { method: 'POST', body: new URLSearchParams({ grant_type: 'password', client_id: 'vibestartup', username: email, password, scope: '*' }) })
+    ? await signIn()
     : await fetch(`${api}/oauth/signup`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ client_id: 'vibestartup', name: 'Widget Person', email, password, scope: '*' }) });
   const tok = await r.json();
   if (!r.ok) throw Error(`${kept ? 'sign-in of the day\'s founder' : 'sign-up'}: ${r.status} ${JSON.stringify(tok)}`);
@@ -85,7 +86,17 @@ try {
     const thread = biz?.cofounder?.threadId;
     result.thread = { id: thread };
     check(!!thread, 'the business has a co-founder thread');
-    const transcript = async () => (await call(`/threads/${encodeURIComponent(thread)}/chat?limit=100`)).body?.messages ?? [];
+    // A read the platform could not serve (a 5xx: production's D1 was "overloaded" on 2026-11-12) is read again, and a
+    // read that never succeeds fails the run by name, never as an empty transcript.
+    const transcript = async () => {
+      for (let i = 0; ; i++) {
+        const r = await call(`/threads/${encodeURIComponent(thread)}/chat?limit=100`);
+        if (r.status === 200) return r.body?.messages ?? [];
+        result.transientReads = [...(result.transientReads ?? []), { status: r.status, error: r.body?.error ?? null, at: Date.now() }];
+        if (i >= 4) throw Error(`the transcript could not be read: ${r.status} ${JSON.stringify(r.body)?.slice(0, 200)}`);
+        await sleep(2000 * (i + 1));
+      }
+    };
 
     // Ask, then wait for the widget the co-founder's message carries; answer it; wait for the lock and the reply.
     const round = async (label, question, kind, answer) => {
@@ -133,8 +144,11 @@ try {
       t.founderLine = founderLine?.text ?? null;
       t.reply = reply?.text?.slice(0, 300) ?? null;
       check(entry?.ui?.answered === true, `${label}: the server holds the widget answered`);
-      check(String(entry.ui.answer) === String(t.sent), `${label}: the server's answer is the one sent (${t.sent})`);
-      check(!!founderLine && founderLine.text.includes(String(t.sent)), `${label}: the founder's line carries the answer`);
+      // A select's answer may be kept as the option's value or as its label (what the founder read); either is the one sent.
+      const opt = (entry.ui.options ?? []).find(o => String(o.value ?? o.label) === String(t.sent));
+      const as = [String(t.sent), ...(opt?.label ? [String(opt.label)] : [])];
+      check(as.includes(String(entry.ui.answer)), `${label}: the server's answer is the one sent (${as.join(' or ')}; kept ${entry.ui.answer})`);
+      check(!!founderLine && as.some(a => founderLine.text.includes(a)), `${label}: the founder's line carries the answer`);
       check(!!reply, `${label}: the co-founder replied after the answer`);
       await b.shot(`${label}-answered-${width}`);
       return t;
