@@ -263,7 +263,9 @@ async function init() {
   if (!slug) {
     const list = await listP;
     if (!list.length) { location.replace('/start/'); return; }
-    location.replace(tabHref(hashParams().get('tab') || 'chat', list[0].slug)); return;
+    // An account page (`#page=admin`) is the same page in any business: keep it, and only choose the business.
+    const page = hashParams().get('page');
+    location.replace(page ? `/app/?b=${encodeURIComponent(list[0].slug)}#page=${encodeURIComponent(page)}` : tabHref(hashParams().get('tab') || 'chat', list[0].slug)); return;
   }
   const got = await bizP;
   if (got.e) {
