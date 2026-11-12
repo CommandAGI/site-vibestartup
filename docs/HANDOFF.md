@@ -18,6 +18,15 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   16.5 s, locked 0.28 s, reply 15.0 s; no sideways scroll at 390. The charter teaches the cagi-ask shapes
   (`WIDGETS_RULE`); without a whole example message the model said the chat could not show a slider. The agent loop's
   `confirm` prompt shows Approve and Deny only while the page is open (the platform keeps no pending prompt).
+- The rail's levels (2026-11-12): the tab shown opens under its row (`app/nav.js`, `app/levels.js`). Chat lists the
+  business's 5 most recently active chats, More for 5 more, and New chat (a thread about its `business.json`, listed by
+  CommandAGI's `GET /me/threads?of=`, live on production since ff7e012); Analytics, Tasks, Email and Files list their
+  views, Products its products. `node test/sidebar.mjs --url https://vibestartup.pro` (a throwaway account, erased): 8
+  chats, each answered in 9.5 to 14.1 s; the rail's 5 newest first, More brings the other 3 once; the first chat keeps
+  its own lines and a live reply came in 10.3 s; the views as addresses; the keys; 390 px in the drawer; no sideways
+  scroll, no console error: 58 of 58. `--fixed` checks an API without `of` (the first chat alone, no New chat): 19 of
+  19 before ff7e012. Screenshots: CommandAGI's `test-results/sidebar-2026-11-12/`. A chat is titled by the platform
+  after its first exchange; until the rail reads it again (25 s after a line) it says "New chat".
 - The look is CommandAGI's shape language (2026-11-11, owner): square controls, wall-to-wall selection bands, only
   floats rounded, a phone drawer and bottom bar (`docs/DESIGN.md`; `test/edges.mjs` checks it at every screenshot).
 - Payments: a founder's customers pay through CommandAGI's Connect checkout (Settings → Payments onboards a Stripe
