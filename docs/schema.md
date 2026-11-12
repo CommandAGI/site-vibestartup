@@ -5,8 +5,9 @@ org-* for each vibestartup.pro business? with like BUSINESS.md and other files i
 filesystem organized within a clearly organized schema such that even tho 'everything is a file' the vibestartup users
 just see it thru a simple, organized, crisp lens that the vibestartup.pro app surfaces to them".
 
-This file is the schema. Step 1 (the platform) is done; step 2 (the app moves to it) is the plan at the end. Until
-step 2 lands, the app still keeps a business in the founder's Drive at `Businesses/<slug>/` (`docs/ARCHITECTURE.md`).
+This file is the schema. Step 1 (the platform, CommandAGI 1b260438ddc) and step 2 (the app moves to it, 2026-11-12)
+are done: every business is an org, the console reads it through `lib/schema.js`, and the owner's DigitalProduct moved
+(§ the one-time move). Nothing reads `Businesses/<slug>/` any more.
 
 ## the two accounts
 
@@ -19,16 +20,20 @@ step 2 lands, the app still keeps a business in the founder's Drive at `Business
   (`orgs.founded_by`) and its brand (`orgs.brand = "vibestartup"`) once, at its creation (CommandAGI migration 0765).
   The owner can change later; the founder and the brand do not.
 - **The founder's businesses** are `GET /me/orgs?brand=vibestartup`. The console's switcher lists them, and
-  `?b=<org id>` opens one.
-- **People.** A person the founder invites is a member of the org (`POST /orgs/:id/invites`, `member` or `viewer`); an
-  admin seat is `POST /orgs/:id/members`. Folder shares are not used for members.
+  `?b=<slug>` opens `org-<slug>`. The org's handle is the storefront's slug: the site is made first (a slug another
+  site holds gets a suffix), the org takes the same handle, and the site moves into it before anything is in it
+  (`POST /sites/:id/transfer`).
+- **People.** A person the founder invites is a member of the org (`POST /orgs/:id/invites`, `viewer`, `member` or
+  `admin`; Settings → Members). Folder shares are not used for members.
 - **The co-founder** is one agent made in the org (`POST /agents/<base>/fork { ownerScope: <org id>, name, instructions
   }`). Its charter is its instructions, so every chat starts with it and shares the prompt cache. Its `agent.tsx` is in
   the org's Drive. It acts with its founder's authority, which reaches the org as its owner, so it needs no seat. The
   org's members operate it (seat it, start chats on it); only the founder manages it.
 - **Chats.** Many threads, each of the record (`POST /threads { ownerScope, fromAgentId, about: <business.json
   address> }`), listed newest activity first by `GET /me/threads?of=<business.json address>`. The daily briefing is a
-  trigger on one pinned thread (`business.json` `routines.briefing`).
+  trigger on the first chat (`business.json` `cofounder.threadId`, `routines.briefing`). A business moved from a
+  founder's folder lists its chat from before the move too (`cofounder.earlier`): a run cannot change hands, so that
+  chat stays the founder's thread.
 - **Who pays.** A thread of the org is billed to the org's owner, the founder: the founder's credits pay for the
   business, the free ones first, so the revenue-funded free credits keep working. The org's own purse is not used yet
   (CommandAGI `docs/next/vibestartup-what-is-left…md` § a business as an org).
@@ -38,7 +43,9 @@ step 2 lands, the app still keeps a business in the founder's Drive at `Business
   says which). The platform sends Stripe `business_type: company` for every org today; a sole proprietor's type is a
   CommandAGI gap.
 - **Mail.** The org's own address, `<slug>@commandagi.email` (`POST /orgs/:id/email-addresses`, up to 25 an org), so
-  each business has one and the founder keeps their personal one. Every member reads it.
+  each business has one and the founder keeps their personal one. Every member reads it. A business moved from a
+  founder's folder keeps the founder's address (`digitalproduct@commandagi.email` is the owner's): CommandAGI moves no
+  address to an org yet (its `docs/next`, "An address cannot move to an org"), so the record says so in `gaps`.
 - **A business is not a company.** An org is a shared account (the founder, the co-founder, the people the founder
   invites), which is what CommandAGI's orgs are for (`docs/intentions.md` § companies: "organisation accounts are only
   for sharing accounts"). Its legal entity, when it has one, is an optional `.company.tsx` in its `legal/` folder.
@@ -64,7 +71,8 @@ storefront.json              the storefront's template, style and words         
 agents/<name>/agent.tsx      the co-founder agent; its instructions are the charter    platform (the fork, PATCH /agents)
 brand/brand-book.json        colours, type, voice (made by a script; labelled so)      console
 brand/logo.svg               the mark                                                  console, founder
-products/<slug>.product.tsx  one good each, the source of truth of the catalogue       co-founder, console
+products/products.json       the storefront's catalogue: every product, its words and pictures  console, co-founder
+products/<id>.product.tsx    one good each: what the checkout sells                    co-founder, console
 products/images/             pictures of products                                      founder, co-founder
 products/files/              the files digital products sell                           founder
 contacts/<email>.vcf         one customer or sign-up each (vCard 3.0)                  platform (storefront sign-ups), console, co-founder
@@ -82,30 +90,42 @@ orders/orders.jsonl          orders recorded outside the checkout, one a line   
 Tasks/<title>.task.tsx       approvals and work (`taskKey` per day and step)          co-founder, console, founder
 Sites/<name>/                the storefront site's folder: generated, never edited     console (publish), platform
 runs/                        the threads' runs                                         platform
+Trash/                       what was removed                                          platform
 ```
 
 - **Names.** The co-founder's files are at the root, in capitals: `BUSINESS.md`, `SOUL.md`, `OWNER.md`,
   `PLAYBOOK.md`, `MEMORY.md`, `SUPPORT.md`. The code map is **CODEMAP.md** (one word), not CODE_MAP.md.
-- **Kept once, not in each Drive.** `PLATFORM.md` (what CommandAGI gives the business) and `CODEMAP.md` (where each
-  thing is, from this schema) are the same for every business. They live in this repository at `docs/cofounder/` and
-  are sections of the charter, built by `lib/schema.js`; a business holds no copy. A business's own facts are in its
-  files above.
+- **Kept once, not in each Drive.** The platform's part (what CommandAGI gives the business) and the code map (where
+  each thing is, from this schema) are the same for every business: `PLATFORM` and `charterMap()` in `lib/schema.js`,
+  sections of the charter (`charterFor`, `lib/business.js`), which is the co-founder agent's instructions. A business
+  holds no `PLATFORM.md` or `CODEMAP.md`. A business's own facts are in its files above.
 - **MEMORY.md** is the short page, under 2 KB, that the co-founder reads at the start of work. Longer memory is the
   platform's (`memory_remember`, `memory_search`).
-- **The catalogue** is the product files. `products/products.json` is gone: the storefront reads the goods
-  (`GET /goods` with `x-cagi-account: acct:org:<id>`, `images` on each `<product>`).
+- **The catalogue** is `products/products.json`, and each good is its product file. The plan was to drop
+  `products.json` for the goods; the code proved it wrong: a product file is a `physical` or `digital` good only, and
+  the console sells services, subscriptions and courses by email too, so the storefront's catalogue stays one file
+  that names each good's `file`. The Products tab writes a good as `products/<id>.product.tsx` (slug
+  `<business>-<id>`: a product's slug and SKU are unique on the whole platform), the Drive indexes it as a good of the
+  org, and the tab links the entry to it (`GET /goods` with `x-cagi-account: acct:org:<id>`). Paths in the catalogue
+  (`file`, `images[].path`) are from the org's root.
 - **Customers** are contacts, `contacts/<email>.vcf`: `CATEGORIES:customer` or `CATEGORIES:signup`, the consent in
   `NOTE` (the words agreed to, when, on which page). `customers/customers.json` is gone.
-- **Settings** are `.commandagi/settings.json` at the org's root, keys `vibestartup.autopilot` (boolean) and
-  `vibestartup.briefing` (`daily`, `weekly` or `off`). The business's own `settings.json` and its `members` list are
+- **Settings** are `.commandagi/settings.json` at the org's root, keys `vibestartup.autopilot` (boolean),
+  `vibestartup.briefing` (`daily`, `weekly` or `off`), `vibestartup.notify` (the "Notify me" chips) and
+  `vibestartup.creativeBudget`; every other key of the file is kept. The business's own `settings.json` and its `members` list are
   gone: members are the org's.
-- **business.json** holds only what no other file or platform record says: `{ slug, idea, tagline, blueprint, vibe,
-  voice, partner, cofounder: { name, agentId, model }, site: { id }, email: { id, address }, routines: { briefing,
-  briefingThread }, launchWeek: { startedAt }, gaps: [] }`. The name is the org's; the site's addresses are the site's.
+- **business.json** holds only what no other file or platform record says (`RECORD_KEYS`, `lib/schema.js`): `{ slug,
+  idea, tagline, blueprint, storefrontPick, vibe, voice, partner, cofounder: { name, agentId, threadId, model, welcome,
+  earlier }, site, email: { id, address }, payouts: { account, startedAt }, routines: { briefing }, launchWeek: {
+  startedAt }, lint: { at, strays }, gaps: [], createdAt, updatedAt }`. The name is the org's; the brand is
+  `brand/brand-book.json`; the settings are `.commandagi/settings.json`. `site` keeps its id and the state the
+  storefront's publish needs (its slug, addresses, folder, the storefront's mark, the checkout's answer, the sign-ups'
+  storage, the last deploy); the addresses are read again from the site (`syncBrandUrl`).
   CommandAGI's brand admin reads its `name`, `site.id` and `gaps` (`oauth_clients.brand_record`'s file name at the org
   Drive's root).
-- **A file not in this schema** is the founder's own. The lint (`lib/schema.js`) lists such files in a task once a
-  week and never refuses a write.
+- **A file not in this schema** is the founder's own. The lint (`lint`, `lib/schema.js`) lists such files in one task
+  (`taskKey` `schema.strays`) at most once a week, when the console opens the business (`lintBusiness`), and never
+  refuses or moves a file.
 
 ## the lens: what the console shows
 
@@ -120,16 +140,16 @@ set of paths, held in code in `lib/schema.js` (not in the Drive). Files and Sett
 | Tasks | `Tasks/` (`GET /me/tasks?owner=org&ownerScope=`) | `Tasks/` (approve, decline) |
 | Email | the org's mailboxes | sent mail |
 | Files | the org's Drive, the lens's folders only | uploads |
-| Products | `products/*.product.tsx`, the goods | `products/`, `products/images/`, `products/files/` |
+| Products | `products/products.json`, the goods (as the org), `products/images/`, `studio/`, `brand/` | `products/products.json`, `products/*.product.tsx`, `products/images/`, `products/files/` |
 | Storefront | `storefront.json`, `brand/` | `storefront.json`, then a publish into `Sites/<name>/` |
 | Orders | `GET /goods/orders` as the org, `orders/orders.jsonl` | — |
-| Customers | `contacts/` | `contacts/` (storefront sign-ups) |
+| Customers | `contacts/*.vcf`, the storefront's sign-ups | `contacts/*.vcf` (a sign-up, with its consent) |
 | Ads | `ads/campaign.json`, `studio/` | `ads/campaign.json` |
 | Studio | `brand/brand-book.json`, `studio/` | `studio/` |
 | Outbound | `leads/`, `outbound/` | `outbound/` |
 | Social | `social/posts.json` | `social/posts.json` |
 | Legal | `legal/`, `brand/`, `business.json` | `legal/` |
-| Settings | `.commandagi/settings.json`, the org's members and invites, `SOUL.md` | the same |
+| Settings | `.commandagi/settings.json`, the org's members and invites, payouts (`POST /connect/refresh` as the org) | the same; the Finish payouts card (`POST /connect/onboard` as the org) |
 | Activity | the org's audit and the threads' events | — |
 | Billing, Profile, Share & earn | the founder's account (credits, profile, referrals) | the founder's account |
 | Admin | `GET /brands/vibestartup/admin` (admins of `org-vibestartup` only) | — |

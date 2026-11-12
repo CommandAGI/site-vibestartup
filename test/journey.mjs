@@ -94,7 +94,7 @@ async function run(browser, width) {
   // 3. The wizard, one step at a time.
   await b.waitFor('document.querySelector("#wizard")?.dataset.step === "idea"');
   // The page's modules may still be on their way (a site's first byte takes 0.3 to 6 s): the idea fills when they run.
-  await b.waitFor('(document.querySelector("#idea")?.value ?? "").length > 0', 30000).catch(() => null);
+  await b.waitFor('document.documentElement.dataset.wizard === "ready"', 30000);
   check(/Step 1 of 8/.test(await b.text('#step-label')), `${label}: the wizard starts at step 1 of 8`);
   check((await b.eval('document.querySelector("#idea")?.value ?? ""')).includes('ceramic'), `${label}: the idea is in the box`);
   await b.click('#continue');
@@ -395,6 +395,7 @@ async function run(browser, width) {
   await b.shot(`home-${width}`);
   await b.click('#new-business');
   await b.waitFor('location.pathname === "/start/"', 10000);
+  await b.waitFor('document.documentElement.dataset.wizard === "ready"', 30000);
   await b.waitFor('!!document.querySelector("#idea")');
   await b.fill('#idea', 'A weekend pottery class with a small shop of glazes');
   for (let i = 0; i < 7; i++) { await b.click('#continue'); await sleep(250); }

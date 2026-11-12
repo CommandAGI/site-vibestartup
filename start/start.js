@@ -205,3 +205,5 @@ async function build() {
 }
 
 if (signedInHere) { show(); startGuides(auth()?.userId); if (state.idea) ask(state.idea); }
+// A driven browser waits for this mark: the wizard's buttons do nothing before this module has bound them.
+document.documentElement.dataset.wizard = 'ready';
