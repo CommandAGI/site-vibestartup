@@ -171,9 +171,20 @@ export async function move({ slug, apply = false } = {}) {
   // writes it; the business's tasks from the founder's Tasks/ with it. Then the goods are indexed again as the org's: a
   // good whose file moved comes along with its slug and SKU (CommandAGI's "a product moves with its file").
   if (!report.problems.some(p => p.what === 'copy differs' || p.what === 'unreadable')) {
+    // A file goes to the Trash (`DELETE /drive/:id`, kept until the Trash is emptied); a folder only when empty, so a
+    // folder's files go first, then the folder. A task's .md goes with its .task.tsx.
+    const trashTree = async path => {
+      for (const n of await drive.list(path)) {
+        if (n.type === 'folder') { await trashTree(`${path}/${n.name}`); await drive.remove(n.id).catch(() => null); }
+        else await drive.remove(n.id).catch(e => { if (e.status !== 404) problem('not trashed', { file: `${path}/${n.name}`, why: e.message }); });
+      }
+    };
     const top = await drive.list(from);
-    for (const n of top.filter(n => n.name !== 'runs')) await drive.remove(n.id);
-    for (const f of await drive.list('Tasks')) if (taskFiles.some(t => t.path === `Tasks/${f.name}`)) await drive.remove(f.id);
+    for (const n of top.filter(n => n.name !== 'runs')) {
+      if (n.type === 'folder') { await trashTree(`${from}/${n.name}`); await drive.remove(n.id).catch(() => null); }
+      else await drive.remove(n.id);
+    }
+    for (const f of await drive.list('Tasks')) if (taskFiles.some(t => t.path === `Tasks/${f.name}`)) await drive.remove(f.id).catch(() => null);
     step('trash', { moved: top.filter(n => n.name !== 'runs').map(n => n.name), kept: top.some(n => n.name === 'runs') ? ['runs'] : [], tasks: taskFiles.length });
     const re = await goods.reindex(bizAccount(biz)).catch(e => ({ error: e.message }));
     const theirs = await goods.list(bizAccount(biz)).catch(() => []);
