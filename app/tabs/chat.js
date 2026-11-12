@@ -32,9 +32,34 @@ export async function render(ctx) {
   // The co-founder is typing while the socket says it works, or while the founder's last line has no answer yet.
   let working = false, typingUntil = Date.now() + 120000;
   const unanswered = () => { const last = messages.filter(m => (m.role === 'user' || m.role === 'agent') && m.text?.trim()).at(-1); return !!cof.threadId && (!last || last.role === 'user'); };
-  const isOpening = m => String(m.id ?? '').startsWith('opening:') || /Introduce yourself in three short lines|First say hello in two or three short lines/.test(m.text ?? '');
+  const isOpening = m => String(m.id ?? '').startsWith('opening:') || /Introduce yourself in three short lines|First say hello in two or three short lines|Your welcome message is above this one/.test(m.text ?? '');
+  // The welcome (lib/business.js welcomeFor) is the thread's first line, kept by the platform at creation. The record
+  // holds its words, so it shows before the transcript is read; the transcript's line has the same id and replaces it.
+  const welcome = cof.welcome;
+  if (welcome?.kept && welcome.lineId && welcome.text) messages = [{ id: welcome.lineId, role: 'agent', text: welcome.text, at: welcome.at, template: welcome.template, senderName: cof.name }];
+  // A template's line is typed out word by word the first time this browser shows it (30 to 60 ms a word), as if the
+  // co-founder wrote it now; at once when the founder asks for reduced motion, or when it was shown before.
+  const typed = typedLines();
+  let typing = null;
+  const typeOut = m => {
+    if (typing || typed.has(m.id) || reducedMotion()) return;
+    const words = m.text.match(/\s*\S+/g) ?? [m.text];
+    typing = { id: m.id, words, shown: 1 };
+    const step = () => {
+      if (!alive || !typing) return;
+      typing.shown++;
+      const node = chat.querySelector(`[data-id="${CSS.escape(typing.id)}"] .text`);
+      if (node) { const atBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 80; node.textContent = typing.words.slice(0, typing.shown).join(''); if (atBottom) chat.scrollTop = chat.scrollHeight; }
+      if (typing.shown < typing.words.length) setTimeout(step, 30 + Math.random() * 30);
+      else { rememberTyped(typed, typing.id); typing = null; paint(); }
+    };
+    setTimeout(step, 30);
+  };
   const speaker = m => m.role === 'user' ? 'me' : m.role === 'agent' ? 'cofounder' : 'system';
   const paint = () => {
+    // Decided before the lines are drawn, so the welcome is never drawn whole and then typed again.
+    const scripted = messages.find(m => m.template && m.role === 'agent' && m.text);
+    if (scripted) typeOut(scripted);
     const atBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 80;
     const open = approvalsList.filter(t => t.status === 'todo');
     const decided = approvalsList.filter(t => t.status !== 'todo');
@@ -57,13 +82,15 @@ export async function render(ctx) {
         parts.push(`<div class="msg system" data-id="${esc(m.id ?? '')}"><div class="body"><div class="text">You started ${esc(biz.name)} with ${esc(cof.name ?? 'your co-founder')} · ${esc(time(m.at))}</div></div></div>`);
         continue;
       }
-      parts.push(`<div class="msg ${who}" data-id="${esc(m.id ?? '')}">${who === 'me' ? '' : `<span class="avatar ${who === 'cofounder' ? 'cofounder' : ''}">${who === 'cofounder' ? initial(cof.name) : '·'}</span>`}<div class="body"><div class="who"><b>${esc(who === 'me' ? (founder?.name || 'You') : who === 'cofounder' ? (m.senderName || cof.name || 'Co-founder') : 'System')}</b><span>${esc(time(m.at))}</span></div><div class="text">${esc(m.text)}</div></div>${who === 'me' ? `<span class="avatar">${initial(founder?.name || founder?.email)}</span>` : ''}</div>`);
+      const writing = typing?.id === m.id;
+      const shown = writing ? typing.words.slice(0, typing.shown).join('') : m.text;
+      parts.push(`<div class="msg ${who}${writing ? ' streaming' : ''}" data-id="${esc(m.id ?? '')}"${writing ? ' aria-busy="true"' : ''}>${who === 'me' ? '' : `<span class="avatar ${who === 'cofounder' ? 'cofounder' : ''}">${who === 'cofounder' ? initial(cof.name) : '·'}</span>`}<div class="body"><div class="who"><b>${esc(who === 'me' ? (founder?.name || 'You') : who === 'cofounder' ? (m.senderName || cof.name || 'Co-founder') : 'System')}</b><span>${esc(time(m.at))}</span></div><div class="text">${esc(shown)}</div></div>${who === 'me' ? `<span class="avatar">${initial(founder?.name || founder?.email)}</span>` : ''}</div>`);
     }
     if (biz.site?.lastDeploy?.at) parts.push(`<div class="milestone">${icon('rocket')}<div><b>Site deployed</b> · <a href="${esc(biz.site.url)}" target="_blank" rel="noopener">${esc(biz.site.url)}</a> <small class="muted">${esc(ago(biz.site.lastDeploy.at))}</small></div></div>`);
     for (const t of open) parts.push(approvalCard(t));
     if (decided.length) parts.push(`<p class="hint" style="margin-left:42px">${decided.length} decided ${decided.length === 1 ? 'card' : 'cards'} are in Tasks.</p>`);
     for (const b of live.values()) parts.push(liveBubble(b));
-    if ((working || unanswered()) && !live.size && Date.now() < typingUntil) parts.push(`<div class="msg system composing typing" role="status"><div class="body"><div class="text">${esc(cof.name ?? 'Your co-founder')} is typing</div></div></div>`);
+    if ((working || unanswered()) && !live.size && !typing && Date.now() < typingUntil) parts.push(`<div class="msg system composing typing" role="status"><div class="body"><div class="text">${esc(cof.name ?? 'Your co-founder')} is typing</div></div></div>`);
     chat.innerHTML = parts.join('');
     const needs = $('#building [data-needs] b'); if (needs) needs.textContent = `${open.length} need${open.length === 1 ? 's' : ''} you`;
     $$('.approval [data-approve]', chat).forEach(b => b.onclick = () => decide(b.closest('.approval').dataset.id, true, b));
@@ -154,6 +181,7 @@ export async function render(ctx) {
   const poll = () => { if (!alive) return; timer = setTimeout(async () => { await load(); poll(); }, socketOpen ? 15000 : 4000); };
 
   $('#chat-refresh').onclick = load;
+  if (messages.length) paint();
   connect();
   // An existing business moves its co-founder to the fast model once (lib/business.js moveCofounderModel).
   moveCofounderModel(biz).then(b => b && ctx.setBiz?.(b)).catch(() => null);
@@ -162,6 +190,17 @@ export async function render(ctx) {
   renderPanel(ctx, panel, approvalsList).catch(() => null);
   return () => { alive = false; clearTimeout(timer); clearTimeout(reloadTimer); try { socket?.close(); } catch { /* closed */ } };
 }
+
+/** The template lines this browser has typed out already (ids), so a reload shows them whole. */
+const TYPED_KEY = 'vs_typed';
+function typedLines() {
+  try { return new Set(JSON.parse(localStorage.getItem(TYPED_KEY) ?? '[]')); } catch { return new Set(); }
+}
+function rememberTyped(set, id) {
+  set.add(id);
+  try { localStorage.setItem(TYPED_KEY, JSON.stringify([...set].slice(-50))); } catch { /* storage off: it types again next time */ }
+}
+const reducedMotion = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
 
 async function renderPanel(ctx, panel, approvalsList) {
   const { biz } = ctx;

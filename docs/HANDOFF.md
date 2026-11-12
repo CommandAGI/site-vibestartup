@@ -72,6 +72,30 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   `--files` that one file); production's Drive does not, so production has no listing rows: run
   `node scripts/seed/run.mjs org-specs prod --apply --files <a list naming that file>` before the launch.
 
+- **The welcome, the prompt cache and the floor wait for CommandAGI's next production deploy** (2026-11-11). Landed
+  on CommandAGI's main: `POST /threads { greeting }` (ed68bf17c96), the goal step's cached prefix (8b8cf4e42a9) and the
+  floor that reads a thread's pinned model (48159a699a2). Until production runs them: the platform drops `greeting`, so
+  `cofounder.welcome.kept` is null and the co-founder greets with the model (the opening ask then says so), about 6 s
+  after the console opens; afterwards the welcome is the thread's first line and shows the moment the console opens.
+  The founder's floor (Sonnet 5.5 or Luna) is set on production now: `PUT /integrations/*/model-floor` answered 200 and
+  `GET /integrations` reads it back (`test/cofounder-speed.mjs` checks it).
+  Measured on production before that deploy (one run, `--replies 2`): the console 48 s after the wizard, the first
+  words 5.9 s after it opened, the first card 21.6 s, replies 45.9 s (the first turn was still making its cards) and
+  16.1 s; the co-founder's calls read 31% of their input from OpenAI's cache (20,923 of 67,957 tokens, 8 calls).
+  The same request shape straight to OpenAI (gpt-6-luna, a 3,900-token prefix, 3 turns): 0 cached tokens with the turn's
+  context before the cache mark, 3,909 on turns 2 and 3 with the mark (CommandAGI `docs/agents.md` § prompt caching).
+  The same run on a local platform built from CommandAGI's main with the three changes (`COMMANDAGI_ROOT=<that
+  checkout> node test/cofounder-speed.mjs --api local --replies 3`, real OpenAI calls, no site hosting): the welcome's
+  first words 0.1 s after the console opened, typed out in 4.6 s; the first card at 3.9 s; replies' first words 7.0,
+  9.0 and 3.6 s (whole 8.6, 10.0 and 5.3 s); 80% of the co-founder's input read from the cache (47,312 of 59,499
+  tokens, 8 calls), against 29 to 31% on production. The co-founder did not greet again after the welcome.
+  After the deploy, run `node test/cofounder-speed.mjs --api https://api.commandagi.com --replies 3` again and write
+  the numbers here.
+- **Each founder message makes the co-founder call `task_create` again** (production, 2026-11-11, two runs): after
+  the day-one cards exist, a question ("What should I put on the storefront first?") brought one to three more
+  `task_create` calls before the answer, so the first reply took 22 to 46 s. The local run did not do it. Check the
+  Tasks folder of a new business for duplicate day-one cards; if they are there, the charter should say the two cards
+  exist (or the opening ask should name the turn it belongs to).
 - **The co-founder's first answer** (2026-11-11, `node test/cofounder-speed.mjs --api https://api.commandagi.com`):
   before, the first words 17.8 s after the console opened and no day-one card within 150 s (15 file reads, 8
   failed); after (GPT-6 Luna, the thread started during the deploy, a greeting before any tool, the brief in the

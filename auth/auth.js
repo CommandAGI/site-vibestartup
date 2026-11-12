@@ -1,6 +1,7 @@
 // Sign in and create account: the founder's CommandAGI token for this brand (lib/api.js: the password grant and
 // POST /oauth/signup of the platform-owned `vibestartup` client). Afterwards, to ?next= (a same-origin path) or home.
 import { signIn, signUp, signedIn, setProfile, ApiError, API } from '/lib/api.js';
+import { allowCofounderAccounts } from '/lib/business.js';
 import { $, $$, oops } from '/lib/ui.js';
 
 const params = new URLSearchParams(location.search);
@@ -56,5 +57,7 @@ signup.addEventListener('submit', e => { e.preventDefault(); submit(signup, asyn
   finally { try { if (turnstileId != null) window.turnstile.reset(turnstileId); } catch { /* a token is single-use */ } }
   // The date of birth is set once on the CommandAGI account (immutable there); a failure to set it is not a failed sign-up.
   await setProfile({ birthdate: d.birthdate }).catch(() => null);
+  // The co-founder (GPT-6 Luna) may use the accounts the founder connects: the founder's own floor, set once here.
+  await allowCofounderAccounts({ atSignUp: true }).catch(() => null);
 }); });
 signin.addEventListener('submit', e => { e.preventDefault(); submit(signin, d => signIn({ email: d.email, password: d.password })); });
