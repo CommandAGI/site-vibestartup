@@ -49,7 +49,7 @@ After success the page goes to `?next=` or `/home/`.
 
 | what | selector |
 |---|---|
-| the rail | `.rail a[data-tab="chat|dashboard|analytics|tasks|email|products|orders|customers|ads|studio|outbound|social|files|legal|settings|activity"]`; the current one `[aria-current=page]` |
+| the rail | `.rail a[data-tab="chat|dashboard|analytics|tasks|email|products|storefront|orders|customers|ads|studio|outbound|social|files|legal|settings|activity"]`; the current one `[aria-current=page]` |
 | the rail on a phone | the same `.rail`, a drawer: `#rail-toggle` (top bar) and `#more` (bottom bar) open it (`body[data-rail=open]`), `#rail-close`, `#rail-scrim`, Escape or a chosen tab close it; `#bottombar a[data-tab]` are the four tabs that stay |
 | the account menu | `#account-menu` (opens billing, profile, share, sign out: `[data-page=billing]`, `[data-page=profile]`, `[data-page=share]`, `#signout`) |
 | search | `#search` (⌘K opens it), `#search input` |
@@ -62,6 +62,7 @@ After success the page goes to `?next=` or `/home/`.
 | tasks | `#approvals .task`, `#in-progress .task`, `#done .task`, `#routines .routine` with `[data-pause]`, `[data-resume]`, `[data-run]`, `[data-edit]`, `[data-cancel]`; `#new-routine` |
 | products | `#add-product`, `#p-name`, `#p-desc`, `#p-price`, `#p-type` (a select; subscription, service and course say "checkout soon"), `#p-how` (how buyers pay for the chosen type), `#p-recurring`, `#p-file` (a digital product's file), `#p-pictures .pick[data-path]` (a picture to choose, `[aria-pressed=true]` when chosen), `.pick-upload`, `#create-product`, `#product-list .product` with `[data-images]` (its pictures), `[data-open-page]`, `[data-open-checkout]`, `[data-activate]`, `[data-archive]`, `[data-test-buy]`; the checkout `#checkout-dialog` (a `dialog`) with `[name=email]`, `[name=card]`, `[name=exp]`, `[name=cvc]`, `button[value=pay]`, `#copy-card` |
 | orders | `#orders tbody tr` (a test order carries `.test` and the word Test) |
+| storefront | `[data-template=<id>]` and `[data-style=<id>]` (tiles, `aria-pressed`, each with a preview `iframe`), `#sf-preview iframe`, `[data-width=390\|1280]`, `#sf-state`, `#sf-words` with `[data-copy=headline\|subhead\|kicker\|cta\|productsTitle\|announcement\|about.title\|about.text]`, `[data-add=points\|faq\|testimonials]`, `[data-section=how\|about\|points\|faq\|testimonials]`, `#sf-publish` |
 | customers | `#customers tbody tr` (a storefront sign-up's From cell says `updates`), `#signups-state` (why no sign-ups were read) |
 | email | `#claim` (no address yet), `#mail-soon` (a second business: its own address is Soon, `[data-notify=email-address]`), `#mail-address`, `#mail-folders [data-folder]`, `#mail-list .thread`, `#mail-thread`, `#mail-reply`, `#mail-compose` |
 | ads | `#ads-plan` (the form), `#ads-readiness li[data-ok]`, `#ads-recheck`, `#ads-ask`, `#ads-launch` (disabled and says Soon while the platform's `meta-ads` is not configured; then Launch), `[data-notify=ads-launch]` (only while Soon); with `meta-ads` configured: `#ads-connect`, `#ads-target` (`#ads-target-account`, `#ads-target-page`), `#ads-disconnect`, `#launch-form` (`input[name=image]`, `#launch-go`), `[data-campaign]` with `[data-insights]` and `[data-act=approve|pause|delete]` |
@@ -90,7 +91,9 @@ says which provider and that nothing was sent.
 
 | what | selector |
 |---|---|
-| a product | `#products .product` with `.media img` (its first picture, `srcset`, `loading=lazy`), `h2 a` (its page), `.buy` |
+| the choice | `body[data-template=spotlight\|shop\|launch\|services\|club\|maker][data-style=studio\|editorial\|bold\|soft\|playful\|luxe\|mono\|craft]` |
+| a product | `#products .product` with `.media img` (its first picture, `srcset`, `loading=lazy`; `.ph` when it has none), `h2 a` (its page), `.buy`; the `launch` template with no product has no `#products` |
+| the sections | `#how`, `#about`, `#points`, `#faq details`, `#testimonials .quote`, `.announce` (each only when it has words) |
 | get updates | `#signup` with `[name=email]`, `[name=name]`, `[name=consent]`, `[name=website]` (a trap for bots), `.error`; `#updates .said` when it went through |
 | a product's page | `product/<id>.html`: `.gallery img`, `.thumbs a`, `.pp h1`, `.pp .price`, `.pp .buy`, `.fine` |
 | checkout | `#line`, `#pay` with `[name=email]` and `#ship` (the address; hidden for a download), `#error`, `#by-mail` |

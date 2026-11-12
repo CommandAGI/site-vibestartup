@@ -2,14 +2,15 @@
 // (`#page=billing|profile|share`). Every tab is a module in ./tabs/ that renders into #main with the API client. The
 // founder's own CommandAGI token does everything (docs/ARCHITECTURE.md).
 import { signedIn, whoami, user, credits, signOut, auth, BRAND, brandAdmin } from '/lib/api.js';
-import { listBusinesses, readBusiness, approvals } from '/lib/business.js';
+import { listBusinesses, readBusiness, approvals, writeBusiness, teachStorefront } from '/lib/business.js';
+import { publishIfEdited } from '/lib/storefront.js';
 import { $, $$, esc, icon, toast, menu, modal, initial, oops } from '/lib/ui.js';
 import { startGuides, replayGuides } from '/lib/guides.js';
 
 export const GROUPS = [
   { name: 'Home', tabs: [['chat', 'Chat', 'chat'], ['dashboard', 'Dashboard', 'dashboard'], ['analytics', 'Analytics', 'analytics']] },
   { name: 'Work', tabs: [['tasks', 'Tasks', 'tasks'], ['email', 'Email', 'email'], ['files', 'Files', 'files']] },
-  { name: 'Sell', tabs: [['products', 'Products', 'products'], ['orders', 'Orders', 'orders'], ['customers', 'Customers', 'customers']] },
+  { name: 'Sell', tabs: [['products', 'Products', 'products'], ['storefront', 'Storefront', 'store'], ['orders', 'Orders', 'orders'], ['customers', 'Customers', 'customers']] },
   { name: 'Grow', tabs: [['ads', 'Ads', 'ads'], ['studio', 'Studio', 'studio'], ['outbound', 'Outbound', 'outbound'], ['social', 'Social', 'social']] },
   { name: 'Company', tabs: [['legal', 'Legal', 'legal'], ['settings', 'Settings', 'settings'], ['activity', 'Activity', 'activity']] },
 ];
@@ -17,7 +18,7 @@ export const TABS = GROUPS.flatMap(g => g.tabs.map(([id, label, ico]) => ({ id, 
 export const PAGES = [{ id: 'billing', label: 'Billing', icon: 'card' }, { id: 'profile', label: 'Profile', icon: 'user' }, { id: 'share', label: 'Share & earn', icon: 'gift' }, { id: 'admin', label: 'Admin', icon: 'shield' }];
 const PHONE_TABS = ['chat', 'dashboard', 'tasks', 'files'];
 // G, then a letter, opens a tab (the letter is shown beside the tab in search and in the shortcuts list).
-const GO = { chat: 'C', dashboard: 'D', analytics: 'N', tasks: 'T', email: 'E', files: 'F', products: 'P', orders: 'O', customers: 'U', ads: 'A', studio: 'S', outbound: 'B', social: 'L', legal: 'G', settings: 'I', activity: 'Y' };
+const GO = { chat: 'C', dashboard: 'D', analytics: 'N', tasks: 'T', email: 'E', files: 'F', products: 'P', storefront: 'W', orders: 'O', customers: 'U', ads: 'A', studio: 'S', outbound: 'B', social: 'L', legal: 'G', settings: 'I', activity: 'Y' };
 
 export const state = { me: null, founder: null, biz: null, businesses: [], tab: 'chat', page: null, credits: null, cleanup: null, needs: 0, visit: 0, admin: false };
 // How long a view may wait before the page offers to try again.
@@ -235,6 +236,18 @@ async function route() {
   if (current()) main.focus({ preventScroll: true });
 }
 
+/**
+ * The live storefront follows storefront.json: when the co-founder changed the file, or the business has none yet (it
+ * gets the default for its kind), the console publishes it, and says so. A co-founder that does not know the file yet
+ * is taught it once.
+ */
+async function syncStorefront(biz) {
+  try {
+    if (await teachStorefront(biz)) await writeBusiness(biz);
+    if (await publishIfEdited(biz)) { if (state.biz === biz) renderIdentity(); toast('Your storefront was published with its latest layout, style and words.', 'ok'); }
+  } catch (e) { console.warn('storefront sync', e); }
+}
+
 async function init() {
   if (!signedIn()) return renderSignedOut();
   bindChrome();
@@ -277,6 +290,7 @@ async function init() {
   refreshNeeds();
   await route();
   startGuides(state.me.id);
+  syncStorefront(state.biz);
 }
 
 init().catch(e => { console.error(e); toast(oops(e), 'bad'); });

@@ -362,3 +362,28 @@ body.console .toasts { left: auto; right: 20px; transform: none; }
 /* A secret is typed masked in a text field: a password field draws the browser's saved logins into it. */
 .masked { -webkit-text-security: disc; text-security: disc; }
 .approval .reasoning.md { white-space: normal; }
+
+/* ---------- the Storefront tab: template and style tiles with live previews (app/tabs/storefront.js) ---------- */
+.sf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.sf-tile { display: grid; gap: 4px; padding: 8px 8px 10px; text-align: left; background: var(--surface); border: 1px solid var(--line); cursor: pointer; font: inherit; color: inherit; min-width: 0; }
+.sf-tile:hover { border-color: var(--line-2); }
+.sf-tile[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.sf-tile b { font-size: 14px; margin-top: 6px; }
+.sf-tile small { font-size: 12.5px; color: var(--ink-2); line-height: 1.35; }
+.sf-frame { --w: 1280px; --k: .2; display: block; position: relative; width: 100%; height: calc(960px * var(--k)); overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); pointer-events: none; }
+.sf-frame iframe { position: absolute; top: 0; left: 0; width: var(--w); height: 960px; border: 0; transform: scale(var(--k)); transform-origin: 0 0; background: #fff; }
+.sf-preview { display: grid; justify-items: center; }
+.sf-preview .sf-frame { height: min(720px, 80vh); pointer-events: auto; }
+.sf-preview .sf-frame iframe { height: calc(min(720px, 80vh) / var(--k)); }
+.sf-preview[data-width="390"] .sf-frame { width: min(100%, 390px); }
+.sf-two { display: grid; gap: 14px; }
+.sf-rows { display: grid; gap: 8px; }
+.sf-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.sf-row input:first-child { grid-column: 1 / -1; }
+.sf-toggles { display: flex; flex-wrap: wrap; gap: 10px 20px; }
+@media (min-width: 720px) {
+  .sf-two { grid-template-columns: 1fr 1fr; }
+  .sf-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; }
+  .sf-row input:first-child { grid-column: auto; }
+}
+[data-width][aria-pressed="true"] { border-color: var(--ink); color: var(--ink); }

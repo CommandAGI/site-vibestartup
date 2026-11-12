@@ -134,14 +134,24 @@ CommandAGI `docs/regions.md` § one edge, square corners).
   search and in a rail row's tooltip), `[` and `]` step through the tabs, `?` lists every key.
 - **Toasts** sit in the console's bottom corner on a desktop and above the bottom bar on a phone, never over the
   composer.
-- **The storefront** (`storefrontFiles` in `lib/storefront.js`) wears the business's colours on the same shapes:
-  square cards and buttons, hairlines, a sticky 56 px header, one column of products until 600 px, 48 px targets,
-  16 px fields. The generated mark is a square. A product card is its first picture (4:3, cover), its name (the whole
-  card opens the product's page), three lines of description, the price and Buy or Order; a product with no picture
-  shows the brand's gradient. The product page is a square gallery that swipes (scroll snap, no script) with a strip of
-  thumbnails, then the name, the price, the whole description, Buy and one line on how it is delivered; two columns
-  from 900 px. "Get updates" is one bordered panel under the products: email, first name, the button, and the consent
-  box with the exact words recorded. The footer links Terms, Privacy, Refunds and the business address.
+- **The storefront** (`storefrontFiles` in `lib/storefront.js`, the design in `lib/storefront-design.js`) is a
+  template and a style, chosen in the business's `storefront.json` with its words. Any template works with any style.
+  - **Templates** (the layout): `spotlight` (one product takes the page), `shop` (a banner, then a grid), `launch`
+    (the sign-up is the hero), `services` (packages in a list), `club` (plans side by side), `maker` (a full-width
+    picture, the story, then a list with dotted leaders).
+  - **Styles** (the look): `studio`, `editorial`, `bold`, `soft`, `playful`, `luxe`, `mono`, `craft`. A style is custom
+    properties (type pairing, scale, radii, border, shadow, section rhythm, picture ratio, label and button
+    treatment), a few component rules and one Google Fonts request.
+  - **Colours** come from the brand kit through `palette()`: ink is 7:1 on the ground; the primary and accent used
+    as text, and muted text, are 4.5:1 on the ground, the tint and the card; a button's words are white or near-black,
+    whichever reads. `test/storefront.mjs` holds this for every hue and vibe the generator makes.
+  - **Every template keeps**: a sticky 60 px header, one `h1`, 48 px targets, 16 px fields, one column until 600 px,
+    the facts under the hero (how to pay, how it arrives), "How it works" from the same facts, the sign-up panel with
+    the exact consent words, and a footer with Terms, Privacy, Refunds and the business address. About, highlights,
+    questions and customers' words are hidden until they have words. A product with no picture shows the brand's
+    gradient with its first letter.
+  - **The default** for a business is a script's choice from its blueprint, idea, products and vibe
+    (`defaultStorefront`); the founder changes it in the console's Storefront tab, the co-founder in the file.
 
 ## guides (the first-run tour)
 
