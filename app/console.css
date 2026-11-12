@@ -13,7 +13,7 @@ body.console { background: var(--canvas); font-size: 14px; display: grid; grid-t
 .search-btn:hover { background: var(--surface-2); color: var(--ink-2); }
 .search-btn kbd { margin-left: auto; }
 .search-ico, .credits-ico { width: 16px; height: 16px; flex: none; }
-.tabs { display: grid; padding-bottom: 8px; }
+.tabs { display: grid; grid-template-columns: minmax(0, 1fr); padding-bottom: 8px; }
 .tabs .group { padding: 14px 16px 6px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
 .tabs a { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 16px; color: var(--ink-2); font-weight: 500; position: relative; }
 .tabs a svg { width: 18px; height: 18px; flex: none; }
@@ -24,6 +24,25 @@ body.console { background: var(--canvas); font-size: 14px; display: grid; grid-t
 .tabs a:active, .biz-switch:active, .search-btn:active, .credits:active, .rail .account:active, .bottombar a:active, .bottombar button:active, .menu button:active, .thread:active, .file-row:active { background: var(--line); }
 .tabs a[aria-current="page"] { background: var(--accent-soft); color: var(--accent-deep); box-shadow: inset 2px 0 0 var(--accent); }
 .tabs a .count { margin-left: auto; min-width: 20px; padding: 0 5px; background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 600; text-align: center; line-height: 18px; }
+/* a tab's levels (app/nav.js): open under the tab shown, a hairline at the left, rows a step in */
+.tabs a .caret { margin-left: auto; display: inline-grid; color: var(--ink-3); transform: rotate(-90deg); transition: transform .15s var(--ease); }
+.tabs a .count + .caret { margin-left: 6px; }
+.tabs a[aria-expanded="true"] .caret { transform: none; }
+.tabs a[aria-current="true"] { color: var(--ink); box-shadow: inset 2px 0 0 var(--line-strong, var(--line)); }
+.tabs .sub { list-style: none; margin: 0 0 4px 25px; padding: 0; border-left: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.tabs .sub li { min-width: 0; }
+.tabs .sub .sub-item { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 0 12px 0 14px; border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 500; text-align: left; cursor: pointer; }
+.tabs .sub .sub-item span { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.tabs .sub .sub-item small { flex: none; color: var(--ink-3); font-size: 11px; font-weight: 400; }
+.tabs .sub .sub-item svg { width: 14px; height: 14px; flex: none; }
+.tabs .sub .sub-item:hover { background: var(--surface-2); color: var(--ink); }
+.tabs .sub .sub-item[aria-current="page"] { background: var(--accent-soft); color: var(--accent-deep); box-shadow: inset 2px 0 0 var(--accent); }
+.tabs .sub .sub-item:focus-visible { outline-offset: -2px; }
+.tabs .sub .sub-more, .tabs .sub .sub-action { color: var(--accent-deep); }
+.tabs .sub .sub-item[disabled] { cursor: default; opacity: .7; }
+.tabs .sub .sub-note { min-height: 32px; padding: 6px 14px; font-size: 13px; color: var(--ink-3); }
+.levels-open { display: none; }
+.product.focused { outline: 2px solid var(--accent); outline-offset: 2px; }
 .rail-foot { margin-top: auto; display: grid; border-top: 1px solid var(--line); flex: none; }
 .credits { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 16px; font-size: 13px; color: var(--ink-2); }
 .credits:hover { background: var(--surface-2); color: var(--ink); }
@@ -354,6 +373,8 @@ body.console .toasts { left: auto; right: 20px; transform: none; }
   .biz-switch, .search-btn, .tabs a, .credits, .rail .account { justify-content: center; padding: 0; }
   .tabs a { min-height: 44px; }
   .tabs a .count { position: absolute; top: 4px; right: 8px; margin: 0; }
+  /* an icon rail has no room for levels: the tab's own page has them */
+  .tabs .sub, .tabs a .caret { display: none; }
 }
 @media (max-width: 760px) {
   body.console { grid-template-columns: 1fr; }
@@ -367,6 +388,8 @@ body.console .toasts { left: auto; right: 20px; transform: none; }
   .search-foot { display: none; }
   .tabs a, .credits, .search-btn { min-height: 44px; }
   .tabs a { font-size: 15px; }
+  .tabs .sub .sub-item { min-height: 44px; font-size: 14px; }
+  .levels-open { display: inline-grid; }
   .frame { grid-template-rows: 52px 1fr; }
   .topbar { padding: 0 12px 0 4px; gap: 4px; }
   .rail-toggle { display: inline-grid; }

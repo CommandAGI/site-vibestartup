@@ -114,7 +114,14 @@ CommandAGI `docs/regions.md` § one edge, square corners).
 - **Console** (`/app/?b=<slug>`): at 1440, a 240 px rail (the business switcher, ⌘K search, five groups of tabs,
   then credits and the account menu; every row runs from wall to wall), a 56 px top bar (the tab's title, its actions
   as icon buttons), the content at max 1120 px; the Chat tab has a 320 px right panel ("Building": the site's state,
-  the brand kit, what needs you, the blueprint). From 761 to 900 the rail is icons (64 px).
+  the brand kit, what needs you, the blueprint). From 761 to 900 the rail is icons (64 px), without levels.
+- **A tab's levels** (`app/nav.js`, listed in `app/levels.js`): the tab shown opens under its row in the rail; every
+  other tab is closed (a caret says it has levels). Chat lists its 5 most recently active chats, More for 5 more,
+  and New chat; Analytics its views (Overview, Activity, The site); Tasks its groups; Email its folders; Files its
+  groups; Products its products. A level is an address (`#tab=<tab>&view=<id>`, `&item=<id>`, `&thread=<id>`) and
+  the one shown is the band, its tab a quieter line. Keys: ↑ ↓ move, Home and End, → opens a tab or goes into it, ←
+  goes back to the tab; one row is in the Tab order. On a phone the levels are in the drawer, 44 px rows, and the top
+  bar's list button (`.levels-open`) opens it.
 - **The console on a phone** (760 and under): the rail is a drawer from the left edge (the same rows, 44 px high, the
   business switcher, credits and the account menu included), opened by the top bar's menu button or the bottom bar's
   More, closed by its ✕, the scrim, Escape or choosing a tab. A bottom bar of five stays (Chat, Dashboard, Tasks,

@@ -1,15 +1,16 @@
-// Files: the co-founder's memory and the business's folder as files, grouped; search, upload, preview, copy.
+// Files: the co-founder's memory and the business's folder as files, grouped; search, upload, preview, copy. A group's
+// view (`#tab=files&view=<key>`, the last field of GROUPS; app/levels.js lists the same keys) shows that group alone.
 import { drive } from '/lib/api.js';
 import { folderOf } from '/lib/business.js';
 import { $, $$, esc, icon, toast, copy, ago, bytes, oops } from '/lib/ui.js';
 import { head, section, empty, iconBtn } from './_shared.js';
 
 const GROUPS = [
-  ['Identity', ['cofounder/SOUL.md', 'cofounder/BUSINESS.md', 'cofounder/OWNER.md'], 'its personality and voice, the business, the owner'],
-  ['Operations', ['cofounder/PLAYBOOK.md', 'cofounder/PLATFORM.md'], 'the playbook, the platform'],
-  ['Evolving', ['cofounder/MEMORY.md', 'cofounder/CODEMAP.md'], 'working memory, the code map'],
-  ['Other', ['cofounder/SUPPORT.md', 'business.json', 'settings.json'], 'support, the record'],
-  ['Creative assets', ['studio/', 'brand/'], 'everything made, and the brand'],
+  ['Identity', ['cofounder/SOUL.md', 'cofounder/BUSINESS.md', 'cofounder/OWNER.md'], 'its personality and voice, the business, the owner', 'identity'],
+  ['Operations', ['cofounder/PLAYBOOK.md', 'cofounder/PLATFORM.md'], 'the playbook, the platform', 'operations'],
+  ['Evolving', ['cofounder/MEMORY.md', 'cofounder/CODEMAP.md'], 'working memory, the code map', 'evolving'],
+  ['Other', ['cofounder/SUPPORT.md', 'business.json', 'settings.json'], 'support, the record', 'other'],
+  ['Creative assets', ['studio/', 'brand/'], 'everything made, and the brand', 'assets'],
 ];
 
 export async function render(ctx) {
@@ -37,11 +38,12 @@ export async function render(ctx) {
       for (const f of extra.slice(0, 20)) { const t = await drive.readText(f.id).catch(() => ''); if (t.toLowerCase().includes(q)) matches.push(f); }
     }
     const row = f => `<div class="file-row" data-id="${esc(f.id)}" data-rel="${esc(f.rel)}">${icon(/image\//.test(f.contentType ?? '') ? 'image' : 'files', 16)}<div><div class="name">${esc(f.rel)}</div><div class="meta">${f.size != null ? esc(bytes(f.size)) + ' · ' : ''}${esc(ago(f.updatedAt ?? f.createdAt ?? Date.now()))}</div></div><div class="acts">${iconBtn('eye', 'Open', 'data-open')}${iconBtn('copy', 'Copy contents', 'data-copy')}${iconBtn('download', 'Download', 'data-download')}</div></div>`;
-    const grouped = GROUPS.map(([name, paths, about]) => { const items = matches.filter(f => paths.some(p => p.endsWith('/') ? f.rel.startsWith(p) : f.rel === p)); return items.length ? `<div class="group"><h4>${esc(name)} <small class="hint">${esc(about)}</small></h4>${items.map(row).join('')}</div>` : ''; }).join('');
+    const view = GROUPS.some(g => g[3] === ctx.view) ? ctx.view : null;
+    const grouped = GROUPS.filter(g => !view || g[3] === view).map(([name, paths, about]) => { const items = matches.filter(f => paths.some(p => p.endsWith('/') ? f.rel.startsWith(p) : f.rel === p)); return items.length ? `<div class="group"><h4>${esc(name)} <small class="hint">${esc(about)}</small></h4>${items.map(row).join('')}</div>` : ''; }).join('');
     const rest = matches.filter(f => !GROUPS.some(([, paths]) => paths.some(p => p.endsWith('/') ? f.rel.startsWith(p) : f.rel === p)));
     el.innerHTML = head('Files', 'Your co-founder\'s memory as plain files you can read, and everything else of the business. Businesses/' + esc(biz.slug) + '/ in your Drive.')
       + `<label class="field" style="margin-bottom:16px"><span class="sr-only">Search</span><input id="file-search" placeholder="Search names and contents" value="${esc(state.q)}"></label>
-        <div class="files-layout"><div id="file-groups">${grouped}${rest.length ? `<div class="group"><h4>Everything else</h4>${rest.map(row).join('')}</div>` : ''}${matches.length ? '' : empty('Nothing here', state.q ? 'Nothing matches.' : 'The folder is empty.')}</div><div class="panel" id="file-preview-wrap"><h4 id="file-preview-name">Preview</h4><div id="file-preview" class="muted">Open a file to read it.</div></div></div>`;
+        <div class="files-layout"><div id="file-groups">${grouped}${rest.length && !view ? `<div class="group"><h4>Everything else</h4>${rest.map(row).join('')}</div>` : ''}${matches.length && (grouped || !view) ? '' : empty('Nothing here', state.q ? 'Nothing matches.' : view ? 'No files in this group yet.' : 'The folder is empty.')}</div><div class="panel" id="file-preview-wrap"><h4 id="file-preview-name">Preview</h4><div id="file-preview" class="muted">Open a file to read it.</div></div></div>`;
     let t; $('#file-search', el).oninput = e => { clearTimeout(t); t = setTimeout(() => { state.q = e.target.value; paint(); }, 250); };
     const fileOf = b => all.get(b.closest('.file-row').dataset.rel);
     $$('[data-open]', el).forEach(b => b.onclick = () => open(fileOf(b)));

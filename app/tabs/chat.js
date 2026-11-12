@@ -13,7 +13,11 @@ const PROMPTS = ['What should I do today?', 'What needs my call?', 'Change the s
 
 export async function render(ctx) {
   const { biz, founder, el, panel, actions } = ctx;
-  const cof = biz.cofounder ?? {};
+  // The chat shown is the thread the address names (`#tab=chat&thread=<id>`, the rail's chats), else the first one. Another
+  // chat has the same co-founder, without the first one's welcome.
+  const first = biz.cofounder ?? {};
+  const asked = ctx.view;
+  const cof = asked && asked !== first.threadId ? { ...first, threadId: asked, welcome: null } : first;
   el.innerHTML = `<div class="chat-wrap"><div class="chat" id="chat" aria-label="Conversation"><div class="skeleton" role="status" aria-label="Loading the conversation" style="max-width:520px"><i class="short"></i><i></i><i class="short"></i></div></div>
     <div class="composer"><div class="prompts" id="prompts" aria-label="Suggested questions">${PROMPTS.map(p => `<button type="button" class="chip" data-prompt>${esc(p)}</button>`).join('')}</div><form id="compose-form"><label class="sr-only" for="composer">Message ${esc(cof.name ?? 'your co-founder')}</label><textarea id="composer" rows="1" placeholder="Message ${esc(cof.name ?? 'your co-founder')}…"></textarea><button type="submit" class="btn icon send" id="send" aria-label="Send" data-tip="Send">${icon('send')}</button></form><p class="hint">${esc(cof.name ?? 'Your co-founder')} is an AI agent. Big decisions come to you as approval cards.</p></div></div>`;
   actions.innerHTML = `<button type="button" class="btn icon" id="chat-refresh" aria-label="Refresh" data-tip="Refresh">${icon('refresh')}</button>`;
@@ -43,7 +47,7 @@ export async function render(ctx) {
   let socket = null, socketOpen = false, retries = 0;
   // The co-founder is typing while the socket says it works, or while the founder's last line has no answer yet.
   let working = false, typingUntil = Date.now() + 120000;
-  const unanswered = () => { const last = messages.filter(m => (m.role === 'user' || m.role === 'agent') && m.text?.trim()).at(-1); return !!cof.threadId && (!last || last.role === 'user'); };
+  const unanswered = () => { const last = messages.filter(m => (m.role === 'user' || m.role === 'agent') && m.text?.trim()).at(-1); return !!cof.threadId && (last ? last.role === 'user' : cof === first); };
   const isOpening = m => String(m.id ?? '').startsWith('opening:') || /Introduce yourself in three short lines|First say hello in two or three short lines|Your welcome message is above this one/.test(m.text ?? '');
   // The welcome (lib/business.js welcomeFor) is the thread's first line, kept by the platform at creation. The record
   // holds its words, so it shows before the transcript is read; the transcript's line has the same id and replaces it.
@@ -162,7 +166,7 @@ export async function render(ctx) {
     composer.value = ''; fit();
     messages.push({ role: 'user', text, at: Date.now(), id: `local-${Date.now()}` });
     typingUntil = Date.now() + 120000; paint();
-    try { await threads.send(cof.threadId, text); if (!socketOpen) setTimeout(load, 1500); }
+    try { await threads.send(cof.threadId, text); if (!socketOpen) setTimeout(load, 1500); ctx.chatsChanged?.(); setTimeout(() => alive && ctx.chatsChanged?.(), 25000); }
     catch (err) { messages = messages.filter(m => m.text !== text || !String(m.id).startsWith('local-')); toast(oops(err), 'bad'); paint(); }
   };
 

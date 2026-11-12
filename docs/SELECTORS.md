@@ -53,6 +53,7 @@ After success the page goes to `?next=` or `/home/`.
 | what | selector |
 |---|---|
 | the rail | `.rail a[data-tab="chat|dashboard|analytics|tasks|email|products|storefront|orders|customers|ads|studio|outbound|social|files|legal|settings|activity"]`; the current one `[aria-current=page]` |
+| a tab's levels | the tab shown has `aria-expanded=true` and `#sub-<tab>` after it: `a.sub-item` rows (the one shown `[aria-current=page]`, its tab then `[aria-current=true]`), `[data-more]` (More), `[data-action=new-chat]`; a closed tab with levels has `aria-expanded=false`; `.levels-open` in the top bar opens the drawer on a phone |
 | the rail on a phone | the same `.rail`, a drawer: `#rail-toggle` (top bar) and `#more` (bottom bar) open it (`body[data-rail=open]`), `#rail-close`, `#rail-scrim`, Escape or a chosen tab close it; `#bottombar a[data-tab]` are the four tabs that stay |
 | the account menu | `#account-menu` (opens billing, profile, share, sign out: `[data-page=billing]`, `[data-page=profile]`, `[data-page=share]`, `#signout`) |
 | search | `#search` (⌘K opens it), `#search input` |

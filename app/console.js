@@ -2,10 +2,12 @@
 // (`#page=billing|profile|share`). Every tab is a module in ./tabs/ that renders into #main with the API client. The
 // founder's own CommandAGI token does everything (docs/ARCHITECTURE.md).
 import { signedIn, whoami, user, credits, signOut, auth, BRAND, brandAdmin } from '/lib/api.js';
-import { listBusinesses, readBusiness, approvals, writeBusiness, teachStorefront } from '/lib/business.js';
+import { listBusinesses, readBusiness, approvals, writeBusiness, teachStorefront, startChat } from '/lib/business.js';
 import { publishIfEdited } from '/lib/storefront.js';
 import { $, $$, esc, icon, toast, menu, modal, initial, oops } from '/lib/ui.js';
 import { startGuides, replayGuides } from '/lib/guides.js';
+import { branch, bindTree, redraw } from './nav.js';
+import { levelOf, CHAT_PAGE } from './levels.js';
 
 export const GROUPS = [
   { name: 'Home', tabs: [['chat', 'Chat', 'chat'], ['dashboard', 'Dashboard', 'dashboard'], ['analytics', 'Analytics', 'analytics']] },
@@ -20,7 +22,7 @@ const PHONE_TABS = ['chat', 'dashboard', 'tasks', 'files'];
 // G, then a letter, opens a tab (the letter is shown beside the tab in search and in the shortcuts list).
 const GO = { chat: 'C', dashboard: 'D', analytics: 'N', tasks: 'T', email: 'E', files: 'F', products: 'P', storefront: 'W', orders: 'O', customers: 'U', ads: 'A', studio: 'S', outbound: 'B', social: 'L', legal: 'G', settings: 'I', activity: 'Y' };
 
-export const state = { me: null, founder: null, biz: null, businesses: [], tab: 'chat', page: null, credits: null, cleanup: null, needs: 0, visit: 0, admin: false };
+export const state = { me: null, founder: null, biz: null, businesses: [], tab: 'chat', page: null, credits: null, cleanup: null, needs: 0, visit: 0, admin: false, view: null, level: null };
 // How long a view may wait before the page offers to try again.
 const SLOW_MS = 10000;
 
@@ -43,7 +45,11 @@ function renderSignedOut() {
 
 function renderRail() {
   const tabs = $('#tabs');
-  tabs.innerHTML = GROUPS.map(g => `<div class="group">${esc(g.name)}</div>${g.tabs.map(([id, label, ico]) => `<a href="${tabHref(id)}" data-tab="${id}" title="${esc(label)} (G then ${GO[id]})" ${state.tab === id && !state.page ? 'aria-current="page"' : ''}>${icon(ico)}<span>${esc(label)}</span>${id === 'tasks' && state.needs ? `<span class="count">${state.needs}</span>` : ''}</a>`).join('')}`).join('');
+  redraw(tabs, GROUPS.map(g => `<div class="group">${esc(g.name)}</div>${g.tabs.map(([id, label, ico]) => {
+    const shown = state.tab === id && !state.page;
+    const kids = kidsOf(id, shown);
+    return branch({ id, href: tabHref(id), label, ico, title: `${label} (G then ${GO[id]})`, current: shown && (kids?.items.some(k => k.current) ? 'true' : true), count: id === 'tasks' ? state.needs : 0, kids });
+  }).join('')}`).join(''));
   $('.search-ico').innerHTML = icon('search', 16);
   $('.credits-ico').innerHTML = icon('bolt', 16);
   $('#rail-toggle').innerHTML = icon('menu');
@@ -52,6 +58,51 @@ function renderRail() {
   const bottom = $('#bottombar');
   bottom.innerHTML = PHONE_TABS.map(id => { const t = TABS.find(x => x.id === id); return `<a href="${tabHref(id)}" data-tab="${id}" ${state.tab === id && !state.page ? 'aria-current="page"' : ''}>${icon(t.icon, 20)}<span>${esc(t.label)}</span></a>`; }).join('') + `<button type="button" id="more">${icon('more', 20)}<span>More</span></button>`;
   $('#more').onclick = () => setRail(true);
+}
+
+/**
+ * The levels of tab `id` for the rail (app/levels.js), open while it is the tab shown: the views of a tab are fixed,
+ * a tab's items and the chats are read (state.level, a page at a time for the chats).
+ */
+function kidsOf(id, shown) {
+  const l = state.biz && levelOf(id, state.biz);
+  if (!l) return null;
+  if (!shown) return { open: false, items: [] };
+  const lv = state.level?.tab === id ? state.level : null;
+  const list = l.items ? l.items(state.biz) : lv?.items ?? [];
+  const at = state.view;
+  return {
+    open: true, label: l.label, loading: !!lv?.loading, more: !!lv?.next, empty: l.load ? (lv?.error ? 'Could not load.' : 'Nothing yet.') : '',
+    action: l.action && !lv?.fixed ? { key: l.action.key, label: l.action.label, icon: l.action.icon } : null,
+    items: list.map(k => ({ key: `${id}:${k.id}`, href: `${tabHref(id)}&${l.param}=${encodeURIComponent(k.id)}`, label: k.label, meta: k.meta, current: at === k.id })),
+  };
+}
+
+/** Read the levels of the tab shown: from the start (`more` false) or the next page. Resolves when they are drawn. */
+function loadLevel({ more = false, limit } = {}) {
+  const tab = state.tab, biz = state.biz;
+  const l = biz && !state.page && levelOf(tab, biz);
+  if (!l?.load) return Promise.resolve();
+  const lv = state.level?.tab === tab && state.level.slug === biz.slug ? state.level : (state.level = { tab, slug: biz.slug, items: [], next: null });
+  if (more && !lv.next) return Promise.resolve();
+  lv.loading = true; renderRail();
+  const run = l.load({ biz, me: state.me }, { cursor: more ? lv.next : null, limit: limit ?? CHAT_PAGE }).then(
+    got => { lv.items = more ? [...lv.items, ...got.items.filter(i => !lv.items.some(x => x.id === i.id))] : got.items; lv.next = got.next; lv.fixed = !!got.fixed; lv.error = null; },
+    e => { lv.error = e; },
+  ).finally(() => { lv.loading = false; if (state.level === lv) renderRail(); });
+  lv.pending = run;
+  return run;
+}
+
+/** A new chat with the co-founder, opened at once. */
+async function newChat(button) {
+  if (!state.biz?.cofounder?.threadId) return toast('Wake the co-founder first.', 'bad');
+  button.disabled = true; button.setAttribute('aria-busy', 'true');
+  try {
+    const id = await startChat(state.biz, state.founder, state.me.id);
+    state.level = null;
+    location.hash = `tab=chat&thread=${encodeURIComponent(id)}`;
+  } catch (e) { toast(oops(e), 'bad'); button.disabled = false; button.removeAttribute('aria-busy'); }
 }
 
 /** The phone's rail is a drawer from the left edge (console.css); wider, the rail is always there and this does nothing. */
@@ -101,6 +152,20 @@ function bindChrome() {
   $('#rail-scrim').onclick = () => setRail(false);
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.dataset.rail === 'open') setRail(false); });
   labelCells();
+  const nav = $('#tabs');
+  bindTree(nav);
+  nav.addEventListener('click', e => {
+    const more = e.target.closest('[data-more]');
+    if (more) {
+      e.preventDefault();
+      const before = state.level?.items.length ?? 0;
+      // The first of the chats this page brought takes the focus, so a keyboard keeps its place.
+      loadLevel({ more: true }).then(() => { const first = $$('#tabs .sub a.sub-item')[before]; if (more.isConnected || document.activeElement === document.body) first?.focus({ preventScroll: true }); });
+      return;
+    }
+    const act = e.target.closest('[data-action="new-chat"]');
+    if (act) { e.preventDefault(); newChat(act); }
+  });
   // ⌘K search over tabs, pages and businesses
   const dlg = $('#search'); const input = $('#search input'); const list = $('#search .search-results');
   let items = [], sel = 0;
@@ -198,6 +263,19 @@ async function route() {
   state.page = PAGES.some(p => p.id === hp.get('page')) ? hp.get('page') : null;
   state.tab = state.page ? null : (hp.get('tab') || 'chat');
   if (!state.page && !TABS.some(t => t.id === state.tab)) state.tab = 'chat';
+  const level = state.page ? null : levelOf(state.tab, state.biz);
+  state.view = level ? hp.get(level.param) : null;
+  // A tab's items are read again each time the founder comes to it (the chats move as they are used).
+  const entered = state.lastTab !== (state.page ?? state.tab); state.lastTab = state.page ?? state.tab;
+  if (level?.load && (entered || state.level?.tab !== state.tab || state.level?.slug !== state.biz.slug)) loadLevel();
+  if (state.tab === 'chat' && !state.view) {
+    renderRail();
+    // Chat with no thread named opens the most recently active one (the first chat while the list is slow or absent).
+    await Promise.race([state.level?.pending, new Promise(r => setTimeout(r, 2500))]).catch(() => null);
+    if (!current()) return;
+    const id = state.level?.items[0]?.id ?? state.biz.cofounder?.threadId;
+    if (id) { state.view = id; history.replaceState(null, '', `${location.pathname}${location.search}#tab=chat&thread=${encodeURIComponent(id)}`); }
+  }
   renderRail(); renderIdentity();
   const main = $('#main'); main.dataset.tab = state.page ?? state.tab;
   document.body.dataset.panel = state.tab === 'chat' ? '1' : '0';
@@ -224,9 +302,19 @@ async function route() {
     const ctx = {
       biz: state.biz, me: state.me, founder: state.founder, el: view, actions, panel,
       refresh: () => { if (current()) return route(); }, setBiz: b => { state.biz = b; renderIdentity(); }, openTab, ask, refreshCredits, refreshNeeds, tabHref, pageHref,
-      businesses: state.businesses,
+      businesses: state.businesses, view: state.view,
+      // The chats moved (a line sent, a title given): read them again, as many as the rail shows.
+      chatsChanged: () => { if (state.tab === 'chat') loadLevel({ limit: Math.max(CHAT_PAGE, state.level?.items.length ?? 0) }); },
+      openRail: () => setRail(true),
     };
     out = await mod.render(ctx);
+    if (current() && level) {
+      // An item's level (`item=<id>`) is a row of the tab: it is brought into view and marked.
+      if (level.param === 'item' && state.view) { const row = view.querySelector(`[data-id="${CSS.escape(state.view)}"]`); if (row) { row.classList.add('focused'); row.scrollIntoView({ block: 'center' }); } }
+      // On a phone the rail is a drawer: the tab's levels (the chats) are one tap from the top bar.
+      actions.insertAdjacentHTML('beforeend', `<button type="button" class="btn icon levels-open" aria-label="${esc(level.label)}" data-tip="${esc(level.label)}">${icon('list')}</button>`);
+      $('.levels-open', actions).onclick = () => setRail(true);
+    }
     if (current() && (!view.childElementCount || $(':scope > .skeleton', view))) failed(null);
   } catch (e) {
     if (current()) { console.error(e); failed(e); }

@@ -8,7 +8,9 @@ const FOLDERS = [['all', 'All'], ['inbox', 'Inbox'], ['unread', 'Unread'], ['sen
 
 export async function render(ctx) {
   const { biz, el, actions } = ctx;
-  const state = { folder: 'all', list: [], open: null, q: '' };
+  // A folder's view (`#tab=email&view=inbox|unread|sent|drafts`, app/levels.js) opens on it; the tab's own buttons still
+  // move between them.
+  const state = { folder: FOLDERS.some(([id]) => id === ctx.view) ? ctx.view : 'all', list: [], open: null, q: '' };
   const hp = new URLSearchParams(location.hash.replace(/^#/, ''));
   if (hp.get('thread')) state.open = hp.get('thread');
   actions.innerHTML = `${iconBtn('edit', 'Compose', 'id="mail-compose"')}${iconBtn('refresh', 'Refresh', 'id="mail-refresh"')}`;
