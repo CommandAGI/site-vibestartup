@@ -266,9 +266,8 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
 - **`hello@vibestartup.pro`.** Since 2026-11-12 19:40 UTC vibestartup.pro's mail is CommandAGI's (Postmark), moved by
   the CommandAGI session: hello@ (the catch-all), help@, info@, legal@, press@ and abuse@ are org-vibestartup's
   mailboxes; jacob@ and security@ are the owner's. Mail to jacob@ and hello@ lands in their CommandAGI mailboxes
-  (verified 20:16 UTC); the forward to the owner's Gmail does not work yet (a forward was sent From the outside sender,
-  which Cloudflare refuses; the CommandAGI session is moving it to the domain's own server). Until it does, read that
-  mail in CommandAGI.
+  and forwards to the owner's Gmail (since CommandAGI 85185cc0747, proven 21:56 UTC: From "<sender> via
+  hello@vibestartup.pro", Reply-To the sender, sent through the domain's Postmark server).
   The previous app's catch-all worker (`vibestartup-api-production`) no longer receives mail.
 - **commandagi.com's gloss highlight.** It is a design call on CommandAGI's own site, not this one: a one-edge line on
   every rounded control (CommandAGI `docs/verification.md`, 2026-11-03).
