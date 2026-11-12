@@ -47,7 +47,9 @@ export async function render(ctx) {
   let socket = null, socketOpen = false, retries = 0;
   // The co-founder is typing while the socket says it works, or while the founder's last line has no answer yet.
   let working = false, typingUntil = Date.now() + 120000;
-  const unanswered = () => { const last = messages.filter(m => (m.role === 'user' || m.role === 'agent') && m.text?.trim()).at(-1); return !!cof.threadId && (last ? last.role === 'user' : cof === first); };
+  // An empty first chat waits for the opening turn only while the business is new; a chat opened later (a moved
+  // business's main chat) is simply empty until the founder writes.
+  const unanswered = () => { const last = messages.filter(m => (m.role === 'user' || m.role === 'agent') && m.text?.trim()).at(-1); return !!cof.threadId && (last ? last.role === 'user' : cof === first && Date.now() - (biz.createdAt ?? 0) < 15 * 60e3); };
   const isOpening = m => String(m.id ?? '').startsWith('opening:') || /Introduce yourself in three short lines|First say hello in two or three short lines|Your welcome message is above this one/.test(m.text ?? '');
   // The welcome (lib/business.js welcomeFor) is the thread's first line, kept by the platform at creation. The record
   // holds its words, so it shows before the transcript is read; the transcript's line has the same id and replaces it.

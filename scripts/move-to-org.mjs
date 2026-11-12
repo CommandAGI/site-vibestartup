@@ -142,6 +142,8 @@ export async function move({ slug, apply = false } = {}) {
     biz.cofounder.threadId = t.threadId;
     biz.cofounder.model = 'openai/gpt-6-luna';
     biz.cofounder.earlier = [...(old.cofounder?.earlier ?? []), ...earlier];
+    // The welcome was the first line of the chat before the move, not of this one.
+    delete biz.cofounder.welcome;
   }
   step('cofounder', { agentId: biz.cofounder.agentId, threadId: biz.cofounder.threadId, earlier: biz.cofounder.earlier?.map(e => e.id) });
 
