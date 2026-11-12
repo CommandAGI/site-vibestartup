@@ -147,11 +147,9 @@ try {
       t.founderLine = founderLine?.text ?? null;
       t.reply = reply?.text?.slice(0, 300) ?? null;
       check(entry?.ui?.answered === true, `${label}: the server holds the widget answered`);
-      // A select's answer may be kept as the option's value or as its label (what the founder read); either is the one sent.
-      const opt = (entry.ui.options ?? []).find(o => String(o.value ?? o.label) === String(t.sent));
-      const as = [String(t.sent), ...(opt?.label ? [String(opt.label)] : [])];
-      check(as.includes(String(entry.ui.answer)), `${label}: the server's answer is the one sent (${as.join(' or ')}; kept ${entry.ui.answer})`);
-      check(!!founderLine && as.some(a => founderLine.text.includes(a)), `${label}: the founder's line carries the answer`);
+      // The value is the answer; the label is how it is shown (CommandAGI f774c931108).
+      check(String(entry.ui.answer) === String(t.sent), `${label}: the server's answer is the value sent (${t.sent}; kept ${entry.ui.answer})`);
+      check(!!founderLine && founderLine.text.includes(String(t.sent)), `${label}: the founder's line carries the answer`);
       check(!!reply, `${label}: the co-founder replied after the answer`);
       await b.shot(`${label}-answered-${width}`);
       return t;
