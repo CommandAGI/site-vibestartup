@@ -82,13 +82,16 @@ async function run(b) {
   check(await hashThread(b) === main, 'Chat with no thread named opens the most recent one (the first chat), and the address names it');
   let items = await subItems(b);
   check(items.length === 1 && items[0].current && threadOf(items[0].href) === main, `the rail lists the one chat, marked (${JSON.stringify(items.map(i => i.label))})`);
-  check(await b.eval('!!document.querySelector("#tabs .sub [data-action=new-chat]")'), 'the rail has "New chat"');
+  // --fixed: an API that cannot list a business's chats by file: the rail shows the first chat alone, and no New chat.
+  const fixed = flag('fixed');
+  check(fixed ? !await b.eval('!!document.querySelector("#tabs .sub [data-action=new-chat]")') : await b.eval('!!document.querySelector("#tabs .sub [data-action=new-chat]")'), fixed ? 'the rail has no "New chat" on an API that cannot list chats' : 'the rail has "New chat"');
   // The welcome first (a template, then the opening's reply), so the answer counted is the answer to this line.
   await b.waitFor('document.querySelectorAll(".msg.cofounder").length >= 1 && !document.querySelector(".typing, .streaming")', 90000).catch(() => null);
   await sleep(3000);
   await say(b, 'In one short line: what is the first thing to do?', 'the first chat');
   await shot('chat-first-1440', 1440);
 
+  if (!fixed) {
   // 3. Seven more chats, from the rail's "New chat", each with one line.
   const ids = [main];
   for (let i = 1; i <= 7; i++) {
@@ -143,6 +146,7 @@ async function run(b) {
   check(await b.eval('document.activeElement?.dataset.tab === "chat"'), '← goes from a chat to Chat');
   check(await b.eval('[...document.querySelectorAll("#tabs [data-key]")].filter(r => r.tabIndex === 0).length === 1'), 'one row of the rail is in the Tab order');
 
+  }
   // 7. Analytics, Tasks and Files: their views, as addresses.
   await b.click('#tabs a[data-tab=analytics]');
   await b.waitFor('!!document.querySelector("#sub-analytics")', 10000);
@@ -171,13 +175,15 @@ async function run(b) {
   await b.click('.levels-open');
   await b.waitFor('document.body.dataset.rail === "open"', 5000);
   await sleep(400);
-  check(await b.eval('document.querySelectorAll("#tabs .sub a.sub-item").length >= 5 && document.querySelector("#tabs .sub a.sub-item").getBoundingClientRect().height >= 44'), 'the phone\'s drawer lists the chats, 44 px rows');
+  check(await b.eval(`document.querySelectorAll("#tabs .sub a.sub-item").length >= ${fixed ? 1 : 5} && document.querySelector("#tabs .sub a.sub-item").getBoundingClientRect().height >= 44`), 'the phone\'s drawer lists the chats, 44 px rows');
   await shot('chat-drawer-390', 390);
+  if (!fixed) {
   const second = await chatAt(b, 1);
   await markChat(b, second);
   await b.click('#tabs .sub a.sub-item[data-pick]');
   for (let k = 0; k < 20 && (await hashThread(b) !== second || await b.eval('document.body.dataset.rail === "open"')); k++) await sleep(500);
   check(await hashThread(b) === second && await b.eval('document.body.dataset.rail !== "open"'), 'a chat opened from the drawer is shown, and the drawer closes');
+  }
   await b.eval('location.hash = "tab=analytics&view=overview"');
   await b.waitFor('!!document.querySelector("#main .grid-4")', 20000).catch(() => null);
   await b.click('.levels-open');
