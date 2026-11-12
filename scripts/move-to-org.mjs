@@ -54,7 +54,8 @@ export async function move({ slug, apply = false } = {}) {
   const settingsOld = await drive.readJsonPath(from, 'settings.json').catch(() => null) ?? {};
   const customers = (await drive.readJsonPath(`${from}/customers`, 'customers.json').catch(() => null))?.customers ?? [];
   const bizTasks = (await tasks.list({ labels: [`biz:${slug}`], includeClosed: true }).catch(() => [])).map(t => ({ id: t.id ?? t.doc?.id, title: t.title ?? t.doc?.title, status: t.status ?? t.doc?.status, readme: t.readme ?? t.doc?.readme }));
-  const taskFiles = (await drive.files('Tasks/')).filter(f => bizTasks.some(t => f.path === `Tasks/${t.title}.task.tsx` || (t.readme && f.path === `Tasks/${t.readme}`)));
+  // A task is its .task.tsx and the .md of its body, both named by its title.
+  const taskFiles = (await drive.files('Tasks/')).filter(f => bizTasks.some(t => [`Tasks/${t.title}.task.tsx`, `Tasks/${t.title}.md`, t.readme && `Tasks/${t.readme}`].includes(f.path)));
   const site = old.site?.id ? await sites.get(old.site.id).catch(e => ({ error: e.message })) : null;
   const oldThread = old.cofounder?.threadId ?? null;
   const oldTriggers = oldThread ? await threads.triggers.list(oldThread).catch(() => []) : [];
