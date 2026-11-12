@@ -4,6 +4,8 @@ import { threads, drive } from '/lib/api.js';
 import { wakeCofounder, moveCofounderModel } from '/lib/business.js';
 import { $, $$, esc, icon, toast, initial, time, ago, oops, busy } from '/lib/ui.js';
 import { md } from '/lib/md.js';
+import { widget, toolUi, stripAsk } from '/lib/widgets.js';
+import { storefrontUrl } from '/lib/storefront.js';
 import { bizTasks, isApproval, approve, reject, siteState, askLink } from './_shared.js';
 
 // Questions a founder often has, one tap from the composer. A chip writes the question; the founder sends it.
@@ -29,6 +31,10 @@ export async function render(ctx) {
   // co-founder's words while the model writes them (the socket's message.delta), one bubble per step.
   let messages = [], approvalsList = [], lastAgentAt = 0, alive = true, timer = null;
   const live = new Map();
+  // A widget's state on this page (lib/widgets.js): `sending`, `error`, a multiselect's `picked`. The server's
+  // message.update is what locks it; `waiters` resolve when that update comes.
+  const asks = new Map();
+  const waiters = new Map();
   let socket = null, socketOpen = false, retries = 0;
   // The co-founder is typing while the socket says it works, or while the founder's last line has no answer yet.
   let working = false, typingUntil = Date.now() + 120000;
@@ -70,13 +76,21 @@ export async function render(ctx) {
       const m = messages[i];
       const who = speaker(m);
       if (m.tool) {
+        // A chart the co-founder drew with `visualize`: the tool line carries it (lib/widgets.js toolUi).
+        const pic = toolUi(m.tool);
+        if (pic) { parts.push(`<div class="msg cofounder" data-id="${esc(m.id ?? '')}"><span class="avatar cofounder">${initial(cof.name)}</span><div class="body"><div class="who"><b>${esc(cof.name || 'Co-founder')}</b><span>${esc(time(m.at))}</span></div>${widget({ ...m, ui: pic })}</div></div>`); continue; }
         // A run of the same tool reads as one line: "used read_drive_file ×8 (2 failed)".
         let n = 1, failed = m.tool.ok === false ? 1 : 0;
         while (messages[i + 1]?.tool?.name === m.tool.name) { i++; n++; if (messages[i].tool.ok === false) failed++; }
         parts.push(`<div class="msg system"><div class="body"><div class="text">${esc(cof.name ?? 'Co-founder')} used ${esc(m.tool.name)}${n > 1 ? ` ×${n}` : ''}${failed ? ` (${n > 1 ? `${failed} failed` : 'it failed'})` : ''}</div></div></div>`);
         continue;
       }
-      if (!m.text?.trim()) continue;
+      // A file the founder gave with no request names itself (the platform's line has no words).
+      if (who === 'me' && !m.text?.trim() && m.ui?.kind === 'file' && m.ui.answer) {
+        parts.push(`<div class="msg system" data-id="${esc(m.id ?? '')}"><div class="body"><div class="text">You uploaded ${esc(m.ui.answer)} · ${esc(time(m.at))}</div></div></div>`);
+        continue;
+      }
+      if (!m.text?.trim() && !(who !== 'me' && m.ui)) continue;
       // The opening ask (lib/business.js openingFor: instructions to the agent and the business's address) reads as
       // one quiet line, not as the founder's words.
       if (who === 'me' && isOpening(m)) {
@@ -85,14 +99,23 @@ export async function render(ctx) {
       }
       const writing = typing?.id === m.id;
       const shown = writing ? typing.words.slice(0, typing.shown).join('') : m.text;
-      parts.push(`<div class="msg ${who}${writing ? ' streaming' : ''}" data-id="${esc(m.id ?? '')}"${writing ? ' aria-busy="true"' : ''}>${who === 'me' ? '' : `<span class="avatar ${who === 'cofounder' ? 'cofounder' : ''}">${who === 'cofounder' ? initial(cof.name) : '·'}</span>`}<div class="body"><div class="who"><b>${esc(who === 'me' ? (founder?.name || 'You') : who === 'cofounder' ? (m.senderName || cof.name || 'Co-founder') : 'System')}</b><span>${esc(time(m.at))}</span></div>${who === 'me' ? `<div class="text">${esc(shown)}</div>` : `<div class="text md">${md(shown)}</div>`}</div>${who === 'me' ? `<span class="avatar">${initial(founder?.name || founder?.email)}</span>` : ''}</div>`);
+      parts.push(`<div class="msg ${who}${writing ? ' streaming' : ''}" data-id="${esc(m.id ?? '')}"${writing ? ' aria-busy="true"' : ''}>${who === 'me' ? '' : `<span class="avatar ${who === 'cofounder' ? 'cofounder' : ''}">${who === 'cofounder' ? initial(cof.name) : '·'}</span>`}<div class="body"><div class="who"><b>${esc(who === 'me' ? (founder?.name || 'You') : who === 'cofounder' ? (m.senderName || cof.name || 'Co-founder') : 'System')}</b><span>${esc(time(m.at))}</span></div>${who === 'me' ? `<div class="text">${esc(shown)}</div>` : shown?.trim() ? `<div class="text md">${md(shown)}</div>` : ''}${who !== 'me' && m.ui && !writing ? widget(m, asks.get(m.id)) : ''}</div>${who === 'me' ? `<span class="avatar">${initial(founder?.name || founder?.email)}</span>` : ''}</div>`);
     }
-    if (biz.site?.lastDeploy?.at) parts.push(`<div class="milestone">${icon('rocket')}<div><b>Site deployed</b> · <a href="${esc(biz.site.url)}" target="_blank" rel="noopener">${esc(biz.site.url)}</a> <small class="muted">${esc(ago(biz.site.lastDeploy.at))}</small></div></div>`);
+    // The brand address the right panel shows (lib/storefront.js storefrontUrl), not the hosting one.
+    const siteUrl = storefrontUrl(biz);
+    if (biz.site?.lastDeploy?.at && siteUrl) parts.push(`<div class="milestone">${icon('rocket')}<div><b>Site deployed</b> · <a href="${esc(siteUrl)}" target="_blank" rel="noopener">${esc(siteUrl.replace(/^https?:\/\//, ''))}</a> <small class="muted">${esc(ago(biz.site.lastDeploy.at))}</small></div></div>`);
     for (const t of open) parts.push(approvalCard(t));
     if (decided.length) parts.push(`<p class="hint" style="margin-left:42px">${decided.length} decided ${decided.length === 1 ? 'card' : 'cards'} are in Tasks.</p>`);
     for (const b of live.values()) parts.push(liveBubble(b));
     if ((working || unanswered()) && !live.size && !typing && Date.now() < typingUntil) parts.push(`<div class="msg system composing typing" role="status"><div class="body"><div class="text">${esc(cof.name ?? 'Your co-founder')} is typing</div></div></div>`);
+    // A paint draws the chat again: what the founder typed into a widget, and the focus, stay.
+    const kept = $$('.ask input:not([type="file"])', chat).filter(i => i.id).map(i => [i.id, i.value]);
+    const focused = chat.contains(document.activeElement) ? document.activeElement : null;
+    const focusAt = focused?.id || (focused?.closest('[data-widget]') ? { ask: focused.closest('[data-widget]').dataset.widget, value: focused.dataset.value } : null);
     chat.innerHTML = parts.join('');
+    for (const [id, value] of kept) { const i = chat.querySelector(`#${CSS.escape(id)}`); if (i && !i.closest('.ask.answered')) { i.value = value; const o = i.closest('.ask-range')?.querySelector('output'); if (o) o.textContent = value; } }
+    if (typeof focusAt === 'string') chat.querySelector(`#${CSS.escape(focusAt)}`)?.focus({ preventScroll: true });
+    else if (focusAt) { const box = chat.querySelector(`[data-widget="${CSS.escape(focusAt.ask)}"]`); (box?.querySelector(focusAt.value != null ? `[data-value="${CSS.escape(focusAt.value)}"]:not([disabled])` : 'button:not([disabled])') ?? box?.querySelector('button:not([disabled]), input:not([disabled])') ?? box)?.focus?.({ preventScroll: true }); }
     const needs = $('#building [data-needs] b'); if (needs) needs.textContent = `${open.length} need${open.length === 1 ? 's' : ''} you`;
     $$('.approval [data-approve]', chat).forEach(b => b.onclick = () => decide(b.closest('.approval').dataset.id, true, b));
     $$('.approval [data-reject]', chat).forEach(b => b.onclick = () => decide(b.closest('.approval').dataset.id, false, b));
@@ -100,7 +123,7 @@ export async function render(ctx) {
     $('#wake', chat)?.addEventListener('click', e => busy(e.currentTarget, async () => { try { const b = await wakeCofounder(biz); ctx.setBiz(b); cof.threadId = b.cofounder.threadId; cof.agentId = b.cofounder.agentId; toast(`${cof.name} is awake.`, 'ok'); await load(); } catch (err) { toast(oops(err), 'bad'); } }));
     if (atBottom) chat.scrollTop = chat.scrollHeight;
   };
-  const liveBubble = b => `<div class="msg cofounder streaming" data-live="${esc(b.id)}" aria-live="polite"><span class="avatar cofounder">${initial(cof.name)}</span><div class="body"><div class="who"><b>${esc(cof.name || 'Co-founder')}</b><span>${esc(time(b.at))}</span></div><div class="text md">${md(b.text)}</div></div></div>`;
+  const liveBubble = b => `<div class="msg cofounder streaming" data-live="${esc(b.id)}" aria-live="polite"><span class="avatar cofounder">${initial(cof.name)}</span><div class="body"><div class="who"><b>${esc(cof.name || 'Co-founder')}</b><span>${esc(time(b.at))}</span></div><div class="text md">${md(stripAsk(b.text))}</div></div></div>`;
   const approvalCard = t => `<div class="approval" data-id="${esc(t.id)}"><div class="row"><span class="badge accent">Needs your call</span><small class="muted">${esc(ago(t.createdAt ?? Date.now()))}</small></div><b>${esc(t.title)}</b>${t.readme || t.body ? `<div class="reasoning md" hidden>${md(t.body ?? t.readme ?? '')}</div>` : ''}<div class="acts"><button type="button" class="btn sm primary" data-approve>Approve</button><button type="button" class="btn sm quiet" data-reject>Reject</button>${t.body || t.readme ? '<button type="button" class="btn sm ghost" data-reasoning>Show reasoning</button>' : ''}</div></div>`;
   const decide = async (id, yes, button) => {
     const t = approvalsList.find(x => x.id === id); if (!t) return;
@@ -137,14 +160,104 @@ export async function render(ctx) {
     catch (err) { messages = messages.filter(m => m.text !== text || !String(m.id).startsWith('local-')); toast(oops(err), 'bad'); paint(); }
   };
 
+  // A widget's answer: over the thread's socket (`widget.respond`, which locks the widget, posts the answer as the
+  // founder's line and wakes the co-founder), confirmed by the server's message.update. When the socket is not open or
+  // no update comes, the transcript is read once (an answer that landed is never sent twice), then the question's
+  // answer route takes it. The controls stay off while it is on its way; a failure says so and turns them on again.
+  // The thread the chat shows: the widget code reads it here, never the co-founder's first thread by name.
+  const threadOf = () => cof.threadId;
+  const lockedNow = id => !!messages.find(x => x.id === id)?.ui?.answered;
+  const waitLocked = (id, ms) => new Promise(resolve => {
+    const done = v => { clearTimeout(t); waiters.delete(id); resolve(v); };
+    const t = setTimeout(() => done(lockedNow(id)), ms);
+    waiters.set(id, done);
+  });
+  const settle = async (id, work) => {
+    if (asks.get(id)?.sending) return;
+    asks.set(id, { ...asks.get(id), sending: true, error: null }); paint();
+    try {
+      await work();
+      asks.delete(id); typingUntil = Date.now() + 120000; paint();
+    } catch (err) { if (!alive) return; asks.set(id, { ...asks.get(id), sending: false, error: oops(err) }); paint(); }
+  };
+  const respond = (id, raw) => {
+    const m = messages.find(x => x.id === id);
+    const value = String(raw ?? '').trim();
+    if (!m?.ui || m.ui.answered || !value || !threadOf()) return;
+    return settle(id, async () => {
+      if (socket && socketOpen && socket.readyState === 1) {
+        socket.send(JSON.stringify({ t: 'widget.respond', id, value }));
+        if (await waitLocked(id, 8000)) return;
+      }
+      await load();
+      if (lockedNow(id)) return;
+      if (!m.question) throw Error(`The answer did not reach ${cof.name ?? 'your co-founder'}.`);
+      await threads.answer(threadOf(), m.question, value);
+      await load();
+      // The route took the answer; the transcript may show it a moment later.
+      if (!lockedNow(id)) { const x = messages.find(y => y.id === id); if (x?.ui) x.ui = { ...x.ui, answered: true, answer: value }; }
+    });
+  };
+  const upload = (id, files) => {
+    const m = messages.find(x => x.id === id);
+    if (!m?.ui || m.ui.answered || !files.length || !threadOf()) return;
+    return settle(id, async () => {
+      for (const f of (m.ui.multiple ? files : files.slice(0, 1))) await threads.upload(threadOf(), f, m.ui.requestId);
+      if (await waitLocked(id, socketOpen ? 6000 : 0)) return;
+      await load();
+      if (!lockedNow(id)) { const x = messages.find(y => y.id === id); if (x?.ui) x.ui = { ...x.ui, answered: true, answer: files.map(f => f.name).join(', ') }; }
+    });
+  };
+  chat.addEventListener('click', e => {
+    const box = e.target.closest('[data-widget]'); if (!box) return;
+    const id = box.dataset.widget;
+    const send = e.target.closest('[data-ask-send]');
+    if (send && !send.disabled) return respond(id, send.dataset.value);
+    const toggle = e.target.closest('[data-ask-toggle]');
+    if (toggle && !toggle.disabled) {
+      const st = asks.get(id) ?? {};
+      const picked = new Set(st.picked ?? []);
+      if (picked.has(toggle.dataset.value)) picked.delete(toggle.dataset.value); else picked.add(toggle.dataset.value);
+      asks.set(id, { ...st, picked: [...picked], error: null }); paint();
+      return;
+    }
+    const submit = e.target.closest('[data-ask-submit]');
+    if (submit && !submit.disabled) {
+      const m = messages.find(x => x.id === id);
+      const picked = asks.get(id)?.picked ?? [];
+      // In the options' order, as the founder read them.
+      const order = (m?.ui?.options ?? []).map(o => String(o.value ?? o.label));
+      respond(id, [...picked].sort((a, b) => order.indexOf(a) - order.indexOf(b)).join(', '));
+    }
+  });
+  chat.addEventListener('submit', e => {
+    const form = e.target.closest('[data-ask-form]'); if (!form) return;
+    e.preventDefault();
+    respond(form.closest('[data-widget]').dataset.widget, form.elements.value?.value);
+  });
+  chat.addEventListener('input', e => {
+    if (e.target.type !== 'range') return;
+    const o = e.target.closest('.ask-range')?.querySelector('output'); if (o) o.textContent = e.target.value;
+  });
+  chat.addEventListener('change', e => {
+    if (!e.target.matches('[data-ask-file]')) return;
+    upload(e.target.closest('[data-widget]').dataset.widget, [...e.target.files]);
+  });
+
   // The thread's socket: the co-founder's words as the model writes them, its lines as they land, and whether it is
   // working. Without a socket (refused, closed five times) the chat reads the transcript every 4 s instead.
   const onLive = m => {
     if (m.t === 'message.delta' && m.text) {
       live.set(m.id, { id: m.id, text: m.text, at: live.get(m.id)?.at ?? Date.now() });
       const el = chat.querySelector(`[data-live="${CSS.escape(m.id)}"] .text`);
-      if (el) { const atBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 80; el.textContent = m.text; if (atBottom) chat.scrollTop = chat.scrollHeight; }
+      if (el) { const atBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 80; el.innerHTML = md(stripAsk(m.text)); if (atBottom) chat.scrollTop = chat.scrollHeight; }
       else paint();
+    } else if (m.t === 'message.update' && m.id) {
+      // A widget answered (here, in another tab, or by the answer route): the server's state locks it.
+      const at = messages.findIndex(x => x.id === m.id);
+      if (at >= 0) messages[at] = { ...messages[at], ...(m.text != null ? { text: m.text } : {}), ...(m.ui ? { ui: m.ui } : {}) };
+      if (m.ui?.answered) { asks.delete(m.id); waiters.get(m.id)?.(true); }
+      paint();
     } else if (m.t === 'message.delete') {
       // The step ended; its own message follows in a moment and takes the bubble's place.
       setTimeout(() => { if (live.delete(m.id)) paint(); }, 3000);

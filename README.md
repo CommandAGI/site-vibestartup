@@ -33,6 +33,7 @@ what is open, and what is left).
 | `lib/api.js` | the CommandAGI client: the token (the `vibestartup` OAuth client's password grant and `/oauth/signup`), refresh, REST, MCP tools, Drive, threads, tasks, sites, email |
 | `lib/business.js` | the business record, its creation sequence, the co-founder's charter, the memory files, the brand generator |
 | `lib/storefront.js` | the storefront: its files (shop, a page per product, checkout, terms, privacy, refunds, product pictures, the sign-ups' server module), what the checkout can sell, the brand address, the publish |
+| `lib/widgets.js` | a co-founder message's controls and charts (CommandAGI's ChatUi: options, slider, yes or no, text, file, lens and graph charts), every model string escaped; `test/widgets.mjs` tests every kind |
 | `lib/ui.js` | icons, toasts, dialogs, menus, formatting, the Soon pill |
 | `lib/legal-docs.js`, `lib/pdf.js` | the Legal tab's document templates, and a PDF writer with no dependency (Helvetica, wrapping, lists, tables, signature lines, page breaks, the brand's mark) |
 | `lib/guides.js` | the first-run guides: callouts beside real controls, seen once per account (docs/DESIGN.md § guides) |
