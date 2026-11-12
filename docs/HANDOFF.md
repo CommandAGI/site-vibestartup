@@ -39,6 +39,14 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   (deployed with `pnpm commandagi sites deploy <git archive of HEAD> --prod` from a CommandAGI checkout, as the host
   account that owns the site `vibestartup`; never deploy `.`, which would carry `.test-results/`). The API is
   `https://api.commandagi.com` (`/brand.js`).
+- 2026-11-12, every business an org: `node test/journey.mjs --url https://vibestartup.pro` passes at 1440 and 390 px
+  with no problem (two throwaway founders, erased): the org `org-<slug>` with the schema's files and no stray, the
+  storefront live at `<slug>.vibestartup.pro`, the co-founder answering in its org chat (11.9 and 17.9 s), the approval a
+  file of the org's `Tasks/`, Files' lens and Open in CommandAGI link, the Finish payouts card, the switcher with two
+  businesses, and the founder's erasure taking both business orgs (no `orgs_held`; `GET /sites/brand/<slug>` 404 after).
+  `test/sidebar.mjs` 58 of 58; `test/schema.mjs` 6 of 6; `test/storefront.mjs` 53 of 53. `test/chat-widgets.mjs`: the
+  select passed (server lock, reply); the slider, and in a second run the select, were not drawn by the model in time.
+  Screenshots and logs: CommandAGI's `test-results/business-org-2026-11-12/`.
 - 2026-11-11, at 55b16e5: the journey passes against production's API at 1440 and 390 px (`node test/journey.mjs --api
   https://api.commandagi.com`), every step, with one problem left: the co-founder's first answer can take over 90 s.
 - Chat controls (2026-11-12): a co-founder message's `ui` renders as options, a multiselect, a slider, yes or no, got
