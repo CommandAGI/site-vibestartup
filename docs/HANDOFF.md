@@ -225,8 +225,11 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
 - **Sign-ups have no unsubscribe link yet.** The consent says "I can stop them at any time"; today that is a reply to
   the business address and the founder removing the row (`DELETE /api/signups?email=` on the storefront, with the
   read key, is there; no button calls it). Sending updates is Outbound's job and should carry the link.
-- **Launch follow-ups not done yet:** require Turnstile on OAuth sign-ups (`signup.turnstile.require.oauth`); an
-  "Unlock more credits" card from `GET /me/free-credits`; drop Billing's origin fallback (the brand origin is on
+- **Turnstile on sign-up (2026-11-12):** the form waits for the widget's token (15 s; 3 minutes while Cloudflare's box
+  to tick shows; a failed check says to press Troubleshoot or reload), and CommandAGI 8b598177df3 sets
+  `signup.turnstile.require.oauth` to true (shipped by the CommandAGI session; it confirms with a real sign-up).
+  Test addresses (example.com) are not checked, so the tests are unaffected.
+- **Launch follow-ups not done yet:** an "Unlock more credits" card from `GET /me/free-credits`; drop Billing's origin fallback (the brand origin is on
   production); seed the listing terms to production (`org-specs`, above).
 - **The Email tab's own folder buttons** don't move the address or the rail's highlight; the rail's links do.
 - **Existing businesses keep the co-founder instructions they were made with** until step 2 puts the charter in the
