@@ -14,11 +14,16 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   production ship; never start a production deploy of CommandAGI while another runs
   (`systemctl --user list-units | grep -iE 'deploy|ship'`). The owner waived the CI gate for the launch (2026-11-11);
   the waiver is named in every deploy's record.
-- **In progress: every business becomes its own org** (`docs/schema.md`, step 2). Business creation makes
-  `org-<slug>`; every tab reads the org through one seam; the owner's DigitalProduct moves into `org-digitalproduct`.
-  Its product moves after CommandAGI's adopt rule ships, and its mail address stays the founder's until an address can
-  move to an org (CommandAGI `docs/next`). Until step 2 lands, a business is still `Businesses/<slug>/` in the founder's
-  Drive.
+- **Every business is its own org (step 2, done 2026-11-12).** A new business is `org-<slug>` (founded by the founder,
+  brand `vibestartup`); its files are the schema's at the org's root (`docs/schema.md`, `lib/schema.js`), its
+  co-founder an agent forked into the org with the charter as its instructions, its chats, site, address, tasks, goods
+  and payouts the org's. Every tab reads the org through one seam (`bizDrive`, `bizTasksApi`, `bizAccount`); nothing
+  reads `Businesses/<slug>/`. The owner's DigitalProduct moved into `org-digitalproduct` with
+  `scripts/move-to-org.mjs` (16 files copied and checked by size and SHA-256, the site transferred with its slug,
+  deploys and analytics, its good adopted with the same id, slug and SKU, the old chat listed as "Before the move", the
+  briefing on the new chat); records in CommandAGI's `docs/verification.md` (2026-11-12) and
+  `test-results/business-org-2026-11-12/`. Its mail address stays the owner's until CommandAGI can move an address to
+  an org.
 - **Ads are "Soon".** Meta app "VibeStartup Ads" (1338102101689302, portfolio commandagi 1379331479721276) is Live.
   Business verification was submitted on 2026-11-11 (about 2 business days), access verification on 2026-11-12
   (about 5 business days). App Review for advanced `ads_management` follows both; its material is
@@ -55,8 +60,8 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   after its first exchange; until the rail reads it again (25 s after a line) it says "New chat".
 - The look is CommandAGI's shape language (2026-11-11, owner): square controls, wall-to-wall selection bands, only
   floats rounded, a phone drawer and bottom bar (`docs/DESIGN.md`; `test/edges.mjs` checks it at every screenshot).
-- Payments: a founder's customers pay through CommandAGI's Connect checkout (Settings → Payments onboards a Stripe
-  Express account). A physical product is a good, and so is a digital product with its file (`products/files/`). What a
+- Payments: a founder's customers pay through CommandAGI's Connect checkout into the business's own Stripe Express
+  account (the Finish payouts card onboards the org). A physical product is a good, and so is a digital product with its file (`products/files/`). What a
   guest can buy is read at run time (`guestCheckout`, `lib/storefront.js`): the platform's `store` flag (off on
   production for visitors: every good is ordered by email until it is on, below), and whether the checkout sells a
   download to a guest (`email_required` vs `account_required`). The storefront is written from the answer, and its
@@ -66,7 +71,7 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   pictures chosen in Products from the Studio library, made into 480/960/1600 px WebP in the browser and served with
   `srcset` and `loading=lazy`; a page per product (`product/<id>.html`: gallery, thumbnails, description, price, buy);
   "Get updates" recorded by the storefront's own server module in the site's KV with the consent words, then listed in
-  Customers and copied into `customers/customers.json`; the business's own `legal/terms.html` published in place of
+  Customers and written as contacts, `contacts/<email>.vcf`; the business's own `legal/terms.html` published in place of
   the default, default privacy and refunds pages otherwise; no sideways scroll at 390 and 1440. The checkout stopped
   at "order by email" (the `store` flag is off, and a new account's goods are drafts until payouts), so Stripe's page
   was not reached.
@@ -107,6 +112,17 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   production. Billing's fallback is still in the code (left to do).
 
 ## left to do
+
+- **Business orgs, what the platform does not do yet** (CommandAGI `docs/next`, the VibeStartup file): an address moved
+  to an org (DigitalProduct writes from the owner's `digitalproduct@commandagi.email`); a site moved back to a person;
+  a seller's legal type (Connect onboards every org as `company`; a sole proprietor is `individual`); the org's own
+  purse (an org's chats bill its owner, so the founder's credits, free first, pay).
+- **Ads in an org.** The Meta ads routes read the founder's own Drive for a campaign's picture and plan; the console now
+  names them by address (`cloud://home/org-<slug>/…`). Check that `POST /meta-ads/campaigns` resolves an org address
+  before Ads opens (it is "Soon" until then).
+- **The Products tab writes a product file with JSON string attributes** (`name={"…"}`, `lib/business.js`
+  `productFile`). The co-founder's files use plain strings. Check that a physical product added in Products is indexed
+  as the org's good on production (the journey's step 6 says which badge it got).
 
 - **Hiring: VibeStartup's agent does not sign.** On dev (2026-11-11) a founder's proposed and signed contract for
   `listing-vibestartup-cofounder` stayed `proposed` for 6 minutes. The platform wakes the provider agent
@@ -181,6 +197,12 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
 - `lib/api.js` has no fetch timeout; a hung call shows the tab's "still loading, Try again" banner after 10 s.
 
 ## for the owner
+
+- **Finish DigitalProduct's payouts.** Its own Stripe account is made. Open https://vibestartup.pro/app/?b=digitalproduct,
+  press **Finish payouts** (Dashboard, Products or Settings) and fill in Stripe's form: identity, bank and tax. Until
+  then its good stays a draft and the storefront takes orders by email.
+- **The old chat's run stays in your Drive** at `Businesses/digitalproduct/runs/` (the folder's only content): a run
+  cannot change hands, and its thread writes there. Everything else of the folder is in your Trash, restorable.
 
 - **The previous site's resources.** The production site `vibestartup` still holds the previous app's D1, KV,
   `COFOUNDER_MODEL` and `OPENROUTER_API_KEY`; this site uses none of them. Deleting the D1 loses what the previous app
