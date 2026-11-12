@@ -98,6 +98,32 @@ body.console[data-panel="1"] .frame { grid-template-columns: 1fr 320px; }
 .msg.system .text { background: transparent; border: 0; padding: 0; color: var(--ink-3); font-size: 13px; }
 .msg.system.composing .text::after { content: "…"; animation: blink 1.2s steps(3, end) infinite; }
 .msg.cofounder.streaming .text::after { content: "\258D"; margin-left: 2px; color: var(--ink-3); animation: blink 1s steps(2, end) infinite; }
+/* Markdown an agent writes (lib/md.js): blocks spaced like the page, square like the rest of the console */
+.md { white-space: normal; line-height: 1.55; }
+.md > :first-child { margin-top: 0; }
+.md > :last-child { margin-bottom: 0; }
+.md p, .md ul, .md ol, .md blockquote, .md pre, .md .md-table, .md hr { margin: 0 0 10px; }
+.md ul, .md ol { padding-left: 22px; }
+.md li { margin: 2px 0; }
+.md li > ul, .md li > ol { margin: 2px 0 4px; }
+.md li.task { list-style: none; margin-left: -20px; display: flex; gap: 8px; align-items: baseline; }
+.md .md-check { flex: none; width: 12px; height: 12px; border: 1.5px solid var(--ink-3); transform: translateY(1px); }
+.md .md-check.done { background: var(--ok); border-color: var(--ok); }
+.md .md-h { margin: 14px 0 6px; font-size: 15px; font-weight: 600; line-height: 1.3; }
+.md h3.md-h { font-size: 17px; }
+.md b { font-weight: 600; }
+.md a { color: var(--cofounder); text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
+.md code { font-family: var(--mono); font-size: .88em; padding: 1px 5px; background: var(--surface-2); border: 1px solid var(--line); overflow-wrap: anywhere; }
+.md pre.md-code { padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--line); overflow-x: auto; max-width: 100%; }
+.md pre.md-code code { padding: 0; background: none; border: 0; font-size: 12.5px; white-space: pre; overflow-wrap: normal; }
+.md blockquote { padding: 2px 0 2px 12px; border-left: 3px solid var(--line-2); color: var(--ink-2); }
+.md hr { border: 0; border-top: 1px solid var(--line); }
+.md .md-table { overflow-x: auto; max-width: 100%; }
+.md table { border-collapse: collapse; font-size: 13px; }
+.md th, .md td { padding: 6px 10px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+.md th { background: var(--surface-2); font-weight: 600; }
+.msg.cofounder.streaming .text.md > :last-child::after { content: "\258D"; margin-left: 2px; color: var(--ink-3); animation: blink 1s steps(2, end) infinite; }
+.msg.cofounder.streaming .text.md::after { content: none; }
 @keyframes blink { 50% { opacity: .2; } }
 .approval, .milestone, .briefing { max-width: 760px; margin-left: 42px; }
 .approval { border: 1px solid var(--line); box-shadow: inset 3px 0 0 var(--accent); background: var(--surface); padding: 14px 16px 14px 18px; display: grid; gap: 8px; }
@@ -335,3 +361,4 @@ body.console .toasts { left: auto; right: 20px; transform: none; }
 
 /* A secret is typed masked in a text field: a password field draws the browser's saved logins into it. */
 .masked { -webkit-text-security: disc; text-security: disc; }
+.approval .reasoning.md { white-space: normal; }

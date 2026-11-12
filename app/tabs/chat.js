@@ -3,6 +3,7 @@
 import { threads, drive } from '/lib/api.js';
 import { wakeCofounder, moveCofounderModel } from '/lib/business.js';
 import { $, $$, esc, icon, toast, initial, time, ago, oops, busy } from '/lib/ui.js';
+import { md } from '/lib/md.js';
 import { bizTasks, isApproval, approve, reject, siteState, askLink } from './_shared.js';
 
 // Questions a founder often has, one tap from the composer. A chip writes the question; the founder sends it.
@@ -84,7 +85,7 @@ export async function render(ctx) {
       }
       const writing = typing?.id === m.id;
       const shown = writing ? typing.words.slice(0, typing.shown).join('') : m.text;
-      parts.push(`<div class="msg ${who}${writing ? ' streaming' : ''}" data-id="${esc(m.id ?? '')}"${writing ? ' aria-busy="true"' : ''}>${who === 'me' ? '' : `<span class="avatar ${who === 'cofounder' ? 'cofounder' : ''}">${who === 'cofounder' ? initial(cof.name) : '·'}</span>`}<div class="body"><div class="who"><b>${esc(who === 'me' ? (founder?.name || 'You') : who === 'cofounder' ? (m.senderName || cof.name || 'Co-founder') : 'System')}</b><span>${esc(time(m.at))}</span></div><div class="text">${esc(shown)}</div></div>${who === 'me' ? `<span class="avatar">${initial(founder?.name || founder?.email)}</span>` : ''}</div>`);
+      parts.push(`<div class="msg ${who}${writing ? ' streaming' : ''}" data-id="${esc(m.id ?? '')}"${writing ? ' aria-busy="true"' : ''}>${who === 'me' ? '' : `<span class="avatar ${who === 'cofounder' ? 'cofounder' : ''}">${who === 'cofounder' ? initial(cof.name) : '·'}</span>`}<div class="body"><div class="who"><b>${esc(who === 'me' ? (founder?.name || 'You') : who === 'cofounder' ? (m.senderName || cof.name || 'Co-founder') : 'System')}</b><span>${esc(time(m.at))}</span></div>${who === 'me' ? `<div class="text">${esc(shown)}</div>` : `<div class="text md">${md(shown)}</div>`}</div>${who === 'me' ? `<span class="avatar">${initial(founder?.name || founder?.email)}</span>` : ''}</div>`);
     }
     if (biz.site?.lastDeploy?.at) parts.push(`<div class="milestone">${icon('rocket')}<div><b>Site deployed</b> · <a href="${esc(biz.site.url)}" target="_blank" rel="noopener">${esc(biz.site.url)}</a> <small class="muted">${esc(ago(biz.site.lastDeploy.at))}</small></div></div>`);
     for (const t of open) parts.push(approvalCard(t));
@@ -99,8 +100,8 @@ export async function render(ctx) {
     $('#wake', chat)?.addEventListener('click', e => busy(e.currentTarget, async () => { try { const b = await wakeCofounder(biz); ctx.setBiz(b); cof.threadId = b.cofounder.threadId; cof.agentId = b.cofounder.agentId; toast(`${cof.name} is awake.`, 'ok'); await load(); } catch (err) { toast(oops(err), 'bad'); } }));
     if (atBottom) chat.scrollTop = chat.scrollHeight;
   };
-  const liveBubble = b => `<div class="msg cofounder streaming" data-live="${esc(b.id)}" aria-live="polite"><span class="avatar cofounder">${initial(cof.name)}</span><div class="body"><div class="who"><b>${esc(cof.name || 'Co-founder')}</b><span>${esc(time(b.at))}</span></div><div class="text">${esc(b.text)}</div></div></div>`;
-  const approvalCard = t => `<div class="approval" data-id="${esc(t.id)}"><div class="row"><span class="badge accent">Needs your call</span><small class="muted">${esc(ago(t.createdAt ?? Date.now()))}</small></div><b>${esc(t.title)}</b>${t.readme || t.body ? `<div class="reasoning" hidden>${esc(t.body ?? t.readme ?? '')}</div>` : ''}<div class="acts"><button type="button" class="btn sm primary" data-approve>Approve</button><button type="button" class="btn sm quiet" data-reject>Reject</button>${t.body || t.readme ? '<button type="button" class="btn sm ghost" data-reasoning>Show reasoning</button>' : ''}</div></div>`;
+  const liveBubble = b => `<div class="msg cofounder streaming" data-live="${esc(b.id)}" aria-live="polite"><span class="avatar cofounder">${initial(cof.name)}</span><div class="body"><div class="who"><b>${esc(cof.name || 'Co-founder')}</b><span>${esc(time(b.at))}</span></div><div class="text md">${md(b.text)}</div></div></div>`;
+  const approvalCard = t => `<div class="approval" data-id="${esc(t.id)}"><div class="row"><span class="badge accent">Needs your call</span><small class="muted">${esc(ago(t.createdAt ?? Date.now()))}</small></div><b>${esc(t.title)}</b>${t.readme || t.body ? `<div class="reasoning md" hidden>${md(t.body ?? t.readme ?? '')}</div>` : ''}<div class="acts"><button type="button" class="btn sm primary" data-approve>Approve</button><button type="button" class="btn sm quiet" data-reject>Reject</button>${t.body || t.readme ? '<button type="button" class="btn sm ghost" data-reasoning>Show reasoning</button>' : ''}</div></div>`;
   const decide = async (id, yes, button) => {
     const t = approvalsList.find(x => x.id === id); if (!t) return;
     await busy(button, async () => {
