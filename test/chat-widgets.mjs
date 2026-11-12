@@ -81,6 +81,7 @@ try {
         result.lastMessages = (await transcript()).slice(-4).map(m => ({ role: m.role, text: m.text?.slice(0, 400), ui: m.ui ?? null, question: m.question ?? null, tool: m.tool?.name ?? null }));
         // Why: the model's own reasoning lines and any refusal of a call, from the thread's events.
         const ev = (await call(`/threads/${encodeURIComponent(thread)}/events?limit=300`)).body?.events ?? [];
+        result.rawEvents = ev.filter(e => e.at >= sent).map(e => JSON.stringify(e).slice(0, 2000));
         result.why = ev.filter(e => e.event === 'agent_reasoning' || /^refused/.test(e.event ?? '') || e.event === 'platform.call').slice(-8).map(e => ({ event: e.event, text: e.text?.slice(0, 300), tool: e.tool, reason: e.reason }));
         await b.shot(`${label}-missing-${width}`);
         throw e;
@@ -104,6 +105,8 @@ try {
       const at = msgs.findIndex(m => m.id === t.widget.id);
       const entry = msgs[at];
       t.server = { kind: entry?.ui?.kind, answered: entry?.ui?.answered, answer: entry?.ui?.answer, question: entry?.question ?? null };
+      t.near = msgs.slice(Math.max(0, at - 1)).map(m => ({ id: m.id, role: m.role, text: m.text?.slice(0, 120), ui: m.ui ? { kind: m.ui.kind, answered: m.ui.answered, answer: m.ui.answer } : null, question: m.question ?? null, reply: m.reply ?? null }));
+      result[label] = t;
       const after = msgs.slice(at + 1);
       const founderLine = after.find(m => m.role === 'user');
       const reply = after.slice(after.indexOf(founderLine) + 1).find(m => m.role === 'agent' && m.text?.trim());

@@ -49,8 +49,13 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
     passed in runs 1, 2, 5, 7 and 9 (the select 7 to 13 s after the question, the slider 11 to 14 s). Runs 3, 4, 6 and 8
     drew no select: the model sent its words without the block. API trials with the same charter, also on a
     busy thread and with a live socket, drew it 18 of 18, so the browser flow still holds a cause not found yet
-    (left to do). A founder message sent while the co-founder's turn runs can get no reply (5 of 6 API trials;
-    handed to commandagi-73).
+    (left to do). A founder message sent while the co-founder's turn runs could get no reply (5 of 6 API trials).
+    CommandAGI 38e87ee fixed it: 12 of 12 replied once, no double.
+  - After 38e87ee, 9 browser runs of `test/chat-widgets.mjs`: 7 passed whole (select 10 to 15 s, slider 9 to 14 s, one
+    reply each). Run 1 and run 8 drew no select. Run 8's events show one step: the reasoning "I'll present three price
+    buttons", then a single message, "Which starting price should we use for one mug?", with no block. Its route was
+    `deliberate`. Run 2 drew both controls, but the server did not hold the slider as answered. The test now saves the
+    raw events and the messages around a control, so the next failure shows its cause.
   - Who pays: the founder (an org's thread bills its owner). A call draws the free plan's `ai` allowance first (30
     credits each 8 hours, `GET /quota`), then the free credits, then the bought ones. A chat-only thread's spend was never
     settled: the ledger flushed only at an alarm, and a chat arms none. CommandAGI 3bd4e4ec2ef settles each call as it
