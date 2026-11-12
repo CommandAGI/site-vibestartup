@@ -1,9 +1,12 @@
-// The new-business wizard: one question per screen, the suggestions made by a script from the founder's words
-// (lib/business.js), then the creation sequence against CommandAGI (createBusiness), each step shown as it finishes.
-import { requireSignIn, setNotificationPref, settleReferral, ApiError, auth } from '/lib/api.js';
+// The new-business wizard: one question per screen, the suggestions from one model call on the founder's idea
+// (lib/suggest.js: names, a tagline, the blueprints ranked with a reason, the storefront's layout and look), then the
+// creation sequence against CommandAGI (createBusiness), each step shown as it finishes. While the founder types, the
+// call waits for a pause; a failed or slow call leaves neutral choices (every blueprint, no name, no tagline).
+import { requireSignIn, setNotificationPref, settleReferral, ApiError, auth, api } from '/lib/api.js';
 import { $, $$, esc, oops } from '/lib/ui.js';
 import { startGuides } from '/lib/guides.js';
-import { IDEA_STARTERS, suggestBlueprints, suggestNames, suggestTagline, VIBES, VOICES, PARTNERS, COFOUNDER_NAMES, brandFor, createBusiness } from '/lib/business.js';
+import { IDEA_STARTERS, VIBES, VOICES, PARTNERS, COFOUNDER_NAMES, brandFor, createBusiness } from '/lib/business.js';
+import { suggestFor, neutralSuggestions } from '/lib/suggest.js';
 
 // A signed-out visitor is sent to /auth/ and this page does nothing more (no thrown error: the redirect is the answer).
 const signedInHere = requireSignIn();
@@ -13,33 +16,91 @@ if (signedInHere) settleReferral();
 const STEPS = ['idea', 'blueprint', 'name', 'vibe', 'voice', 'partner', 'cofounder', 'updates'];
 const LABELS = { idea: 'Idea', blueprint: 'Blueprint', name: 'Name', vibe: 'Look', voice: 'Voice', partner: 'Partner', cofounder: 'Co-founder', updates: 'Updates' };
 const params = new URLSearchParams(location.search);
-const state = { idea: params.get('idea') ?? '', blueprint: null, name: '', vibe: 'clean', voice: 'casual', partner: 'creative', cofounder: COFOUNDER_NAMES[0], updates: true };
+const state = { idea: params.get('idea') ?? '', blueprint: null, name: '', tagline: '', vibe: 'clean', voice: 'casual', partner: 'creative', cofounder: COFOUNDER_NAMES[0], updates: true };
 let at = 0;
+
+// ---------- the suggestions: one model call per idea the founder settles on ----------
+
+// `sugg` answers `suggFor`; `asked` is the idea of the call in flight. What the founder picked or typed is never
+// replaced by a later answer (`own`).
+let sugg = neutralSuggestions(), suggFor = null, asked = null;
+const own = { blueprint: false, name: false, tagline: false };
+const MIN_IDEA = 12;
+const waiting = () => asked !== null && asked === state.idea && suggFor !== state.idea;
+function ask(idea) {
+  if (idea.length < MIN_IDEA || idea === suggFor || idea === asked) return;
+  asked = idea;
+  suggestFor(idea, api).then(s => {
+    if (asked !== idea) return; // a newer idea was asked for
+    asked = null; sugg = s; suggFor = idea;
+    if (s.failed) console.info('suggestions: neutral choices:', s.failed); else console.info(`suggestions: ${s.model} in ${s.ms} ms`);
+    if (!own.blueprint) state.blueprint = s.by ? s.blueprints[0] : null;
+    if (!own.name) state.name = s.names[0] ?? '';
+    if (!own.tagline) state.tagline = s.tagline;
+    // The screen that showed a skeleton for this idea fills in.
+    if (idea === state.idea && (STEPS[at] === 'blueprint' || STEPS[at] === 'name')) show();
+  });
+}
+let typing = null;
+const skeleton = (n, what) => `<div class="skeleton" id="suggesting" aria-busy="true"><p class="hint">${esc(what)}</p>${'<i class="block"></i>'.repeat(n)}</div>`;
+// The layout and look the model suggested go to the storefront when the founder kept its first blueprint (the layout
+// was chosen for that shape); the look holds for any blueprint.
+const storefrontPick = () => !sugg.by || suggFor !== state.idea ? null : { template: state.blueprint?.id === sugg.blueprints[0]?.id || state.blueprint?.id === 'own' ? sugg.template : null, style: sugg.style };
 
 const wizard = $('#wizard'), body = $('#wiz-body'), title = $('#wiz-title'), sub = $('#wiz-sub'), label = $('#step-label'), fill = $('#wiz-fill');
 const back = $('#back'), next = $('#continue'), skip = $('#skip'), error = $('#wiz-error');
 
 const choices = (items, selectedId, { suggestedId, extra } = {}) => `<div class="choices" id="choices">${items.map(it => `<button type="button" class="choice${it.id === suggestedId ? ' suggested' : ''}" data-id="${esc(it.id)}" aria-pressed="${String(it.id === selectedId)}"><b>${esc(it.title ?? it.name)}</b>${it.about ? `<p>${esc(it.about)}</p>` : ''}${it.sample ? `<p class="sample">${esc(it.sample)}</p>` : ''}${it.traits ? `<div class="traits">${it.traits.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}${extra ? extra(it) : ''}</button>`).join('')}</div>`;
-const own = (placeholder, value = '') => `<label class="own field"><span>Or your own</span><input id="own" value="${esc(value)}" placeholder="${esc(placeholder)}" maxlength="80"></label>`;
+const ownField = (placeholder, value = '', label = 'Or your own') => `<label class="own field"><span>${esc(label)}</span><input id="own" value="${esc(value)}" placeholder="${esc(placeholder)}" maxlength="80"></label>`;
 
 const SCREENS = {
   idea: {
     title: 'First things first: what are we building?', sub: 'Tell me your idea in a line, or start from one below.', ok: 'Looks good',
     render: () => `<label class="field"><span class="sr-only">Your idea</span><textarea id="idea" maxlength="240" placeholder="A camera-enabled desk lamp that lets an assistant see your notebook">${esc(state.idea)}</textarea></label><p class="hint">Need a starting point?</p><div class="starters">${IDEA_STARTERS.map(s => `<button type="button" class="chip" data-starter>${esc(s)}</button>`).join('')}</div>`,
-    bind: () => { $$('[data-starter]').forEach(c => c.onclick = () => { $('#idea').value = c.textContent; $('#idea').focus(); }); $('#idea').focus(); },
-    read: () => { state.idea = $('#idea').value.trim(); if (state.idea.length < 8) throw new Error('Say the idea in at least a few words.'); state.blueprint ??= suggestBlueprints(state.idea)[0]; },
+    bind: () => {
+      const idea = $('#idea');
+      const settle = () => { clearTimeout(typing); typing = setTimeout(() => ask(idea.value.trim()), 900); };
+      $$('[data-starter]').forEach(c => c.onclick = () => { idea.value = c.textContent; idea.focus(); clearTimeout(typing); ask(idea.value.trim()); });
+      idea.addEventListener('input', settle);
+      idea.focus();
+    },
+    read: () => { state.idea = $('#idea').value.trim(); if (state.idea.length < 8) throw new Error('Say the idea in at least a few words.'); clearTimeout(typing); ask(state.idea); },
   },
   blueprint: {
     title: 'Locked in. What should the first version offer?', sub: 'The first version is one offer, not a catalogue. Pick the shape, or write your own.', ok: 'Continue',
-    render: () => { const list = suggestBlueprints(state.idea); const sel = state.blueprint?.id && list.some(b => b.id === state.blueprint.id) ? state.blueprint.id : (state.blueprint?.id === 'own' ? 'own' : list[0].id); return choices(list, sel, { suggestedId: list[0].id }) + own('A membership with monthly office hours', state.blueprint?.id === 'own' ? state.blueprint.title : ''); },
-    bind: () => bindChoices(id => { const list = suggestBlueprints(state.idea); state.blueprint = list.find(b => b.id === id) ?? state.blueprint; $('#own').value = ''; }),
-    read: () => { const o = $('#own').value.trim(); if (o) state.blueprint = { id: 'own', title: o, about: '' }; if (!state.blueprint) throw new Error('Pick one, or write your own.'); },
+    render: () => {
+      if (waiting()) return skeleton(3, 'Fitting the first version to your idea…');
+      const list = suggFor === state.idea ? sugg.blueprints : neutralSuggestions().blueprints;
+      const ranked = sugg.by && suggFor === state.idea;
+      const sel = state.blueprint?.id && state.blueprint.id !== 'own' && list.some(b => b.id === state.blueprint.id) ? state.blueprint.id : '';
+      return choices(list.map(b => ({ ...b, about: b.why || b.about })), sel, { suggestedId: ranked ? list[0].id : null }) + ownField('A membership with monthly office hours', state.blueprint?.id === 'own' ? state.blueprint.title : '');
+    },
+    bind: () => { if (!$('#choices')) return; bindChoices(id => { const list = suggFor === state.idea ? sugg.blueprints : neutralSuggestions().blueprints; state.blueprint = list.find(b => b.id === id) ?? state.blueprint; own.blueprint = true; $('#own').value = ''; }); },
+    read: () => { if (!$('#choices')) throw new Error('One moment: the options are on their way.'); const o = $('#own').value.trim(); if (o) { state.blueprint = { id: 'own', title: o, about: '' }; own.blueprint = true; } if (!state.blueprint) throw new Error('Pick one, or write your own.'); },
   },
   name: {
-    title: 'Every business needs a name.', sub: 'A few that fit your idea. Pick one, or hand me your own.', ok: 'Continue',
-    render: () => { const names = suggestNames(state.idea).map(n => ({ id: n, name: n })); if (!state.name && names[0]) state.name = names[0].id; const sel = names.some(n => n.id === state.name) ? state.name : ''; return `<div class="names" id="choices">${names.map((n, i) => `<button type="button" class="choice${i === 0 ? ' suggested' : ''}" data-id="${esc(n.id)}" aria-pressed="${String(n.id === sel)}"><b>${esc(n.name)}</b><div class="vibe-swatches">${[brandFor(n.name, state.vibe).primary, brandFor(n.name, state.vibe).secondary, brandFor(n.name, state.vibe).accent].map(c => `<i style="background:${esc(c)}"></i>`).join('')}</div></button>`).join('')}</div>` + own('Your own name', names.some(n => n.id === state.name) ? '' : state.name); },
-    bind: () => bindChoices(id => { state.name = id; $('#own').value = ''; }),
-    read: () => { const o = $('#own').value.trim(); if (o) state.name = o; if (!state.name) throw new Error('Pick a name, or write one.'); },
+    title: 'Every business needs a name.', sub: () => (suggFor === state.idea && sugg.names.length ? 'A few that fit your idea. Pick one, or hand me your own. Then the line people read first.' : 'Name it, then say in one line what it is. You can change both later.'), ok: 'Continue',
+    render: () => {
+      if (waiting()) return skeleton(2, 'Thinking of names for your idea…');
+      const names = suggFor === state.idea ? sugg.names : [];
+      const sel = names.includes(state.name) ? state.name : '';
+      const swatches = n => [brandFor(n, state.vibe).primary, brandFor(n, state.vibe).secondary, brandFor(n, state.vibe).accent].map(c => `<i style="background:${esc(c)}"></i>`).join('');
+      const chips = names.length ? `<div class="names" id="choices">${names.map((n, i) => `<button type="button" class="choice${i === 0 ? ' suggested' : ''}" data-id="${esc(n)}" aria-pressed="${String(n === sel)}"><b>${esc(n)}</b><div class="vibe-swatches">${swatches(n)}</div></button>`).join('')}</div>` : '';
+      return chips + ownField('Your business name', names.includes(state.name) ? '' : state.name, names.length ? 'Or your own' : 'The name')
+        + `<label class="field tagline-field"><span>Tagline</span><input id="tagline" value="${esc(state.tagline)}" placeholder="What is it, in one line?" maxlength="120"></label>`;
+    },
+    bind: () => {
+      if ($('#suggesting')) return;
+      if ($('#choices')) bindChoices(id => { state.name = id; own.name = true; $('#own').value = ''; });
+      $('#tagline').addEventListener('input', () => { own.tagline = true; });
+      if (!$('#choices')) $('#own').focus();
+    },
+    read: () => {
+      if ($('#suggesting')) throw new Error('One moment: the names are on their way.');
+      const o = $('#own').value.trim(); if (o) { state.name = o; own.name = true; }
+      state.tagline = $('#tagline').value.trim();
+      if (!state.name) throw new Error('Pick a name, or write one.');
+    },
   },
   vibe: {
     title: 'How should it look?', sub: 'The brand kit, the storefront and every image follow this.', ok: 'Continue',
@@ -61,14 +122,14 @@ const SCREENS = {
   },
   cofounder: {
     title: 'Name your co-founder.', sub: 'It will introduce itself with this name, and say it is an AI agent.', ok: 'Continue',
-    render: () => `<div class="chips-row" id="choices">${COFOUNDER_NAMES.map(n => `<button type="button" class="chip choice-chip" data-id="${esc(n)}" aria-pressed="${String(n === state.cofounder)}">${esc(n)}</button>`).join('')}</div>` + own('Or a name of your own', COFOUNDER_NAMES.includes(state.cofounder) ? '' : state.cofounder),
+    render: () => `<div class="chips-row" id="choices">${COFOUNDER_NAMES.map(n => `<button type="button" class="chip choice-chip" data-id="${esc(n)}" aria-pressed="${String(n === state.cofounder)}">${esc(n)}</button>`).join('')}</div>` + ownField('Or a name of your own', COFOUNDER_NAMES.includes(state.cofounder) ? '' : state.cofounder),
     bind: () => { $$('#choices .chip').forEach(c => c.onclick = () => { $$('#choices .chip').forEach(x => x.setAttribute('aria-pressed', 'false')); c.setAttribute('aria-pressed', 'true'); state.cofounder = c.dataset.id; $('#own').value = ''; }); },
     read: () => { const o = $('#own').value.trim(); if (o) state.cofounder = o; if (!state.cofounder) throw new Error('Give your co-founder a name.'); },
   },
   updates: {
     title: 'Want an email when something needs your call?', sub: 'Approvals, milestones and the daily briefing. Only when you are needed.', ok: `Create the business`, skippable: true,
     render: () => `<label class="check"><input type="checkbox" id="updates" ${state.updates ? 'checked' : ''}><span>Email me when something needs my call. This records the preference on your CommandAGI account; text messages are not set up here.</span></label>
-      <div class="summary"><div><span>Idea</span><b>${esc(state.idea)}</b></div><div><span>First version</span><b>${esc(state.blueprint?.title ?? '')}</b></div><div><span>Name</span><b>${esc(state.name)}</b></div><div><span>Look</span><b>${esc(VIBES.find(v => v.id === state.vibe)?.name ?? '')}</b></div><div><span>Voice</span><b>${esc(VOICES.find(v => v.id === state.voice)?.name ?? '')}</b></div><div><span>Partner</span><b>${esc(PARTNERS.find(p => p.id === state.partner)?.name ?? '')}</b></div><div><span>Co-founder</span><b>${esc(state.cofounder)}</b></div></div>`,
+      <div class="summary"><div><span>Idea</span><b>${esc(state.idea)}</b></div><div><span>First version</span><b>${esc(state.blueprint?.title ?? '')}</b></div><div><span>Name</span><b>${esc(state.name)}</b></div>${state.tagline ? `<div><span>Tagline</span><b>${esc(state.tagline)}</b></div>` : ''}<div><span>Look</span><b>${esc(VIBES.find(v => v.id === state.vibe)?.name ?? '')}</b></div><div><span>Voice</span><b>${esc(VOICES.find(v => v.id === state.voice)?.name ?? '')}</b></div><div><span>Partner</span><b>${esc(PARTNERS.find(p => p.id === state.partner)?.name ?? '')}</b></div><div><span>Co-founder</span><b>${esc(state.cofounder)}</b></div></div>`,
     bind: () => {},
     read: () => { state.updates = $('#updates').checked; },
   },
@@ -83,7 +144,7 @@ function show() {
   wizard.dataset.step = step;
   label.textContent = `Step ${at + 1} of ${STEPS.length} · ${LABELS[step]}`;
   fill.style.width = `${((at + 1) / STEPS.length) * 100}%`;
-  title.textContent = s.title; sub.textContent = s.sub;
+  title.textContent = s.title; sub.textContent = typeof s.sub === 'function' ? s.sub() : s.sub;
   body.innerHTML = s.render();
   s.bind();
   error.textContent = '';
@@ -121,7 +182,7 @@ async function build() {
   };
   try {
     if (state.updates) await setNotificationPref('email', true).catch(() => null);
-    const biz = await createBusiness({ idea: state.idea, name: state.name, tagline: suggestTagline(state.idea), blueprint: state.blueprint, vibe: state.vibe, voice: state.voice, partner: state.partner, cofounder: state.cofounder }, { onStep });
+    const biz = await createBusiness({ idea: state.idea, name: state.name, tagline: state.tagline, storefront: storefrontPick(), blueprint: state.blueprint, vibe: state.vibe, voice: state.voice, partner: state.partner, cofounder: state.cofounder }, { onStep });
     if (current) { current.classList.remove('doing'); current.setAttribute('data-done', '1'); }
     for (const g of biz.gaps ?? []) {
       const row = rows.find(r => r.dataset.step.toLowerCase().includes(g.what === 'cofounder' ? 'waking' : g.what === 'briefing' ? 'briefing' : g.what === 'site' || g.what === 'deploy' ? 'storefront' : g.what));
@@ -138,4 +199,4 @@ async function build() {
   }
 }
 
-if (signedInHere) { show(); startGuides(auth()?.userId); }
+if (signedInHere) { show(); startGuides(auth()?.userId); if (state.idea) ask(state.idea); }

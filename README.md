@@ -32,6 +32,7 @@ what is open, and what is left).
 | `app/` | the console; `app/connected/` is where a provider's sign-in window comes back (it hands the code to the console and closes) |
 | `lib/api.js` | the CommandAGI client: the token (the `vibestartup` OAuth client's password grant and `/oauth/signup`), refresh, REST, MCP tools, Drive, threads, tasks, sites, email |
 | `lib/business.js` | the business record, its creation sequence, the co-founder's charter, the memory files, the brand generator |
+| `lib/suggest.js` | the wizard's suggestions for an idea: one model call with a JSON schema, and the neutral choices when it fails (docs/ARCHITECTURE.md § the wizard's suggestions) |
 | `lib/storefront.js` | the storefront: its files (shop, a page per product, checkout, terms, privacy, refunds, product pictures, the sign-ups' server module), what the checkout can sell, the brand address, the publish |
 | `lib/widgets.js` | a co-founder message's controls and charts (CommandAGI's ChatUi: options, slider, yes or no, text, file, lens and graph charts), every model string escaped; `test/widgets.mjs` tests every kind |
 | `lib/ui.js` | icons, toasts, dialogs, menus, formatting, the Soon pill |

@@ -63,13 +63,14 @@ async function run(browser, width) {
   const hash = async tab => { await b.eval(`location.hash = 'tab=${tab}'`); await sleep(300); };
   const tabText = () => b.text('#main');
 
-  // 1. The landing: the sketch grows under the box, labelled a preview; Start names the business.
+  // 1. The landing: the sketch grows under the box, labelled a preview, with the idea in the founder's words (a visitor
+  // has no account, so nothing reads the idea here; the wizard's model suggests the names).
   await b.goto(`${base}/`);
   check(/business/i.test(await b.text('h1')), `${label}: the landing headline promises a business`);
   await b.fill('#idea', idea);
-  await b.waitFor('!document.querySelector("#sketch")?.hidden && /Mugs|Ceramic|Cafes/i.test(document.querySelector("[data-f=name]")?.textContent ?? "")', 8000).catch(() => null);
-  const sketched = await b.text('[data-f=name]');
-  check(sketched.trim().length >= 3 && !/Lampwise/i.test(sketched), `${label}: the sketch names the business from the idea (got "${sketched}")`);
+  await b.waitFor('!document.querySelector("#sketch")?.hidden', 8000).catch(() => null);
+  const sketched = await b.text('[data-f=tagline]');
+  check(sketched.trim() === idea, `${label}: the sketch shows the idea as typed (got "${sketched}")`);
   check(/preview/i.test(await b.text('#sketch-note').catch(() => '')), `${label}: the sketch note says it is a preview`);
   check(/Start building/i.test(await b.text('#start')), `${label}: the Start button says "Start building"`);
   const landing = await b.shot(`landing-${width}`);
@@ -95,10 +96,17 @@ async function run(browser, width) {
   check((await b.eval('document.querySelector("#idea")?.value ?? ""')).includes('ceramic'), `${label}: the idea is in the box`);
   await b.click('#continue');
   await b.waitFor('document.querySelector("#wizard")?.dataset.step === "blueprint"');
-  check(!!await b.eval('document.querySelector("#choices .choice.suggested")'), `${label}: the blueprint step marks a suggestion`);
-  await b.click('#choices .choice.suggested');
+  // The model's suggestions (lib/suggest.js) replace the skeleton within a few seconds; a failed call lists every
+  // blueprint with none marked, which this journey counts as a problem.
+  await b.waitFor('!!document.querySelector("#choices .choice")', 15000);
+  check(!!await b.eval('document.querySelector("#choices .choice.suggested")'), `${label}: the blueprint step marks the model's suggestion`);
+  check(await b.eval('document.querySelectorAll("#choices .choice").length') === 5, `${label}: every blueprint is listed`);
+  await b.click('#choices .choice.suggested, #choices .choice');
   await b.click('#continue');
   await b.waitFor('document.querySelector("#wizard")?.dataset.step === "name"');
+  await b.waitFor('!document.querySelector("#suggesting")', 15000);
+  check(await b.eval('document.querySelectorAll("#choices .choice").length') >= 2, `${label}: the name step offers the model's names`);
+  check((await b.eval('document.querySelector("#tagline")?.value ?? ""')).trim().length > 0, `${label}: the tagline is filled from the model`);
   await b.fill('#own', `Kiln ${stamp.slice(-3)}${width}`);
   await b.click('#continue');
   await b.waitFor('document.querySelector("#wizard")?.dataset.step === "vibe"');

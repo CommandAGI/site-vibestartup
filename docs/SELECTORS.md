@@ -9,7 +9,7 @@
 | the idea box | `#idea` (textarea) |
 | the example chips | `#chips .chip` |
 | the sketch under the box | `#sketch` with `[data-f=name]`, `[data-f=tagline]`, `[data-f=product]`, `[data-f=day-1]` … and `#sketch-note` (says it is a preview) |
-| start building | `#start` (a link to `/start/?idea=…`, its text names the sketched business) |
+| start building | `#start` (a link to `/start/?idea=…`, "Start building") |
 | sign in | `a[href="/auth/"]` |
 | the hero's background figures | `.hero-figs` (`aria-hidden`; gone at 1100 px and under), `.hero-fig.her`, `.hero-fig.him`, `.hero-note` |
 | how it works | `#how .steps li` (an arrow after each but the last) |
@@ -34,6 +34,8 @@ After success the page goes to `?next=` or `/home/`.
 | the idea | `#idea` |
 | a choice | `#choices .choice` (a button; `[data-id]`; the suggested one has `.suggested`) |
 | your own answer | `#own` (input), when the step takes one |
+| the suggestions on their way | `#suggesting` (a skeleton on the blueprint and name steps while the model call runs) |
+| the tagline | `#tagline` (on the name step; the model's line, or empty) |
 | continue / back | `#continue`, `#back` |
 | building | `#building li[data-done]` as steps finish; then the page goes to `/app/?b=<slug>` |
 

@@ -47,7 +47,8 @@ try {
     await b.waitFor('document.querySelector("#wizard")?.dataset.step === "idea"', 20000);
     for (const step of ['idea', 'blueprint', 'name', 'vibe', 'voice', 'partner', 'cofounder']) {
       await b.waitFor(`document.querySelector("#wizard")?.dataset.step === ${JSON.stringify(step)}`, 10000);
-      if (step === 'blueprint') await b.click('#choices .choice.suggested');
+      if (step === 'blueprint') { await b.waitFor('!!document.querySelector("#choices .choice")', 15000); await b.click('#choices .choice.suggested, #choices .choice'); }
+      if (step === 'name') await b.waitFor('!!document.querySelector("#tagline")', 15000);
       if (step === 'name') await b.fill('#own', `Kiln ${Date.now().toString(36).slice(-4)}`);
       await b.click('#continue');
     }

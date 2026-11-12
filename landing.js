@@ -1,6 +1,8 @@
 // The landing: the header's scroll line and phone menu, the example chips, and the sketch that grows under the idea
-// box. The sketch is made here by a script (lib/business.js's suggestions and brandFor), and nothing is sent.
-import { IDEA_STARTERS, suggestNames, suggestTagline, suggestProduct, brandFor, markSvg, COFOUNDER_NAMES } from '/lib/business.js';
+// box. The sketch is the shape of what the founder gets, with the idea in their own words: it reads nothing from them
+// (a visitor here has no account, so no model call). The names, the tagline and the first offer are suggested by a
+// model in the wizard (/start/, lib/suggest.js). Nothing is sent.
+import { IDEA_STARTERS, brandFor, markSvg, COFOUNDER_NAMES } from '/lib/business.js';
 import { $, $$, esc } from '/lib/ui.js';
 import { signedIn } from '/lib/api.js';
 
@@ -31,22 +33,20 @@ function render() {
     start.href = text ? `/start/?idea=${encodeURIComponent(text)}` : '/start/';
     return;
   }
-  const name = suggestNames(text)[0] || 'Your business';
-  const brand = brandFor(name, 'clean', 'casual');
-  const product = suggestProduct(text);
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const name = 'Your business';
+  const brand = brandFor(text, 'clean', 'casual');
   const cof = COFOUNDER_NAMES[text.length % COFOUNDER_NAMES.length];
   sketch.classList.add('inking');
   sketch.hidden = false;
   $('[data-f=name]', sketch).textContent = name;
-  $('[data-f=tagline]', sketch).textContent = suggestTagline(text);
+  $('[data-f=tagline]', sketch).textContent = text;
   $('[data-f=mark]', sketch).innerHTML = markSvg(name, brand);
   $('[data-f=swatches]', sketch).innerHTML = [brand.primary, brand.secondary, brand.accent].map(c => `<i style="background:${esc(c)}" title="${esc(c)}"></i>`).join('');
-  $('[data-f=product]', sketch).textContent = product;
-  $('[data-f=url]', sketch).textContent = `${slug || 'your-business'}.commandagi.app`;
+  $('[data-f=product]', sketch).textContent = 'Your first offer';
+  $('[data-f=url]', sketch).textContent = 'your-business.commandagi.app';
   $('[data-f=cof-initial]', sketch).textContent = cof[0];
   $('[data-f=cof-line]', sketch).textContent = `${cof}: ${COF_LINES[text.length % COF_LINES.length]}`;
-  start.textContent = `Start building ${name}`;
+  start.textContent = 'Start building';
   start.href = `/start/?idea=${encodeURIComponent(text)}`;
   requestAnimationFrame(() => requestAnimationFrame(() => sketch.classList.remove('inking')));
 }

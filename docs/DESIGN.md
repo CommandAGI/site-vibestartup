@@ -89,8 +89,9 @@ CommandAGI `docs/regions.md` § one edge, square corners).
 
 - **Landing**: a 64 px sticky header (wordmark, Product, How it works, Pricing, FAQ; Sign in; Start free). Hero:
   two figures in the margins behind it (below), the headline, one sentence, the idea box (textarea, example chips below, "Start building" inside the box), then the
-  business sketch that grows under it as the visitor types (name, brand colours, storefront card, launch week): made
-  in the browser, labelled a preview. Then: how it works (three steps with arrows between them), the console in a
+  business sketch that grows under it as the visitor types (the idea in their words, brand colours, storefront card,
+  launch week): made in the browser, labelled a preview. It reads nothing from the words (a visitor has no account,
+  so no model call); the names, the tagline and the first offer come in the wizard. Then: how it works (three steps with arrows between them), the console in a
   framed window (labelled "with example data"), the launch week (seven days), what the co-founder does (eight cards,
   one per capability: an icon, a title, a sentence, and one line that says what you connect or that it is ready),
   what you get and don't, plans (the three listings at Billing's prices, `app/tabs/billing.js`; the first one's
@@ -105,7 +106,9 @@ CommandAGI `docs/regions.md` § one edge, square corners).
   not a claim about a customer: no person's name, no quote. At 1100 px and under the figures are gone. Reduced motion:
   nothing drifts.
 - **Wizard** (`/start/`): one question per screen, centred, max 640 px, a progress line "Step 3 of 8 · Name", the
-  co-founder's suggested answers as cards (one marked Suggested), a text field for your own, Continue and Back.
+  suggested answers as cards (one marked Suggested, each with its reason), a text field for your own, Continue and
+  Back. The suggestions are one model call on the idea (docs/ARCHITECTURE.md § the wizard's suggestions); while it
+  runs, the step shows a skeleton; without an answer it shows every choice with none marked.
 - **Home** (`/home/`): the businesses as cards (name, mark, launch-week day, what waits on you, credits), a new
   business card, the account row.
 - **Console** (`/app/?b=<slug>`): at 1440, a 240 px rail (the business switcher, ⌘K search, five groups of tabs,
@@ -200,7 +203,8 @@ The hero's sketch inks in field by field (opacity + 4 px rise, 320 ms). Reduced 
 
 ## signature
 
-Type an idea; the business sketches itself under the box, then the Start button says "Start building <Name>". The
+Type an idea; the business sketches itself under the box, then Start building takes it to the wizard, where a model
+fits the names, the tagline and the first version to it. The
 same box, with the same sketch, is the first screen of the wizard and the "New business" card at home.
 
 ## don'ts

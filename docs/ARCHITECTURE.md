@@ -103,6 +103,30 @@ The co-founder's thread, triggers and site are CommandAGI objects whose ids `bus
 Every request is the founder's own: the API's authority, key scopes, audit and billing run unchanged. Nothing here
 acts for anyone but the signed-in founder, and the app holds no credential of its own.
 
+## the wizard's suggestions
+
+The wizard's names, tagline, ranked blueprints (each with a reason), first product, and the storefront's layout and
+look come from one model call on the founder's idea: `POST /models/call` with `jsonSchema` (CommandAGI
+`docs/agents.md` § a host's model call), on the founder's own token (`lib/suggest.js`). No code here reads the idea's
+words: CommandAGI's rule is that free text goes to a model (AGENTS.md). The call waits for a 0.9 s pause in typing,
+or for Continue, and goes once per idea; the blueprint and name steps show a skeleton until it answers.
+
+- **The model**: Claude Haiku 5.5 at low effort (`SUGGEST_MODEL`). Production, 2026-11-12, the full schema: 1.9 to
+  2.3 s on the model, 2.4 to 3.1 s from the caller. GPT-6 Luna took 4.4 to 5.7 s; GLM-5.3 Flash and Qwen 3.8 Flash
+  took 7 to 20 s or answered off-schema.
+- **Who pays**: the founder, like every call of theirs. The account's free `ai` allowance covers it first (one whole
+  credit per call; the free plan has 30 a month), then the founder's credits. CommandAGI has no separate sign-up
+  budget for a brand's model calls.
+- **When it fails** (refused, no credits, an error, an answer off the schema, or no answer in 6 s): every blueprint in
+  a fixed order (digital, booking, preorder, waitlist, demo) with none marked, no names (the founder types one), an
+  empty tagline the founder is asked for, and the storefront from the blueprint, the products' kinds and the vibe
+  (`lib/storefront-design.js` `defaultStorefront`). `test/suggest.mjs` holds this path to reading nothing from the idea.
+- **The storefront**: the model's layout goes to `business.json` `storefrontPick` when the founder keeps its first
+  blueprint, its look always; the first `storefront.json` starts from it. On day 1 the co-founder checks that the pair
+  fits the idea and proposes a change in the storefront card (`openingFor`).
+- **The landing**: a visitor has no account, so the sketch under the idea box shows the idea in their words and the
+  shape of what they get, with nothing read from the words.
+
 ## studio video
 
 CommandAGI's generate catalog has one video model today: `image-to-video.kling` (Kling v2 master on fal, inputs

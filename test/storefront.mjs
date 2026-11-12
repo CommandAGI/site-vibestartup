@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 // lib/api.js reads the page's brand and address when it loads; a storefront's files need neither.
 globalThis.window = {}; globalThis.location = { search: '' };
 const { storefrontFiles, storefrontPreview } = await import('../lib/storefront.js');
-const { brandFor, IDEA_STARTERS, suggestBlueprints, storefrontRule } = await import('../lib/business.js');
+const { brandFor, storefrontRule } = await import('../lib/business.js');
+const { BLUEPRINTS } = await import('../lib/suggest.js');
 const { TEMPLATES, STYLES, defaultStorefront, newStorefrontSource, readStorefrontSource, sourceMark, palette, contrast } = await import('../lib/storefront-design.js');
 
 let n = 0;
@@ -126,16 +127,23 @@ ok('a section is turned off in the source, and an unknown choice falls back to t
   assert.deepEqual(src.copy.faq, []);
 });
 
-ok('a business with no storefront.json renders with the default for its kind', () => {
+ok('a business with no storefront.json renders with the default from its structured choices, never its idea', () => {
   const biz = { ...business('warm'), blueprint: { id: 'preorder' } };
   const files = storefrontFiles(biz, FIXTURES.physical.products, { images: FIXTURES.physical.images });
-  assert.match(sound(files['index.html'], 'default'), /<body data-template="maker" data-style="craft">/);
+  assert.match(sound(files['index.html'], 'default'), /<body data-template="shop" data-style="craft">/);
   assert.deepEqual(defaultStorefront({ ...biz, blueprint: { id: 'preorder' } }, []), { template: 'launch', style: 'craft' });
-  assert.deepEqual(defaultStorefront({ name: 'DigitalProduct', idea: 'A digital product store for AI prompts and workflows', vibe: 'clean' }, FIXTURES.digital.products), { template: 'spotlight', style: 'mono' });
-  assert.deepEqual(defaultStorefront({ idea: 'Things', vibe: 'premium' }, FIXTURES.physical.products), { template: 'shop', style: 'luxe' });
-  for (const idea of IDEA_STARTERS) for (const blueprint of [null, ...suggestBlueprints(idea)]) {
-    const d = defaultStorefront({ idea, blueprint, vibe: 'bold' }, []);
-    assert.ok(TEMPLATES.some(t => t.id === d.template) && STYLES.some(s => s.id === d.style), idea);
+  assert.deepEqual(defaultStorefront({ ...biz, blueprint: { id: 'booking' } }, []), { template: 'services', style: 'soft' });
+  assert.deepEqual(defaultStorefront({ vibe: 'clean' }, FIXTURES.digital.products), { template: 'spotlight', style: 'studio' });
+  assert.deepEqual(defaultStorefront({ vibe: 'premium' }, FIXTURES.physical.products), { template: 'shop', style: 'luxe' });
+  // The pair picked at sign-up wins; an unknown id in it falls back to the blueprint's.
+  assert.deepEqual(defaultStorefront({ ...biz, storefrontPick: { template: 'maker', style: 'editorial' } }, FIXTURES.physical.products), { template: 'maker', style: 'editorial' });
+  assert.deepEqual(defaultStorefront({ ...biz, storefrontPick: { template: 'nope', style: 'mono' } }, []), { template: 'launch', style: 'mono' });
+  // The idea's words change nothing.
+  for (const idea of ['A digital product store for AI prompts', 'A coaching and consultation booking page', 'Small-batch honey from our farm'])
+    assert.deepEqual(defaultStorefront({ idea, tagline: idea, vibe: 'clean' }, []), { template: 'shop', style: 'studio' }, idea);
+  for (const blueprint of [null, ...BLUEPRINTS]) {
+    const d = defaultStorefront({ blueprint, vibe: 'bold' }, []);
+    assert.ok(TEMPLATES.some(t => t.id === d.template) && STYLES.some(s => s.id === d.style), blueprint?.id);
   }
   const fresh = newStorefrontSource(biz);
   assert.deepEqual(Object.keys(fresh), ['template', 'style', 'copy', 'sections']);
