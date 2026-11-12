@@ -64,7 +64,7 @@ try {
   const aiUsed = async () => ((await call('/quota')).body?.categories ?? []).find(c => c.category === 'ai')?.used ?? null;
   const allowanceBefore = await aiUsed();
   const stored = JSON.stringify({ access: tok.access_token, refresh: tok.refresh_token ?? null, expiresAt: Date.now() + (Number(tok.expires_in) || 3600) * 1000, userId: me.id });
-  await withBrowser(async b => {
+  await withBrowser(async b => { try {
     const problemsAt = () => b.problems.filter(p => !/favicon|ws-token|WebSocket/.test(p));
     await b.goto(`${site}/`);
     await b.eval(`localStorage.setItem('vs_auth', ${JSON.stringify(stored)})`);
@@ -202,7 +202,10 @@ try {
     check(/for Kiln \S+ [1-9]\d* /.test(result.billing.usage ?? ''), `Billing lists the co-founder's calls (${result.billing.usage})`);
     await b.shot(`billing-${width}`);
     result.problems = problemsAt();
-  }, { out, width, height: 900 });
+  } finally {
+    // How the page's sockets to the thread opened and ended (the browser's events, and each close's code from the page).
+    result.sockets = { browser: b.sockets, page: await b.pageSockets().catch(() => null) };
+  } }, { out, width, height: 900 });
   // Model calls settle into the ledger a moment after the turn.
   await sleep(8000);
   const creditsAfter = (await call('/me/credits')).body;

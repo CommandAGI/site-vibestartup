@@ -37,6 +37,16 @@ export async function startChrome(profile, started) {
 }
 
 /** The page: `send(method, params)`, `eval(js)`, `click`, `type`, `waitFor`, `shot`, and what went wrong. */
+/** Runs in every document before its own scripts: each WebSocket's open, close (code, reason, wasClean) and error, with
+ *  times, in window.__sockets, so a report can say how a socket ended. */
+const SOCKET_LOG = `(() => { const W = window.WebSocket; if (!W || W.__logged) return; window.__sockets = [];
+  const log = (e) => { try { window.__sockets.push({ at: Date.now(), ...e }); } catch {} };
+  function L(url, protocols) { const ws = protocols === undefined ? new W(url) : new W(url, protocols); const u = String(url).replace(/([?&](token|ticket|key)=)[^&]+/gi, '$1…');
+    log({ event: 'new', url: u }); ws.addEventListener('open', () => log({ event: 'open', url: u }));
+    ws.addEventListener('close', e => log({ event: 'close', url: u, code: e.code, reason: e.reason, wasClean: e.wasClean }));
+    ws.addEventListener('error', () => log({ event: 'error', url: u })); return ws; }
+  L.prototype = W.prototype; Object.assign(L, { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3, __logged: true }); window.WebSocket = L; })();`;
+
 export async function page(wsUrl, { out, width = 1440, height = 900 } = {}) {
   const ws = new WebSocket(wsUrl);
   await new Promise((resolve, reject) => { ws.onopen = resolve; ws.onerror = reject; });
@@ -49,6 +59,10 @@ export async function page(wsUrl, { out, width = 1440, height = 900 } = {}) {
    *  platform's request, not the app's. Everything else that leaves the page is the app's own business. */
   const PLATFORM_REQUESTS = ['static.cloudflareinsights.com'];
   const requestUrls = new Map();
+  // The page's WebSockets as the browser saw them: opened, closed, a frame error, with the time (ms) of each. Their close
+  // codes come from the page itself (SOCKET_LOG below): CDP does not report a close code.
+  const sockets = [];
+  const socketUrls = new Map();
   ws.onmessage = event => {
     const message = JSON.parse(event.data);
     if (message.id && pending.has(message.id)) {
@@ -64,6 +78,9 @@ export async function page(wsUrl, { out, width = 1440, height = 900 } = {}) {
       const url = requestUrls.get(message.params.requestId) ?? '';
       if (!PLATFORM_REQUESTS.some(p => url.includes(p))) problems.push(`request failed: ${message.params.errorText || 'blocked'} ${url || message.params.requestId}`);
     }
+    if (message.method === 'Network.webSocketCreated') { socketUrls.set(message.params.requestId, message.params.url); sockets.push({ at: Date.now(), event: 'created', id: message.params.requestId, url: message.params.url.replace(/([?&](token|ticket|key)=)[^&]+/gi, '$1…') }); }
+    if (message.method === 'Network.webSocketClosed') sockets.push({ at: Date.now(), event: 'closed', id: message.params.requestId });
+    if (message.method === 'Network.webSocketFrameError') sockets.push({ at: Date.now(), event: 'frameError', id: message.params.requestId, error: message.params.errorMessage });
     for (const l of listeners) l(message);
   };
   const send = (method, params = {}) => new Promise((resolve, reject) => {
@@ -75,6 +92,7 @@ export async function page(wsUrl, { out, width = 1440, height = 900 } = {}) {
   await send('Page.enable');
   await send('Runtime.enable');
   await send('Network.enable');
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: SOCKET_LOG });
   await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 500 });
   if (out) await mkdir(out, { recursive: true });
 
@@ -150,7 +168,8 @@ export async function page(wsUrl, { out, width = 1440, height = 900 } = {}) {
 
   const close = async () => { try { ws.close(); } catch { /* already closed */ } };
 
-  return { send, eval: evalJs, goto, waitFor, click, clickText, type, fill, shot, text, close, problems, requests };
+  const pageSockets = () => evalJs('window.__sockets ?? []');
+  return { send, eval: evalJs, goto, waitFor, click, clickText, type, fill, shot, text, close, problems, requests, sockets, pageSockets };
 }
 
 // Every Chrome this process started, killed however the process ends: a `finally` does not run when an error escapes
