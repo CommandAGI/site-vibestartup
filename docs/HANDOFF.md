@@ -96,8 +96,10 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
 
 ## owned by other sessions
 
-- **CommandAGI's org conversion (`commandagi-73`).** The 7,982 orgs with origin `public-record` become folders of
-  `org-commandagi/relisting/<slug>/` (CommandAGI `docs/next/relisting.md`); the owner approved the deletes. Every other
+- **CommandAGI's org conversion (`commandagi-73`).** 7,745 of the 7,982 orgs with origin `public-record` (7,629 SEC
+  issuers, 116 Alibaba suppliers) become folders of `org-commandagi/relisting/<slug>/` (CommandAGI
+  `docs/next/relisting.md`); the owner approved the deletes. The other 237 are stores (org-parts-digikey and
+  org-parts-mouser, the org-shop-* shops) and stay accounts, because purchases and supplier sync read them. Every other
   org stays, and an org a brand client creates is never touched. Since 2026-11-12 the owner's account owns every
   production org, so erasure and the brand admin view find a founder's businesses by the org's recorded founder and
   brand (`orgs.founded_by`, `orgs.brand`), never by owner.
