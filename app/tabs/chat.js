@@ -49,7 +49,8 @@ export async function render(ctx) {
   let working = false, typingUntil = Date.now() + 120000;
   // An empty first chat waits for the opening turn only while the business is new; a chat opened later (a moved
   // business's main chat) is simply empty until the founder writes.
-  const unanswered = () => { const last = messages.filter(m => (m.role === 'user' || m.role === 'agent') && m.text?.trim()).at(-1); return !!cof.threadId && (last ? last.role === 'user' : cof === first && Date.now() - (biz.createdAt ?? 0) < 15 * 60e3); };
+  const turnStopped = m => m.role === 'system' && / stopped working without a reply: /.test(m.text ?? '');
+  const unanswered = () => { const last = messages.filter(m => ((m.role === 'user' || m.role === 'agent') && m.text?.trim()) || turnStopped(m)).at(-1); return !!cof.threadId && (last ? last.role === 'user' : cof === first && Date.now() - (biz.createdAt ?? 0) < 15 * 60e3); };
   const isOpening = m => String(m.id ?? '').startsWith('opening:') || /Introduce yourself in three short lines|First say hello in two or three short lines|Your welcome message is above this one/.test(m.text ?? '');
   // The welcome (lib/business.js welcomeFor) is the thread's first line, kept by the platform at creation. The record
   // holds its words, so it shows before the transcript is read; the transcript's line has the same id and replaces it.
@@ -112,6 +113,12 @@ export async function render(ctx) {
       // a fixed machine sentence, not a model's words): a notice with the way on, never the platform's numbers alone.
       if (who === 'cofounder' && /^agent error: the account's credits do not cover/.test(m.text ?? '')) {
         parts.push(`<div class="msg system" data-id="${esc(m.id ?? '')}" data-out-of-credits><div class="body"><div class="note warn">${esc(cof.name ?? 'Your co-founder')} stopped: your free allowance and credits do not cover the next step. The free allowance fills up again every 8 hours. <a href="#page=billing">Buy credits in Billing</a> to go on now, then write again. · ${esc(time(m.at))}</div></div></div>`);
+        continue;
+      }
+      // CommandAGI's line for a turn that died without a reply (thread-member-turn-runtime.ts, a fixed machine sentence:
+      // "<name> stopped working without a reply: <why>. Nothing it was doing will finish."): a notice that says what to do.
+      if (turnStopped(m)) {
+        parts.push(`<div class="msg system" data-id="${esc(m.id ?? '')}" data-turn-stopped><div class="body"><div class="note warn">${esc(cof.name ?? 'Your co-founder')} stopped before finishing and did not reply; what it was in the middle of did not finish. Write your last message again and ${esc(cof.name ?? 'your co-founder')} picks it up. · ${esc(time(m.at))}</div></div></div>`);
         continue;
       }
       const writing = typing?.id === m.id;

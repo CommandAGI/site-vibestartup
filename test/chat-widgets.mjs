@@ -101,6 +101,15 @@ try {
       }
     };
 
+    // A turn CommandAGI ended without a reply (its watchdog's fixed line, thread-member-turn-runtime.ts): when it was
+    // posted, and whether the page showed its notice ([data-turn-stopped]).
+    const stoppedReport = async label => {
+      const line = (await transcript().catch(() => [])).filter(m => m.role === 'system' && / stopped working without a reply: /.test(m.text ?? '')).at(-1) ?? null;
+      const shown = await b.eval(`!!document.querySelector('[data-turn-stopped]')`).catch(() => null);
+      result.stopped = [...(result.stopped ?? []), { label, line: line ? { id: line.id, at: line.at, text: line.text?.slice(0, 300) } : null, pageShowsNotice: shown, at: Date.now() }];
+      if (line && !shown) await b.waitFor(`!!document.querySelector('[data-turn-stopped]')`, 20000).then(() => { result.stopped.at(-1).pageShowsNotice = 'after a wait'; }).catch(() => null);
+      await b.shot(`${label}-stopped-${width}`).catch(() => null);
+    };
     // Ask, then wait for the widget the co-founder's message carries; answer it; wait for the lock and the reply.
     const round = async (label, question, kind, answer) => {
       const t = { question };
@@ -110,6 +119,7 @@ try {
       const sel = `#chat .ask[data-kind="${kind}"]:not(.answered)`;
       await b.waitFor(`!!document.querySelector('${sel}')`, 180000).catch(async e => {
         // What the co-founder made instead, for the report.
+        await stoppedReport(label);
         result.lastMessages = (await transcript()).slice(-4).map(m => ({ role: m.role, text: m.text?.slice(0, 400), ui: m.ui ?? null, question: m.question ?? null, tool: m.tool?.name ?? null }));
         // Why: the model's own reasoning lines and any refusal of a call, from the thread's events.
         const ev = (await call(`/threads/${encodeURIComponent(thread)}/events?limit=300`)).body?.events ?? [];
@@ -131,7 +141,7 @@ try {
       t.busySeen = await b.eval(`(() => { const a = document.querySelector('[data-widget="${t.widget.id}"]'); return !!a && (a.getAttribute('aria-busy') === 'true' || a.classList.contains('answered')); })()`);
       await b.waitFor(`!!document.querySelector('[data-widget="${t.widget.id}"].answered')`, 30000);
       t.lockedS = (Date.now() - clicked) / 1000;
-      await b.waitFor(`document.querySelectorAll('#chat .msg.cofounder:not(.streaming)').length > ${before}`, 180000);
+      await b.waitFor(`document.querySelectorAll('#chat .msg.cofounder:not(.streaming)').length > ${before}`, 180000).catch(async e => { await stoppedReport(`${label}-reply`); throw e; });
       t.replyS = (Date.now() - clicked) / 1000;
       await b.waitFor(`!document.querySelector('#chat .msg.cofounder.streaming')`, 60000).catch(() => null);
       await sleep(1500);
