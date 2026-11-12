@@ -90,7 +90,9 @@ try {
         await b.shot(`${label}-missing-${width}`);
         throw e;
       });
-      t.widgetS = (Date.now() - sent) / 1000;
+      // Absolute times too, to line up with the thread's events (each event's `at`).
+      t.sentAt = sent; t.drawnAt = Date.now();
+      t.widgetS = (t.drawnAt - sent) / 1000;
       await b.waitFor(`!document.querySelector('#chat .msg.cofounder.streaming')`, 60000).catch(() => null);
       t.widget = await b.eval(`(() => { const a = document.querySelector('${sel}'); return { id: a.dataset.widget, prompt: a.querySelector('.ask-prompt')?.innerText ?? null, options: [...a.querySelectorAll('.ask-opt')].map(o => o.innerText.replace(/\\n/g, ' · ')), range: a.querySelector('input[type=range]') ? { min: a.querySelector('input[type=range]').min, max: a.querySelector('input[type=range]').max, value: a.querySelector('input[type=range]').value } : null }; })()`);
       await b.shot(`${label}-open-${width}`);
