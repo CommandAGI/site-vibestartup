@@ -46,8 +46,11 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
     now says a control is text in one `done` action, with the whole action as an example, and that no message comes
     before it. The console writes a changed charter into an existing co-founder once (`refreshCharter`). API trials:
     0 of 4 sliders before, then 18 of 18 on a fresh thread. Browser runs of `test/chat-widgets.mjs`: select and slider
-    passed in runs 1, 2, 5 and 7 (the select 7 to 13 s after the question, the slider 11 to 14 s). Runs 3, 4 and 6 drew no
-    select: the model sent its words without the block, mostly while its day-one turn was still ending.
+    passed in runs 1, 2, 5, 7 and 9 (the select 7 to 13 s after the question, the slider 11 to 14 s). Runs 3, 4, 6 and 8
+    drew no select: the model sent its words without the block. API trials with the same charter, also on a
+    busy thread and with a live socket, drew it 18 of 18, so the browser flow still holds a cause not found yet
+    (left to do). A founder message sent while the co-founder's turn runs can get no reply (5 of 6 API trials;
+    handed to commandagi-73).
   - Who pays: the founder (an org's thread bills its owner). A call draws the free plan's `ai` allowance first (30
     credits each 8 hours, `GET /quota`), then the free credits, then the bought ones. A chat-only thread's spend was never
     settled: the ledger flushed only at an alarm, and a chat arms none. CommandAGI 3bd4e4ec2ef settles each call as it
