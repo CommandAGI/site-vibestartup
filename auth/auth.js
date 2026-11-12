@@ -49,7 +49,7 @@ const TURNSTILE_HOSTS = new Set(['vibestartup.pro', 'www.vibestartup.pro', 'vibe
 const TOKEN_WAIT_MS = 15000;
 // A person Cloudflare is unsure about gets a box to tick: while it shows, a sign-up waits for them (up to 3 minutes).
 const TICK_WAIT_MS = 180000;
-let turnstileId = null, token = null, tokenWaiters = [], turnstileBroken = false, mustTick = false;
+let turnstileId = null, token = null, tokenWaiters = [], turnstileBroken = false, mustTick = false, checkFailed = false;
 const gotToken = t => { token = t; const w = tokenWaiters; tokenWaiters = []; w.forEach(f => f(t)); };
 if (TURNSTILE_HOSTS.has(location.hostname)) {
   fetch(`${API}/signup/config`).then(r => r.json()).then(cfg => {
@@ -57,12 +57,12 @@ if (TURNSTILE_HOSTS.has(location.hostname)) {
     window.onTurnstileLoad = () => {
       turnstileId = window.turnstile.render('#turnstile', {
         sitekey: key, action: cfg.turnstile.action ?? 'signup', appearance: 'interaction-only',
-        callback: t => { mustTick = false; gotToken(t); },
+        callback: t => { mustTick = false; checkFailed = false; gotToken(t); },
         'before-interactive-callback': () => { mustTick = true; },
         'after-interactive-callback': () => { mustTick = false; },
         'expired-callback': () => { token = null; },
         // An error: the widget retries on its own and shows its own message; a waiting sign-up keeps waiting.
-        'error-callback': () => { token = null; },
+        'error-callback': () => { token = null; checkFailed = true; },
       });
     };
     const sc = document.createElement('script'); sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad'; sc.async = true;
@@ -75,13 +75,15 @@ async function turnstileToken() {
   if (!TURNSTILE_HOSTS.has(location.hostname)) return null;
   if (token) return token;
   if (turnstileBroken) return null;
-  if (mustTick) say(signup, 'Tick “Verify you are human” above. Your account is created right after.');
+  if (checkFailed) say(signup, 'Cloudflare could not check this browser. Press Troubleshoot in the box above, or reload the page and try again.');
+  else if (mustTick) say(signup, 'Tick “Verify you are human” above. Your account is created right after.');
   return new Promise(resolve => {
     // The wait grows to the tick's when the box appears while the sign-up waits.
     const started = Date.now();
     const tick = setInterval(() => {
       if (mustTick && !$('[data-error]', signup).textContent) say(signup, 'Tick “Verify you are human” above. Your account is created right after.');
-      if (Date.now() - started > (mustTick ? TICK_WAIT_MS : TOKEN_WAIT_MS)) { clearInterval(tick); resolve(null); }
+      if (checkFailed) say(signup, 'Cloudflare could not check this browser. Press Troubleshoot in the box above, or reload the page and try again.');
+      if (Date.now() - started > (mustTick || checkFailed ? TICK_WAIT_MS : TOKEN_WAIT_MS)) { clearInterval(tick); resolve(null); }
     }, 500);
     tokenWaiters.push(v => { clearInterval(tick); say(signup, ''); resolve(v); });
   });
