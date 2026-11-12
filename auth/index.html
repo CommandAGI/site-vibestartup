@@ -23,7 +23,7 @@
 
 <main id="main" class="auth-main">
   <div class="auth-card">
-    <form id="signup" autocomplete="on" novalidate>
+    <form id="signup" autocomplete="on" novalidate onsubmit="event.preventDefault()">
       <h1>Create your account</h1>
       <p class="muted">Free credits to start. No card.</p>
       <label class="field"><span>Your name</span><input name="name" autocomplete="name" required maxlength="80" placeholder="Ada Lovelace"></label>
@@ -35,7 +35,7 @@
       <button class="btn primary lg full" type="submit">Create my account</button>
       <p class="auth-switch">Already have an account? <button type="button" data-auth-switch="signin">Sign in</button></p>
     </form>
-    <form id="signin" autocomplete="on" novalidate hidden>
+    <form id="signin" autocomplete="on" novalidate hidden onsubmit="event.preventDefault()">
       <h1>Sign in</h1>
       <p class="muted">With your VibeStartup account, or any CommandAGI account.</p>
       <label class="field"><span>Email</span><input name="email" type="email" autocomplete="email" required></label>

@@ -61,3 +61,6 @@ signup.addEventListener('submit', e => { e.preventDefault(); submit(signup, asyn
   await allowCofounderAccounts({ atSignUp: true }).catch(() => null);
 }); });
 signin.addEventListener('submit', e => { e.preventDefault(); submit(signin, d => signIn({ email: d.email, password: d.password })); });
+// The forms send nothing until this module has bound them (auth/index.html stops a native submit, which would put the
+// password in the address while the page's modules are still on their way); a driven browser waits for this mark.
+document.documentElement.dataset.auth = 'ready';

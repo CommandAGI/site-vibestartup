@@ -65,6 +65,8 @@ async function run(b) {
   await b.fill('#signup [name=email]', email);
   await b.fill('#signup [name=password]', PASSWORD);
   if (await b.eval('!!document.querySelector("#signup [name=birthdate]")')) await b.eval('(() => { const i = document.querySelector("#signup [name=birthdate]"); i.value = "1990-05-05"; i.dispatchEvent(new Event("input", { bubbles: true })); i.dispatchEvent(new Event("change", { bubbles: true })); })()');
+  await b.waitFor('document.documentElement.dataset.auth === "ready"', 30000).catch(() => null);
+
   await b.click('#signup button[type=submit]');
   made = true;
   await b.waitFor('location.pathname !== "/auth/"', 30000);
