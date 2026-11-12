@@ -270,8 +270,9 @@ async function route() {
   if (level?.load && (entered || state.level?.tab !== state.tab || state.level?.slug !== state.biz.slug)) loadLevel();
   if (state.tab === 'chat' && !state.view) {
     renderRail();
-    // Chat with no thread named opens the most recently active one (the first chat while the list is slow or absent).
-    await Promise.race([state.level?.pending, new Promise(r => setTimeout(r, 2500))]).catch(() => null);
+    // Chat with no thread named opens the most recently active one, from the list read now (the one read before may be
+    // stale), or the first chat when the list is slow or absent.
+    await Promise.race([state.level?.pending, new Promise(r => setTimeout(r, 8000))]).catch(() => null);
     if (!current()) return;
     const id = state.level?.items[0]?.id ?? state.biz.cofounder?.threadId;
     if (id) { state.view = id; history.replaceState(null, '', `${location.pathname}${location.search}#tab=chat&thread=${encodeURIComponent(id)}`); }
