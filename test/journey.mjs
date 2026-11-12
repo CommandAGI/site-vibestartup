@@ -398,7 +398,13 @@ async function run(browser, width) {
   await b.waitFor('document.documentElement.dataset.wizard === "ready"', 30000);
   await b.waitFor('!!document.querySelector("#idea")');
   await b.fill('#idea', 'A weekend pottery class with a small shop of glazes');
-  for (let i = 0; i < 7; i++) { await b.click('#continue'); await sleep(250); }
+  // Each step waits for its page (the blueprint and name steps wait for the model's suggestions) before Continue.
+  for (let i = 0; i < 7 && await b.eval('document.querySelector("#wizard")?.dataset.step') !== 'updates'; i++) {
+    const at = await b.eval('document.querySelector("#wizard")?.dataset.step');
+    await b.waitFor('!document.querySelector("#wizard .skeleton") && !document.querySelector("#continue")?.disabled', 20000).catch(() => null);
+    await b.click('#continue');
+    await b.waitFor(`document.querySelector("#wizard")?.dataset.step !== ${JSON.stringify(at)}`, 20000).catch(() => null);
+  }
   await b.waitFor('document.querySelector("#wizard")?.dataset.step === "updates"', 10000);
   await b.click('#continue');
   await built(b, label);

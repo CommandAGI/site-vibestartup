@@ -154,74 +154,63 @@ set of paths, held in code in `lib/schema.js` (not in the Drive). Files and Sett
 | Billing, Profile, Share & earn | the founder's account (credits, profile, referrals) | the founder's account |
 | Admin | `GET /brands/vibestartup/admin` (admins of `org-vibestartup` only) | — |
 
-## step 2: the app moves to the schema (the plan)
+## step 2: how the app is built on the schema (2026-11-12)
 
-Not run yet: other sessions are editing `lib/business.js`, `app/tabs/chat.js`, `app/console.js` and `lib/storefront.js`.
-No compatibility layer: one way, the org. About 900 changed lines in 25 files, in seven commits, then one script run.
+Landed in this repository on 2026-11-12, on CommandAGI production 03e577dded1. No compatibility layer: nothing reads
+`Businesses/<slug>/`.
 
-**Platform first (CommandAGI, one commit).** The task tools take `account` (`task_create`, `task_list`, `task_get`,
-`task_update`; CommandAGI `docs/next/vibestartup-what-is-left…md` § a business as an org), so the co-founder makes its
-approvals in the org. Until it lands the co-founder writes `Tasks/<title>.task.tsx` with `write_drive_file { account }`,
-and the console makes the day-one cards itself.
+- **The seam.** `lib/schema.js` (the paths, the files and their writers, the lens, the charter's platform part and
+  code map, the record's keys, the settings' keys, the lint) and, in `lib/api.js`, a Drive, tasks, goods and payments
+  that act for an account: `drive.forAccount(org)`, `tasks.forAccount(org)`, `goods.*(account)`,
+  `payments.*(account)`, `orgs.*`. `lib/business.js` gives every tab `bizDrive(biz)`, `bizTasksApi(biz)` and
+  `bizAccount(biz)`; no tab names a path of its own outside the schema.
+- **Creating a business** (`createBusiness`): `POST /sites { name, slug }` first, then `POST /accounts { name, handle:
+  <the site's slug> }` (on 409 `handle_taken`, the `suggestion`, and the record names the difference as a gap), then
+  `POST /sites/:id/transfer { ownerScope }` while the site is empty; the schema's files at the org's root; the org's
+  address (`POST /orgs/:id/email-addresses`); the storefront's files and deploy; the six Markdown files; the
+  co-founder forked into the org with the charter as its instructions; the first chat (`POST /threads { ownerScope,
+  fromAgentId, about, greeting }`, no `systemPrompt`) and the opening ask by its replay; the daily briefing on it.
+- **The console** opens `?b=<slug>` as `org-<slug>` (`readBusiness`: the record, the brand book, the settings and the
+  org's name, read together), lists the switcher with `GET /me/orgs?brand=vibestartup`, lists the chats with `GET
+  /me/threads?of=<the org's business.json address>` (and `cofounder.earlier`), and draws the approval cards from the
+  org's `Tasks/`. Files shows the lens's folders only; Files and Settings have one "Open in CommandAGI" link
+  (`https://commandagi.com/file?path=cloud://home/org-<slug>/`). Settings manages the org's members and invites.
+- **Payouts**: the Dashboard, Products and Settings show "Finish payouts" until the business's own Stripe account can
+  be paid (`POST /connect/refresh { account }` as the org). Its button makes the account if there is none (`POST
+  /connect/onboard` with `x-cagi-account: acct:org:<id>`) and opens Stripe's form: identity, bank and tax are the
+  founder's to fill in, on Stripe's page.
+- **Who pays**: the org's chats are billed to the founder (CommandAGI's `Access.billingTarget`: an org's thread bills its
+  owner), so the founder's credits pay, the free ones first. `test/chat-widgets.mjs` checks it.
+- **The lint** runs when the console opens a business, at most once a week, and makes one task (`schema.strays`).
+- **Tests**: `test/schema.mjs` (plain node: the paths, the lens, the lint, the record, the settings, a contact's
+  vCard); `test/journey.mjs` checks the org, its files and no stray, the storefront at `<slug>.vibestartup.pro`, the
+  approval as a file of the org's `Tasks/`, Files' lens and link, the Finish payouts card, the switcher with two
+  businesses, and the erasure of the founder's two business orgs.
 
-1. **The seam (one small commit, before anything moves).** `lib/schema.js`, new (about 150 lines): `PATHS` (every path
-   above, by name), `FILES` (each file's writer and format), `TABS` (the lens table), `charterMap()` (the CODEMAP
-   section of the charter), `lint(listing)`. `lib/api.js`: every Drive call takes the business's account
-   (`drive.forAccount(acct)`: `owner=org&ownerScope=<org id>` on `/drive*`, `/accounts/<acct>/files/<path>` for reads by
-   path); `orgs.list()` = `GET /me/orgs?brand=vibestartup`, `orgs.create(name)` = `POST /accounts`, `orgs.invite`,
-   `orgs.members`; `email.claimForOrg(org, local)` = `POST /orgs/:id/email-addresses`; `goods.orders(acct)` and
-   `payments.*` send `x-cagi-account`; `tasks.*` take `{ owner: 'org', ownerScope }`. `lib/business.js`: `folderOf`,
-   `addressOf` and `readBizJson`/`writeBizJson` go through `schema.PATHS` and the account. No behaviour changes in this
-   commit.
-2. **Creating a business makes an org** (`lib/business.js createBusiness`, about 120 lines changed): `orgs.create(name)`;
-   the files of the schema at its root (the six Markdown files, `business.json`, `storefront.json`,
-   `.commandagi/settings.json`, `brand/`); the site with `POST /sites { name, slug, ownerScope }`; the address with
-   `email.claimForOrg`; the co-founder with `POST /agents/<base>/fork { ownerScope, name, instructions: charter }`
-   (no thread `systemPrompt`); the thread with `POST /threads { ownerScope, fromAgentId, about, greeting }`; the
-   briefing trigger on it. `memoryFiles` loses `PLATFORM.md` and `CODEMAP.md` (into the charter from
-   `docs/cofounder/`). `listBusinesses` = `orgs.list()` and each org's `business.json`; `readBusiness(orgId)`;
-   `deleteBusiness` removes the site and the triggers, then `DELETE /orgs/:id`.
-3. **The console switches by org** (`app/console.js`, about 40 lines): `?b=<org id>`; the switcher lists
-   `listBusinesses()`; a founder with no org of the brand goes to `start/`.
-4. **Every tab reads from the org** (`app/tabs/*.js` and `_shared.js`, about 350 lines): the paths of the lens table;
-   Products writes only `.product.tsx` (no `products.json`); Customers reads and writes `contacts/*.vcf`; Settings
-   writes `.commandagi/settings.json` and manages the org's members and invites instead of folder shares; Chat lists the
-   record's threads with `GET /me/threads?of=` and opens a new one with the same launch.
-5. **The storefront reads the goods** (`lib/storefront.js`, about 80 lines): products from `GET /goods` as the org, images
-   from each product's `images`, sign-ups into `contacts/`, the publish into the site's own folder (`site.folder`).
-6. **The charter** (`charterFor`, `productsRule`, `storefrontRule`, about 60 lines): paths from `schema.PATHS`, the
-   Drive tools with `account: "acct:org:<id>"`, the code map from `schema.charterMap()`.
-7. **Tests** (`test/local.mjs`, `test/journey.mjs`, `test/storefront.mjs`, about 100 lines): a journey from a blank
-   sign-up that makes a business through the wizard and checks the org's Drive against `schema.lint` (no stray file),
-   the switcher with two businesses, and another account refused at the org.
+## the one-time move
 
-**The one-time move** (`scripts/move-to-org.mjs`, about 200 lines; run once, with the owner's VibeStartup token, for
-the owner's business "DigitalProduct", account `7d29cf3e-5808-4eb6-a522-0c38171689cd`). Dry run first, then `--apply`;
-each step is idempotent and writes what it did into a report beside the script's run.
+`scripts/move-to-org.mjs` moves a business made before businesses were orgs. It runs in the console's page as the
+signed-in founder (their own token): `(await import('/scripts/move-to-org.mjs')).move({ slug, apply })`. A dry run
+reads only; `apply: true` does each step once (a second run does only what is left) and writes its report into the
+founder's own Drive (`VibeStartup/moves/<slug>-<time>.json`).
 
-1. Read `Businesses/<slug>/business.json` and the whole folder listing; stop if anything is unreadable.
-2. `POST /accounts { name }` with the founder's VibeStartup token (so `orgs.brand` is `vibestartup`); keep the org id in
-   the report, and reuse it on a rerun.
-3. Copy every file of `Businesses/<slug>/` to its schema path in the org's Drive, byte for byte (`cofounder/*.md` to the
-   root, `settings.json` into `.commandagi/settings.json`'s keys, `customers/customers.json` into `contacts/<email>.vcf`
-   with each consent kept, `products/products.json` into each product's `images`); compare each file's size and hash
-   after the copy.
-4. The products: the `.product.tsx` files move with step 3, so the goods are reindexed under `acct:org:<id>`
-   (`POST /goods/reindex` with `x-cagi-account`); the orders already paid keep their seller account, and the Orders tab
-   reads both accounts' orders for this business.
-5. The site keeps its slug, its addresses, its deployments and its analytics: it stays in the founder's Drive
-   (`Sites/<name>`), named by `business.json` `site.id`, until CommandAGI has a site transfer (`POST /sites/:id/transfer`,
-   CommandAGI `docs/next/…` § a business as an org). The publish writes into `site.folder`, wherever it is.
-6. The co-founder: fork its agent into the org (`ownerScope`), with today's charter. The thread history stays in the
-   existing thread, whose run is of the founder's `business.json`: its id goes into the new `business.json`
-   (`routines.briefingThread`), the Chat tab lists it beside the org's threads, and its triggers stay on it.
-7. The mail address: the founder's personal address stays theirs; the org claims `<slug>@commandagi.email` and the
-   storefront and `SUPPORT.md` name it.
-8. Stripe: the founder's payouts stay connected to the founder. The org onboards its own Connect account; the founder
-   finishes Stripe's form (the one step that needs them), and until then the console keeps the goods in draft.
-9. Write the new `business.json`, then move `Businesses/<slug>/` to the Trash (not deleted), and record the move in the
-   org's `MEMORY.md`.
-
-Its acceptance: the console opens the business from the switcher with every tab showing what it showed before, the
-storefront at `digitalproduct.vibestartup.pro` answers as before, the old thread's messages show in Chat, and the brand
-admin view lists one business for the founder.
+1. Read the folder (`GET /accounts/me/files?prefix=Businesses/<slug>/`: each file's size and SHA-256), the record, the
+   catalogue, the settings, the customers, the business's tasks in the founder's `Tasks/`, the site, the chat and its
+   routines, the goods; stop if anything is unreadable.
+2. `POST /accounts { name, handle: <slug> }` with the founder's VibeStartup token, so the org's brand is VibeStartup.
+3. Copy every file to its schema path in the org's Drive (the co-founder's Markdown from `cofounder/` to the root, the
+   rest at its own path, the business's task files into `Tasks/`), then compare each copy's size and SHA-256 with the
+   original's. `cofounder/PLATFORM.md` and `cofounder/CODEMAP.md` are not copied: they are the charter's now, and stay
+   in the Trash with the folder.
+4. Reshape what changes shape: `settings.json` into `.commandagi/settings.json`'s keys, `customers/customers.json`
+   into `contacts/<email>.vcf`, the catalogue's paths to the org's root.
+5. Move the site with `POST /sites/:id/transfer`: its id, slug, deploys, env and analytics stay (CommandAGI cannot move
+   a site back to a person yet: its `docs/next`).
+6. Fork the co-founder into the org with today's charter and open the org's main chat; the chat from before stays the
+   founder's thread (a run cannot change hands) and is listed in Chat as "Before the move" (`cofounder.earlier`).
+7. Make the same routines on the new main chat, then pause the old ones (kept, with their history).
+8. Write the record; the mail address stays the founder's (a gap on the record); start payouts as the org (its own
+   Stripe account, up to Stripe's form).
+9. Move the old folder to the Trash, all but `runs/` (the old chat's run, which its thread writes at that path), and
+   the business's task files with it; then `POST /goods/reindex` as the org, so a good whose file moved comes along
+   with its slug and SKU (CommandAGI's "a product moves with its file", 03e577dded1); record the move in `MEMORY.md`.

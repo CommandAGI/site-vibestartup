@@ -37,6 +37,8 @@ try {
   const me = (await call('/me')).body;
   // The sign-up's floor, as auth/auth.js sets it.
   await call('/integrations/*/model-floor', { method: 'PUT', body: JSON.stringify({ floor: [{ model: 'anthropic/claude-sonnet-5-5' }, { model: 'openai/gpt-6-luna' }] }) });
+  // Who pays for the org's chats: the founder's own credits, the free ones first (docs/schema.md § who pays).
+  const creditsBefore = (await call('/me/credits')).body;
   const stored = JSON.stringify({ access: tok.access_token, refresh: tok.refresh_token ?? null, expiresAt: Date.now() + (Number(tok.expires_in) || 3600) * 1000, userId: me.id });
   await withBrowser(async b => {
     const problemsAt = () => b.problems.filter(p => !/favicon|ws-token|WebSocket/.test(p));
@@ -45,7 +47,7 @@ try {
     await b.goto(`${site}/start/?idea=${encodeURIComponent('Hand-thrown ceramic mugs sold to cafes by subscription')}`);
     for (const step of ['idea', 'blueprint', 'name', 'vibe', 'voice', 'partner', 'cofounder']) {
       await b.waitFor(`document.querySelector("#wizard")?.dataset.step === ${JSON.stringify(step)}`, 20000);
-      if (step === 'blueprint') await b.click('#choices .choice.suggested');
+      if (step === 'blueprint') { await b.waitFor('!!document.querySelector("#choices .choice")', 20000); await b.click(await b.eval('!!document.querySelector("#choices .choice.suggested")') ? '#choices .choice.suggested' : '#choices .choice'); }
       if (step === 'name') await b.fill('#own', `Kiln ${Date.now().toString(36).slice(-4)}`);
       await b.click('#continue');
     }
@@ -61,6 +63,7 @@ try {
       return (await call(`/accounts/org-${encodeURIComponent(slug)}/files/business.json`)).body;
     })();
     const thread = biz?.cofounder?.threadId;
+    result.thread = { id: thread };
     check(!!thread, 'the business has a co-founder thread');
     const transcript = async () => (await call(`/threads/${encodeURIComponent(thread)}/chat?limit=100`)).body?.messages ?? [];
 
@@ -139,6 +142,14 @@ try {
     check(look.sideways <= 0, 'at 390 px nothing scrolls sideways');
     result.problems = problemsAt();
   }, { out, width, height: 900 });
+  // Model calls settle into the ledger a moment after the turn.
+  await sleep(8000);
+  const creditsAfter = (await call('/me/credits')).body;
+  const history = (await call('/me/credits/history')).body;
+  result.credits = { before: creditsBefore, after: creditsAfter, history: (history?.entries ?? history?.history ?? history?.items ?? []).slice(0, 8) };
+  result.thread.ownerScope = (await call(`/threads/${encodeURIComponent(result.thread?.id ?? '')}`)).body?.ownerScope ?? null;
+  check(/^org-/.test(result.thread.ownerScope ?? ''), `the co-founder's chat is the org's (${result.thread.ownerScope})`);
+  check(JSON.stringify(creditsBefore) !== JSON.stringify(creditsAfter), `the org's chats were billed to the founder (credits ${JSON.stringify(creditsBefore?.credits ?? creditsBefore)} → ${JSON.stringify(creditsAfter?.credits ?? creditsAfter)})`);
 } catch (e) { failure = e; } finally {
   const tok = await (await fetch(`${api}/oauth/token`, { method: 'POST', body: new URLSearchParams({ grant_type: 'password', client_id: 'vibestartup', username: email, password, scope: '*' }) })).json().catch(() => ({}));
   result.erased = tok.access_token ? (await fetch(`${api}/me/erase`, { method: 'POST', headers: { authorization: `Bearer ${tok.access_token}`, 'content-type': 'application/json' }, body: '{"confirm":true}' })).status : 'no token';
