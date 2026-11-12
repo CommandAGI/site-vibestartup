@@ -147,7 +147,7 @@ try {
     await b.waitFor('!!document.querySelector("#allowance [data-allowance]") && !!document.querySelector("#usage")', 30000);
     result.billing = await b.eval(`({ allowance: document.querySelector('#allowance [data-allowance]').textContent, usage: document.querySelector('#usage')?.innerText?.replace(/\\s+/g, ' ').slice(0, 200) ?? null })`);
     check(/\d+ of \d+/.test(result.billing.allowance), `Billing shows the free allowance (${result.billing.allowance})`);
-    check(/Model calls/.test(result.billing.usage ?? '') && /for Kiln/.test(result.billing.usage ?? ''), `Billing lists the co-founder's calls (${result.billing.usage})`);
+    check(/for Kiln \S+ [1-9]\d* /.test(result.billing.usage ?? ''), `Billing lists the co-founder's calls (${result.billing.usage})`);
     await b.shot(`billing-${width}`);
     result.problems = problemsAt();
   }, { out, width, height: 900 });
