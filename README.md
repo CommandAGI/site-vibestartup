@@ -10,8 +10,9 @@ own: every feature is a CommandAGI feature, called from the browser with the fou
 
 - **The landing** (`/`): type an idea, watch a sketch of the business grow under the box, start building.
 - **The wizard** (`/start/`): idea, the first version, a name, a look, a voice, the co-founder's character and name,
-  updates; then the business is made, step by step, on the founder's CommandAGI account: a folder in their Drive,
-  a business email, a storefront site, the co-founder's memory files, the co-founder's thread, the daily briefing.
+  updates; then the business is made, step by step: a CommandAGI org of its own (`org-<slug>`, its Drive the business,
+  `docs/schema.md`), a storefront site, a business email, the co-founder's memory files, the co-founder (an agent of
+  the org) and its first chat, the daily briefing.
 - **Home** (`/home/`): the account's businesses, a new one, the account.
 - **The console** (`/app/?b=<slug>`): chat with the co-founder, the dashboard, analytics, tasks and routines, email,
   products, orders, customers, ads, the studio, outbound, social, files, legal, settings, activity; billing, profile
@@ -31,7 +32,10 @@ what is open, and what is left).
 | `home/`, `auth/`, `pages.css` | the businesses, sign in and create account |
 | `app/` | the console; `app/connected/` is where a provider's sign-in window comes back (it hands the code to the console and closes) |
 | `lib/api.js` | the CommandAGI client: the token (the `vibestartup` OAuth client's password grant and `/oauth/signup`), refresh, REST, MCP tools, Drive, threads, tasks, sites, email |
-| `lib/business.js` | the business record, its creation sequence, the co-founder's charter, the memory files, the brand generator |
+| `lib/schema.js` | the schema of a business: every path of its org's Drive, the lens (which tab reads and writes what), the charter's platform part and code map, the weekly lint |
+| `scripts/move-to-org.mjs` | the one-time move of a business made before businesses were orgs (`docs/schema.md` § the one-time move) |
+| `lib/contacts.js` | a customer or a sign-up as a vCard (`contacts/<email>.vcf`) |
+| `lib/business.js` | the business (an org): its record, its creation sequence, the co-founder's charter, the memory files, the brand generator, payouts, the lint, the seam every tab uses (`bizDrive`, `bizTasksApi`, `bizAccount`) |
 | `lib/suggest.js` | the wizard's suggestions for an idea: one model call with a JSON schema, and the neutral choices when it fails (docs/ARCHITECTURE.md § the wizard's suggestions) |
 | `lib/storefront.js` | the storefront: its files (shop, a page per product, checkout, terms, privacy, refunds, product pictures, the sign-ups' server module), what the checkout can sell, the brand address, the publish |
 | `lib/widgets.js` | a co-founder message's controls and charts (CommandAGI's ChatUi: options, slider, yes or no, text, file, lens and graph charts), every model string escaped; `test/widgets.mjs` tests every kind |
