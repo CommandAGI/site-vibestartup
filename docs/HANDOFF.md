@@ -101,6 +101,12 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   (`day1.storefront`, `day1.offer`: `dayOneTasks`), says to make them once, and the charter and PLAYBOOK.md say every
   approval task has a key of its day and step and that the co-founder reads its open tasks before it makes one.
   `test/cofounder-speed.mjs` now lists the business's tasks and reports a title or a key that is there twice.
+  Measured on production after the deploy (de1a156, 2026-11-12 04:2x UTC, `--replies 3`): two tasks, `day1.offer` and
+  `day1.storefront`, no title or key twice. The co-founder still called `task_create` once in the first reply (the key
+  answered the existing card, so nothing was made), and that reply's first words came at 20.1 s (whole 22.1 s); the
+  next two replies 12.8 and 12.0 s (whole 14.2 and 14.6 s). Welcome first words 3.1 s, the first card at 31.2 s, the
+  build 30.4 s. 72.9% of the co-founder's input came from the prompt cache (63,183 of 86,715 tokens, 10 calls). Left:
+  the extra call in the first reply costs a few seconds; the replies' 12 s is the turn's start, not the model.
 - **The co-founder's first answer** (2026-11-11, `node test/cofounder-speed.mjs --api https://api.commandagi.com`):
   before, the first words 17.8 s after the console opened and no day-one card within 150 s (15 file reads, 8
   failed); after (GPT-6 Luna, the thread started during the deploy, a greeting before any tool, the brief in the
