@@ -6,7 +6,7 @@
 // taken at --width and at 390 px. The account is erased at the end, also when the run fails.
 //
 //   node test/chat-widgets.mjs [--url https://vibestartup.commandagi.app] [--api https://api.commandagi.com|local]
-//                              [--out <dir>] [--width 1440] [--no-slider] [--refused]
+//                              [--out <dir>] [--width 1440] [--no-slider] [--refused] [--keep]
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withBrowser, sleep } from './browser.mjs';
@@ -19,6 +19,8 @@ const out = arg('out') ?? path.join(here, '..', '.test-results', 'chat-widgets')
 const slider = !process.argv.includes('--no-slider');
 // The thread refuses a slider answer out of its range (WIDGET_ANSWER_REFUSED); the page shows why on that widget.
 const refused = process.argv.includes('--refused');
+// Keep the account and its threads, so CommandAGI can read the thread's events afterwards; the report names the account.
+const keep = process.argv.includes('--keep');
 const email = `widgets-${Date.now().toString(36)}@example.com`;
 const password = 'correct horse battery';
 const ASK_SELECT = 'Which starting price should we use for one mug? Give me three prices to choose from as buttons in the chat.';
@@ -184,7 +186,7 @@ try {
   check(allowanceAfter > allowanceBefore || Number(creditsAfter?.credits) < Number(creditsBefore?.credits), `the org's chats were billed to the founder (allowance used ${allowanceBefore} → ${allowanceAfter}, credits ${creditsBefore?.credits} → ${creditsAfter?.credits})`);
 } catch (e) { failure = e; } finally {
   const tok = await (await fetch(`${api}/oauth/token`, { method: 'POST', body: new URLSearchParams({ grant_type: 'password', client_id: 'vibestartup', username: email, password, scope: '*' }) })).json().catch(() => ({}));
-  result.erased = tok.access_token ? (await fetch(`${api}/me/erase`, { method: 'POST', headers: { authorization: `Bearer ${tok.access_token}`, 'content-type': 'application/json' }, body: '{"confirm":true}' })).status : 'no token';
+  result.erased = keep ? 'kept (--keep)' : tok.access_token ? (await fetch(`${api}/me/erase`, { method: 'POST', headers: { authorization: `Bearer ${tok.access_token}`, 'content-type': 'application/json' }, body: '{"confirm":true}' })).status : 'no token';
   await local?.stop();
 }
 console.log(JSON.stringify(result, null, 2));
