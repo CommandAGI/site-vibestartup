@@ -24,16 +24,21 @@ let at = 0;
 // `sugg` answers `suggFor`; `asked` is the idea of the call in flight. What the founder picked or typed is never
 // replaced by a later answer (`own`).
 let sugg = neutralSuggestions(), suggFor = null, asked = null;
+// A failed call charges nothing, so an idea is asked again once (at Continue) before its neutral choices stay.
+const tries = new Map();
 const own = { blueprint: false, name: false, tagline: false };
 const MIN_IDEA = 12;
-const waiting = () => asked !== null && asked === state.idea && suggFor !== state.idea;
+const waiting = () => asked !== null && asked === state.idea;
 function ask(idea) {
-  if (idea.length < MIN_IDEA || idea === suggFor || idea === asked) return;
+  if (idea.length < MIN_IDEA || idea === asked || (idea === suggFor && (!sugg.failed || (tries.get(idea) ?? 0) >= 2))) return;
+  tries.set(idea, (tries.get(idea) ?? 0) + 1);
   asked = idea;
   suggestFor(idea, api).then(s => {
     if (asked !== idea) return; // a newer idea was asked for
     asked = null; sugg = s; suggFor = idea;
-    if (s.failed) console.info('suggestions: neutral choices:', s.failed); else console.info(`suggestions: ${s.model} in ${s.ms} ms`);
+    // Where the choices came from, for the founder's support and the journeys (docs/SELECTORS.md).
+    wizard.dataset.suggest = s.failed ? 'neutral' : 'model';
+    wizard.dataset.suggestWhy = s.failed ?? `${s.model} in ${s.ms} ms`;
     if (!own.blueprint) state.blueprint = s.by ? s.blueprints[0] : null;
     if (!own.name) state.name = s.names[0] ?? '';
     if (!own.tagline) state.tagline = s.tagline;

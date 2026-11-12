@@ -35,6 +35,7 @@ After success the page goes to `?next=` or `/home/`.
 | a choice | `#choices .choice` (a button; `[data-id]`; the suggested one has `.suggested`) |
 | your own answer | `#own` (input), when the step takes one |
 | the suggestions on their way | `#suggesting` (a skeleton on the blueprint and name steps while the model call runs) |
+| where the choices came from | `#wizard[data-suggest="model|neutral"]`, and `data-suggest-why` (the model and its time, or why the call failed) |
 | the tagline | `#tagline` (on the name step; the model's line, or empty) |
 | continue / back | `#continue`, `#back` |
 | building | `#building li[data-done]` as steps finish; then the page goes to `/app/?b=<slug>` |
