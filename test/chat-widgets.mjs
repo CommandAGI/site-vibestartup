@@ -29,6 +29,9 @@ const keep = process.argv.includes('--keep');
 const fresh = process.argv.includes('--fresh');
 const founderFile = path.join(here, '..', '.test-results', `chat-widgets-founder-${new Date().toISOString().slice(0, 10)}.json`);
 const kept = !fresh && fs.existsSync(founderFile) ? JSON.parse(fs.readFileSync(founderFile, 'utf8')) : null;
+// A sign-up bypass token (CommandAGI 377c44886e9: minted by POST /admin/console/signups/bypass-tokens, hours-long,
+// use-counted) lifts the day's test-address cap for this run's sign-up; it is read from the environment, never printed.
+const bypass = process.env.SIGNUP_BYPASS_TOKEN ? { 'x-commandagi-signup-bypass': process.env.SIGNUP_BYPASS_TOKEN } : {};
 if (process.argv.includes('--erase-founder') && !kept) { console.log(`no founder kept today (${founderFile})`); process.exit(0); }
 const email = kept?.email ?? `widgets-${Date.now().toString(36)}@example.com`;
 const password = 'correct horse battery';
@@ -45,7 +48,7 @@ try {
   const signIn = async () => { for (let i = 0; ; i++) { const x = await fetch(`${api}/oauth/token`, { method: 'POST', body: new URLSearchParams({ grant_type: 'password', client_id: 'vibestartup', username: email, password, scope: '*' }) }); if (x.status < 500 || i >= 4) return x; await sleep(3000 * (i + 1)); } };
   const r = kept
     ? await signIn()
-    : await fetch(`${api}/oauth/signup`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ client_id: 'vibestartup', name: 'Widget Person', email, password, scope: '*' }) });
+    : await fetch(`${api}/oauth/signup`, { method: 'POST', headers: { 'content-type': 'application/json', ...bypass }, body: JSON.stringify({ client_id: 'vibestartup', name: 'Widget Person', email, password, scope: '*' }) });
   const tok = await r.json();
   if (!r.ok) throw Error(`${kept ? 'sign-in of the day\'s founder' : 'sign-up'}: ${r.status} ${JSON.stringify(tok)}`);
   if (!kept && !fresh) { fs.mkdirSync(path.dirname(founderFile), { recursive: true }); fs.writeFileSync(founderFile, JSON.stringify({ email, at: Date.now() })); }
