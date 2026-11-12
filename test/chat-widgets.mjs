@@ -78,7 +78,10 @@ try {
       const sel = `#chat .ask[data-kind="${kind}"]:not(.answered)`;
       await b.waitFor(`!!document.querySelector('${sel}')`, 180000).catch(async e => {
         // What the co-founder made instead, for the report.
-        result.lastMessages = (await transcript()).slice(-4).map(m => ({ role: m.role, text: m.text?.slice(0, 400), ui: m.ui ?? null, tool: m.tool?.name ?? null }));
+        result.lastMessages = (await transcript()).slice(-4).map(m => ({ role: m.role, text: m.text?.slice(0, 400), ui: m.ui ?? null, question: m.question ?? null, tool: m.tool?.name ?? null }));
+        // Why: the model's own reasoning lines and any refusal of a call, from the thread's events.
+        const ev = (await call(`/threads/${encodeURIComponent(thread)}/events?limit=300`)).body?.events ?? [];
+        result.why = ev.filter(e => e.event === 'agent_reasoning' || /^refused/.test(e.event ?? '') || e.event === 'platform.call').slice(-8).map(e => ({ event: e.event, text: e.text?.slice(0, 300), tool: e.tool, reason: e.reason }));
         await b.shot(`${label}-missing-${width}`);
         throw e;
       });
