@@ -1,7 +1,32 @@
-# handoff (2026-11-11)
+# handoff (2026-11-12)
 
 Where VibeStartup stands, what other sessions own, and what is left. Update this file when an item closes, and delete an
 item when it is done; history stays in the git log and in CommandAGI's `docs/verification.md`.
+
+## where things stand (2026-11-12)
+
+- **Soft launch:** live since 2026-11-11. Admin (account menu → Admin, for an admin of `org-vibestartup`) counts the
+  founders, businesses, sales and free credits; on 2026-11-12 the only founders were the owner and one test account.
+- **CommandAGI production** runs main past 1b260438ddc. That includes the brand lookup, the instant welcome, prompt
+  caching, the model floor, `taskKey`, `GET /me/threads?of=`, `jsonSchema` on `/models/call`, the business-org
+  foundations and the durable approval questions.
+- **Deploys are shared with the CommandAGI session `commandagi-73`.** Land on CommandAGI's github/main and ride its next
+  production ship; never start a production deploy of CommandAGI while another runs
+  (`systemctl --user list-units | grep -iE 'deploy|ship'`). The owner waived the CI gate for the launch (2026-11-11);
+  the waiver is named in every deploy's record.
+- **In progress: every business becomes its own org** (`docs/schema.md`, step 2). Business creation makes
+  `org-<slug>`; every tab reads the org through one seam; the owner's DigitalProduct moves into `org-digitalproduct`.
+  Its product moves after CommandAGI's adopt rule ships, and its mail address stays the founder's until an address can
+  move to an org (CommandAGI `docs/next`). Until step 2 lands, a business is still `Businesses/<slug>/` in the founder's
+  Drive.
+- **Ads are "Soon".** Meta app "VibeStartup Ads" (1338102101689302, portfolio commandagi 1379331479721276) is Live.
+  Business verification was submitted on 2026-11-11 (about 2 business days), access verification on 2026-11-12
+  (about 5 business days). App Review for advanced `ads_management` follows both; its material is
+  `docs/meta-app-review.md`. Until then only the app's admins' and testers' ad accounts connect, and the platform's
+  switch (`meta,vibestartup-ads` `enabled=false`) stays off.
+- **Next (planned):** move what any CommandAGI app could use into CommandAGI, with VibeStartup keeping a brand subset:
+  first the store templates (as generators with commerce parts and a per-brand subset), then the chat Markdown kit,
+  then the shared co-founder notes as one skill. Brand things stay here: `*.vibestartup.pro`, the look, the words.
 
 ## live and verified
 
@@ -17,7 +42,8 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   after the question, the click locked it on the server in 0.38 s and the reply came 11.4 s after the click; a slider
   16.5 s, locked 0.28 s, reply 15.0 s; no sideways scroll at 390. The charter teaches the cagi-ask shapes
   (`WIDGETS_RULE`); without a whole example message the model said the chat could not show a slider. The agent loop's
-  `confirm` prompt shows Approve and Deny only while the page is open (the platform keeps no pending prompt).
+  `confirm` approval is a durable question since CommandAGI 1b260438ddc (58f556fa469): its Approve and Deny survive a
+  reload, and the chat draws it once, by the question (e2a22c0).
 - The rail's levels (2026-11-12): the tab shown opens under its row (`app/nav.js`, `app/levels.js`). Chat lists the
   business's 5 most recently active chats, More for 5 more, and New chat (a thread about its `business.json`, listed by
   CommandAGI's `GET /me/threads?of=`, live on production since ff7e012); Analytics, Tasks, Email and Files list their
@@ -52,16 +78,31 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   offer and its Stripe checkout when short, the contract proposed from the business's thread with the 2,400-credit
   ceiling and a 30-day deadline, signed by the founder, cancelled, and the account erased. VibeStartup's agent did not
   sign within 6 minutes, so escrow, the active row and accept were not reached (below).
+- Markdown (2026-11-12): the co-founder's messages and a card's reasoning render as Markdown, with every character of
+  the source escaped first and links kept to http(s), mailto and same-site (`lib/md.js`, `test/md.mjs`).
+- Storefront templates (2026-11-12): six layouts (spotlight, shop, launch, services, club, maker) by eight styles
+  (studio, editorial, bold, soft, playful, luxe, mono, craft), chosen in `Businesses/<slug>/storefront.json` with the
+  words and section switches; the Storefront tab previews and publishes, and the co-founder edits the file
+  (`lib/storefront-design.js`, `test/storefront.mjs`: 53 pass; screenshots in CommandAGI's
+  `test-results/storefront-templates-2026-11-12/`). DigitalProduct was published with spotlight × mono.
+- Sign-up suggestions (2026-11-12): one Claude Haiku 5.5 call through `POST /models/call` with a JSON schema gives the
+  names, tagline, ranked blueprints, a first product, and the layout and style, about 3 s after the founder stops
+  typing; one credit of the founder's free allowance. A failed or late call gives neutral fixed choices; nothing reads
+  the idea by keywords (`test/suggest.mjs`).
+- `<slug>.vibestartup.pro` serves every VibeStartup storefront (the edge Worker `vibestartup-subdomains` on
+  `*.vibestartup.pro/*`, `edge/README.md`; CommandAGI's `GET /sites/brand/:slug`); other names get the branded 404.
 - Speed: the console opens in about 2 s (parallel first reads, a file read by path in one call); a business is built in
   under 2 minutes (its folders and files made at once).
 
 ## owned by other sessions
 
-- **CommandAGI, started 2026-11-11 by the VibeStartup session's agent:** a brand's own origin for checkout, portal and
-  Connect onboarding returns (today a pack's checkout returns to commandagi.com: Billing asks for this origin and falls
-  back), and a guest's paid digital good delivered by an emailed download link (github/main 46c73e0). When it reaches
-  production: Billing's fallback goes and Settings → Payments passes this origin. The storefront needs no change for
-  downloads: the console reads the API's answer (`guestCheckout`) and publishes the storefront again when it changes.
+- **CommandAGI's org conversion (`commandagi-73`).** The 7,982 orgs with origin `public-record` become folders of
+  `org-commandagi/relisting/<slug>/` (CommandAGI `docs/next/relisting.md`); the owner approved the deletes. Every other
+  org stays, and an org a brand client creates is never touched. Since 2026-11-12 the owner's account owns every
+  production org, so erasure and the brand admin view find a founder's businesses by the org's recorded founder and
+  brand (`orgs.founded_by`, `orgs.brand`), never by owner.
+- **A brand's own origin for checkout, portal and Connect returns, and guest downloads** (CommandAGI 46c73e0) are on
+  production. Billing's fallback is still in the code (left to do).
 
 ## left to do
 
@@ -88,25 +129,10 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   `--files` that one file); production's Drive does not, so production has no listing rows: run
   `node scripts/seed/run.mjs org-specs prod --apply --files <a list naming that file>` before the launch.
 
-- **The welcome, the prompt cache and the floor wait for CommandAGI's next production deploy** (2026-11-11). Landed
-  on CommandAGI's main: `POST /threads { greeting }` (ed68bf17c96), the goal step's cached prefix (8b8cf4e42a9) and the
-  floor that reads a thread's pinned model (48159a699a2). Until production runs them: the platform drops `greeting`, so
-  `cofounder.welcome.kept` is null and the co-founder greets with the model (the opening ask then says so), about 6 s
-  after the console opens; afterwards the welcome is the thread's first line and shows the moment the console opens.
-  The founder's floor (Sonnet 5.5 or Luna) is set on production now: `PUT /integrations/*/model-floor` answered 200 and
-  `GET /integrations` reads it back (`test/cofounder-speed.mjs` checks it).
-  Measured on production before that deploy (one run, `--replies 2`): the console 48 s after the wizard, the first
-  words 5.9 s after it opened, the first card 21.6 s, replies 45.9 s (the first turn was still making its cards) and
-  16.1 s; the co-founder's calls read 31% of their input from OpenAI's cache (20,923 of 67,957 tokens, 8 calls).
-  The same request shape straight to OpenAI (gpt-6-luna, a 3,900-token prefix, 3 turns): 0 cached tokens with the turn's
-  context before the cache mark, 3,909 on turns 2 and 3 with the mark (CommandAGI `docs/agents.md` § prompt caching).
-  The same run on a local platform built from CommandAGI's main with the three changes (`COMMANDAGI_ROOT=<that
-  checkout> node test/cofounder-speed.mjs --api local --replies 3`, real OpenAI calls, no site hosting): the welcome's
-  first words 0.1 s after the console opened, typed out in 4.6 s; the first card at 3.9 s; replies' first words 7.0,
-  9.0 and 3.6 s (whole 8.6, 10.0 and 5.3 s); 80% of the co-founder's input read from the cache (47,312 of 59,499
-  tokens, 8 calls), against 29 to 31% on production. The co-founder did not greet again after the welcome.
-  After the deploy, run `node test/cofounder-speed.mjs --api https://api.commandagi.com --replies 3` again and write
-  the numbers here.
+- **The welcome, the prompt cache and the floor are on production** (CommandAGI 7a06ccdc999, 2026-11-12). Measured
+  after (de1a156, `node test/cofounder-speed.mjs --api https://api.commandagi.com --replies 3`): welcome first words
+  3.1 s, replies' first words 20.1, 12.8 and 12.0 s, 72.9% of the co-founder's input from the prompt cache. The
+  replies' 12 s is the turn's start on the platform, not the model.
 - **Each founder message makes the co-founder call `task_create` again** (production, 2026-11-11, two runs): after
   the day-one cards exist, a question ("What should I put on the storefront first?") brought one to three more
   `task_create` calls before the answer, so the first reply took 22 to 46 s. The local run did not do it. Check the
@@ -138,18 +164,18 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
 - **Site hosting is slow.** A static file of this site takes 0.3 to 6 s to its first byte: the gateway is in the api
   worker, which Smart Placement runs near its database (`cf-placement: remote-ARN` seen from SJC). A gateway worker of
   its own at the visitor's edge would serve every tenant site from its PoP (CommandAGI `docs/site-hosting.md`).
-- **Existing storefronts keep their rounded stylesheet** until they are published again (any product change in the
-  console publishes it).
-- `brand/og.html` and `og.png` still show the rounded look; the storefront falls back to the system font.
 - **The storefront's checkout has not reached Stripe's page** on any stack since it was written: on production the
-  `store` flag refuses a visitor's cart (`feature_off`). Once the owner turns it on (below), a run with a founder whose
-  payouts are ready should buy a physical good to Stripe's page, and a download with only an email once 46c73e0 is
-  deployed.
-- **The brand address is ready in the app, not in DNS** (below). Until the record exists nothing is offered; the
-  storefront's own address stays `<slug>.commandagi.app`.
+  flag is on now, but no run has had a founder whose payouts are ready. Such a run should buy a physical good to
+  Stripe's page, and a download with only an email.
 - **Sign-ups have no unsubscribe link yet.** The consent says "I can stop them at any time"; today that is a reply to
   the business address and the founder removing the row (`DELETE /api/signups?email=` on the storefront, with the
   read key, is there; no button calls it). Sending updates is Outbound's job and should carry the link.
+- **Launch follow-ups not done yet:** require Turnstile on OAuth sign-ups (`signup.turnstile.require.oauth`); an
+  "Unlock more credits" card from `GET /me/free-credits`; drop Billing's origin fallback (the brand origin is on
+  production); seed the listing terms to production (`org-specs`, above).
+- **The Email tab's own folder buttons** don't move the address or the rail's highlight; the rail's links do.
+- **Existing businesses keep the co-founder instructions they were made with** until step 2 puts the charter in the
+  agent (`docs/schema.md`).
 - `lib/api.js` has no fetch timeout; a hung call shows the tab's "still loading, Try again" banner after 10 s.
 
 ## for the owner
@@ -165,22 +191,12 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   pnpm commandagi sites env vibestartup rm COFOUNDER_MODEL
   ```
 
-- **Open the store to guests.** CommandAGI's `store` flag (`/commerce/*`, `packages/domain/world/flags.js`) is off on
-  production, so every storefront's checkout answers `feature_off` to its buyers and the storefronts take orders by
-  email. It is a money decision, so it is yours: `node scripts/release/flags.mjs --env prod set store on` in a
-  CommandAGI checkout (`docs/feature-flags.md` § changing a flag). The storefronts follow at their next publish (the
-  console publishes again when it sees the change).
-- **`<slug>.vibestartup.pro` for every storefront** (owner decision 2026-11-11). CommandAGI records a site made
-  through VibeStartup's sign-in as VibeStartup's (`sites.brand`) and answers the public `GET /sites/brand/:slug`;
-  the edge Worker `edge/subdomains.js`, in the Cloudflare account that holds vibestartup.pro, proxies
-  `<slug>.vibestartup.pro` to `<slug>.commandagi.app` for such a site only, and answers every other name with the
-  branded 404. The console shows `site.brandUrl` and the storefront's canonical links name it. Two steps are
-  yours: CommandAGI's next production deploy (it carries the lookup), and the Worker in the dashboard
-  (`edge/README.md` § deploy: the Worker `vibestartup-subdomains`, the route `*.vibestartup.pro/*`, no binding;
-  remove today's "no startup here yet" Worker's route). Deploying the Worker first is safe: until the lookup is on
-  production it answers 404 for every label.
 - **vibestartup.us** now shows this app too: its domain was already on the site. Its Google Workspace mail is
   unchanged.
+- **Meta.** When Meta writes about the two verifications or App Review, forward the mail. Both verifications must
+  pass before App Review can be submitted.
+- **Stripe, after step 2.** Each business org gets its own Connect account; Stripe's own form (identity, bank, tax)
+  is the founder's, so DigitalProduct's needs the owner once.
 - **Prices, the paid providers and the launch.** The pages say "set at launch". Payments, ads, social posting and
   outbound mail stop at "connect your provider".
 - **`hello@vibestartup.pro`.** Where it forwards: an Email Routing rule in the vibestartup.pro zone.
