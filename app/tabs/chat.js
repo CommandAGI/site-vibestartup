@@ -115,7 +115,10 @@ export async function render(ctx) {
     if (biz.site?.lastDeploy?.at && siteUrl) parts.push(`<div class="milestone">${icon('rocket')}<div><b>Site deployed</b> · <a href="${esc(siteUrl)}" target="_blank" rel="noopener">${esc(siteUrl.replace(/^https?:\/\//, ''))}</a> <small class="muted">${esc(ago(biz.site.lastDeploy.at))}</small></div></div>`);
     for (const t of open) parts.push(approvalCard(t));
     if (decided.length) parts.push(`<p class="hint" style="margin-left:42px">${decided.length} decided ${decided.length === 1 ? 'card' : 'cards'} are in Tasks.</p>`);
-    for (const p of waits.values()) parts.push(`<div class="msg cofounder" data-prompt-id="${esc(p.id)}"><span class="avatar cofounder">${initial(cof.name)}</span><div class="body"><div class="who"><b>${esc(cof.name || 'Co-founder')}</b><span>${esc(time(p.at))}</span></div>${widget({ id: `prompt:${p.id}`, ui: promptUi(p) }, asks.get(`prompt:${p.id}`))}</div></div>`);
+    // A prompt the platform also keeps as a question (an agent's approval: a confirm whose requestId is the prompt's id)
+    // is answered there, and it survives a reload; the live card would draw it twice.
+    const approvals = new Set(messages.map(x => x.ui?.kind === 'confirm' ? x.ui.requestId : null).filter(Boolean));
+    for (const p of waits.values()) if (!approvals.has(p.id)) parts.push(`<div class="msg cofounder" data-prompt-id="${esc(p.id)}"><span class="avatar cofounder">${initial(cof.name)}</span><div class="body"><div class="who"><b>${esc(cof.name || 'Co-founder')}</b><span>${esc(time(p.at))}</span></div>${widget({ id: `prompt:${p.id}`, ui: promptUi(p) }, asks.get(`prompt:${p.id}`))}</div></div>`);
     for (const b of live.values()) parts.push(liveBubble(b));
     if ((working || unanswered()) && !live.size && !typing && Date.now() < typingUntil) parts.push(`<div class="msg system composing typing" role="status"><div class="body"><div class="text">${esc(cof.name ?? 'Your co-founder')} is typing</div></div></div>`);
     // A paint draws the chat again: what the founder typed into a widget, and the focus, stay.
