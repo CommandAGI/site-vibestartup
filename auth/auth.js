@@ -33,7 +33,8 @@ async function submit(form, act) {
     await act(data);
     location.href = next;
   } catch (e) {
-    if (e instanceof ApiError && e.code === 'signup_capped') say(form, 'New accounts are limited today. Try again tomorrow, or write to hello@vibestartup.pro.');
+    if (e instanceof ApiError && e.code === 'turnstile_failed') say(form, 'We could not confirm this is a person signing up. Wait a moment and press the button again. If it keeps happening, allow challenges.cloudflare.com in your browser or turn off a privacy extension for this page.');
+    else if (e instanceof ApiError && e.code === 'signup_capped') say(form, 'New accounts are limited today. Try again tomorrow, or write to hello@vibestartup.pro.');
     else if (e instanceof ApiError && e.status === 0) say(form, 'We could not reach CommandAGI. Check your connection and try again.');
     else if (e instanceof ApiError && e.code === 'email_taken') { say(form, 'An account with this email already exists. Sign in instead.'); }
     else say(form, oops(e));
@@ -41,20 +42,41 @@ async function submit(form, act) {
   }
 }
 // Turnstile (Cloudflare's bot check, invisible unless it is unsure) on the sign-up form, on the hosts the platform's
-// widget lists; elsewhere (localhost, a preview) no token is sent and the door takes the sign-up without one.
+// widget lists; elsewhere (localhost, a preview) no token is sent and the door takes the sign-up without one. The door
+// requires a token (signup.turnstile.require.oauth), so a sign-up waits for the widget's token: the check runs while the
+// person types, and a challenge it is unsure about is drawn above the button.
 const TURNSTILE_HOSTS = new Set(['vibestartup.pro', 'www.vibestartup.pro', 'vibestartup.us', 'www.vibestartup.us', 'vibestartup.commandagi.app', 'vibestartup--dev.commandagi.app']);
-let turnstileId = null;
+const TOKEN_WAIT_MS = 15000;
+let turnstileId = null, token = null, tokenWaiters = [], turnstileBroken = false;
+const gotToken = t => { token = t; const w = tokenWaiters; tokenWaiters = []; w.forEach(f => f(t)); };
 if (TURNSTILE_HOSTS.has(location.hostname)) {
   fetch(`${API}/signup/config`).then(r => r.json()).then(cfg => {
     const key = cfg?.turnstile?.siteKey; if (!key) return;
-    window.onTurnstileLoad = () => { turnstileId = window.turnstile.render('#turnstile', { sitekey: key, action: cfg.turnstile.action ?? 'signup', appearance: 'interaction-only' }); };
-    const sc = document.createElement('script'); sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad'; sc.async = true; document.head.append(sc);
+    window.onTurnstileLoad = () => {
+      turnstileId = window.turnstile.render('#turnstile', {
+        sitekey: key, action: cfg.turnstile.action ?? 'signup', appearance: 'interaction-only',
+        callback: gotToken,
+        'expired-callback': () => { token = null; },
+        // An error: the widget retries on its own and shows its own message; a waiting sign-up keeps waiting.
+        'error-callback': () => { token = null; },
+      });
+    };
+    const sc = document.createElement('script'); sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad'; sc.async = true;
+    sc.onerror = () => { turnstileBroken = true; gotToken(null); };
+    document.head.append(sc);
   }).catch(() => null);
 }
-const turnstileToken = () => { try { return turnstileId != null ? window.turnstile.getResponse(turnstileId) || null : null; } catch { return null; } };
+/** The widget's token: the one it has, or the next it makes (up to 15 s). Null where no widget runs, or it failed. */
+async function turnstileToken() {
+  if (!TURNSTILE_HOSTS.has(location.hostname)) return null;
+  if (token) return token;
+  if (turnstileBroken) return null;
+  return new Promise(resolve => { const t = setTimeout(() => resolve(null), TOKEN_WAIT_MS); tokenWaiters.push(v => { clearTimeout(t); resolve(v); }); });
+}
+const freshToken = () => { token = null; turnstileBroken = false; try { if (turnstileId != null) window.turnstile.reset(turnstileId); } catch { /* a token is single-use */ } };
 signup.addEventListener('submit', e => { e.preventDefault(); submit(signup, async d => {
-  try { await signUp({ name: String(d.name).trim(), email: d.email, password: d.password, turnstileToken: turnstileToken() }); }
-  finally { try { if (turnstileId != null) window.turnstile.reset(turnstileId); } catch { /* a token is single-use */ } }
+  try { await signUp({ name: String(d.name).trim(), email: d.email, password: d.password, turnstileToken: await turnstileToken() }); }
+  finally { freshToken(); }
   // The date of birth is set once on the CommandAGI account (immutable there); a failure to set it is not a failed sign-up.
   await setProfile({ birthdate: d.birthdate }).catch(() => null);
   // The co-founder (GPT-6 Luna) may use the accounts the founder connects: the founder's own floor, set once here.
