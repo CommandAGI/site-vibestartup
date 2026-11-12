@@ -35,6 +35,11 @@ export async function render(ctx) {
   // message.update is what locks it; `waiters` resolve when that update comes.
   const asks = new Map();
   const waiters = new Map();
+  // The agent loop's own asks (its `confirm` approval barrier, a runtime's prompt): the socket's {t:"prompt"} while
+  // the co-founder waits, answered with prompt.respond and closed by prompt.resolved. The platform keeps them in no
+  // transcript, so they show only while this page is open.
+  const waits = new Map();
+  const promptUi = p => ({ kind: 'select', prompt: p.question, options: (p.options?.length ? p.options : ['approve', 'deny']).map(o => ({ value: String(o), label: o === 'approve' ? 'Approve' : o === 'deny' ? 'Deny' : String(o) })), ...(p.answer != null ? { answered: true, answer: p.answer } : {}) });
   let socket = null, socketOpen = false, retries = 0;
   // The co-founder is typing while the socket says it works, or while the founder's last line has no answer yet.
   let working = false, typingUntil = Date.now() + 120000;
@@ -106,6 +111,7 @@ export async function render(ctx) {
     if (biz.site?.lastDeploy?.at && siteUrl) parts.push(`<div class="milestone">${icon('rocket')}<div><b>Site deployed</b> · <a href="${esc(siteUrl)}" target="_blank" rel="noopener">${esc(siteUrl.replace(/^https?:\/\//, ''))}</a> <small class="muted">${esc(ago(biz.site.lastDeploy.at))}</small></div></div>`);
     for (const t of open) parts.push(approvalCard(t));
     if (decided.length) parts.push(`<p class="hint" style="margin-left:42px">${decided.length} decided ${decided.length === 1 ? 'card' : 'cards'} are in Tasks.</p>`);
+    for (const p of waits.values()) parts.push(`<div class="msg cofounder" data-prompt-id="${esc(p.id)}"><span class="avatar cofounder">${initial(cof.name)}</span><div class="body"><div class="who"><b>${esc(cof.name || 'Co-founder')}</b><span>${esc(time(p.at))}</span></div>${widget({ id: `prompt:${p.id}`, ui: promptUi(p) }, asks.get(`prompt:${p.id}`))}</div></div>`);
     for (const b of live.values()) parts.push(liveBubble(b));
     if ((working || unanswered()) && !live.size && !typing && Date.now() < typingUntil) parts.push(`<div class="msg system composing typing" role="status"><div class="body"><div class="text">${esc(cof.name ?? 'Your co-founder')} is typing</div></div></div>`);
     // A paint draws the chat again: what the founder typed into a widget, and the focus, stay.
@@ -166,7 +172,7 @@ export async function render(ctx) {
   // answer route takes it. The controls stay off while it is on its way; a failure says so and turns them on again.
   // The thread the chat shows: the widget code reads it here, never the co-founder's first thread by name.
   const threadOf = () => cof.threadId;
-  const lockedNow = id => !!messages.find(x => x.id === id)?.ui?.answered;
+  const lockedNow = id => id.startsWith('prompt:') ? waits.get(id.slice(7))?.answer != null : !!messages.find(x => x.id === id)?.ui?.answered;
   const waitLocked = (id, ms) => new Promise(resolve => {
     const done = v => { clearTimeout(t); waiters.delete(id); resolve(v); };
     const t = setTimeout(() => done(lockedNow(id)), ms);
@@ -181,6 +187,7 @@ export async function render(ctx) {
     } catch (err) { if (!alive) return; asks.set(id, { ...asks.get(id), sending: false, error: oops(err) }); paint(); }
   };
   const respond = (id, raw) => {
+    if (id.startsWith('prompt:')) return answerPrompt(id.slice(7), raw);
     const m = messages.find(x => x.id === id);
     const value = String(raw ?? '').trim();
     if (!m?.ui || m.ui.answered || !value || !threadOf()) return;
@@ -196,6 +203,15 @@ export async function render(ctx) {
       await load();
       // The route took the answer; the transcript may show it a moment later.
       if (!lockedNow(id)) { const x = messages.find(y => y.id === id); if (x?.ui) x.ui = { ...x.ui, answered: true, answer: value }; }
+    });
+  };
+  const answerPrompt = (pid, value) => {
+    const p = waits.get(pid);
+    if (!p || p.answer != null) return;
+    return settle(`prompt:${pid}`, async () => {
+      if (!(socket && socketOpen && socket.readyState === 1)) throw Error('The connection to the co-founder is closed. Refresh the page.');
+      socket.send(JSON.stringify({ t: 'prompt.respond', id: pid, value: String(value) }));
+      if (!(await waitLocked(`prompt:${pid}`, 8000))) throw Error(`The answer did not reach ${cof.name ?? 'your co-founder'}.`);
     });
   };
   const upload = (id, files) => {
@@ -258,6 +274,12 @@ export async function render(ctx) {
       if (at >= 0) messages[at] = { ...messages[at], ...(m.text != null ? { text: m.text } : {}), ...(m.ui ? { ui: m.ui } : {}) };
       if (m.ui?.answered) { asks.delete(m.id); waiters.get(m.id)?.(true); }
       paint();
+    } else if (m.t === 'prompt' && m.id && m.question) {
+      waits.set(m.id, { id: m.id, kind: m.kind, question: m.question, options: m.options, at: Date.now() });
+      paint();
+    } else if (m.t === 'prompt.resolved' && m.id) {
+      const p = waits.get(m.id);
+      if (p) { p.answer = String(m.value ?? ''); asks.delete(`prompt:${m.id}`); waiters.get(`prompt:${m.id}`)?.(true); paint(); }
     } else if (m.t === 'message.delete') {
       // The step ended; its own message follows in a moment and takes the bubble's place.
       setTimeout(() => { if (live.delete(m.id)) paint(); }, 3000);
