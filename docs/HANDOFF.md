@@ -39,6 +39,27 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   (deployed with `pnpm commandagi sites deploy <git archive of HEAD> --prod` from a CommandAGI checkout, as the host
   account that owns the site `vibestartup`; never deploy `.`, which would carry `.test-results/`). The API is
   `https://api.commandagi.com` (`/brand.js`).
+- 2026-11-13, the org co-founder's controls, credits and Drive (production, throwaway accounts, erased):
+  - Chat controls: the charter reached the agent whole (14,133 characters, read back from `GET /agents/:id`, and
+    CommandAGI reads an agent's `systemPrompt` at each turn). It was not cut. The model asked through CommandAGI's
+    `ask_user` verb, which draws only plain buttons, and said "this chat's controls don't provide a slider". The charter
+    now says a control is text in one `done` action, with the whole action as an example, and that no message comes
+    before it. The console writes a changed charter into an existing co-founder once (`refreshCharter`). API trials:
+    0 of 4 sliders before, then 18 of 18 on a fresh thread. Browser runs of `test/chat-widgets.mjs`: select and slider
+    passed in runs 1, 2, 5 and 7 (the select 7 to 13 s after the question, the slider 11 to 14 s). Runs 3, 4 and 6 drew no
+    select: the model sent its words without the block, mostly while its day-one turn was still ending.
+  - Who pays: the founder (an org's thread bills its owner). A call draws the free plan's `ai` allowance first (30
+    credits each 8 hours, `GET /quota`), then the free credits, then the bought ones. A chat-only thread's spend was never
+    settled: the ledger flushed only at an alarm, and a chat arms none. CommandAGI 3bd4e4ec2ef settles each call as it
+    ends. Credit probe (sonnet, 4 turns): `ai` used went 5, 10, 15, 19; before the fix it stayed at 0 while 21.5 credits
+    were owed. Past the allowance the call is refused. Chat now shows that refusal as a notice with a link to Billing.
+    Billing shows the allowance and each co-founder's calls. A `@example.com` probe has no credits, so a ledger row
+    cannot be shown with one; the API test covers the credits path.
+  - Drive: inside an org thread, the co-founder's `list_drive {account}` answered 404 for an org with no handle.
+    CommandAGI 5c5e235 fixed it; list, write and read now pass in a fresh org thread. Not checked: org-digitalproduct's
+    co-founder (it needs the owner's session).
+  - Products: `node test/org-goods.mjs` passes 7 of 7. A Products-tab mug is the org's good (`acct:org:<id>`, the
+    product file in `products/`, $28.00), a draft while payouts are not onboarded, and not among the founder's goods.
 - 2026-11-12, every business an org: `node test/journey.mjs --url https://vibestartup.pro` passes at 1440 and 390 px
   with no problem (two throwaway founders, erased): the org `org-<slug>` with the schema's files and no stray, the
   storefront live at `<slug>.vibestartup.pro`, the co-founder answering in its org chat (11.9 and 17.9 s), the approval a
