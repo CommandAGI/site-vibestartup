@@ -18,17 +18,20 @@ export const LEVELS = {
   chat: {
     label: 'Chats', param: 'thread', action: { key: 'new-chat', label: 'New chat', icon: 'plus' },
     /**
-     * The business's chats: the threads about its business.json, most recently active first. A platform that cannot
-     * list them by file yet shows the first chat alone.
+     * The business's chats: the threads about its business.json, most recently active first, then (on the last page)
+     * the chats it had before it was an org (`cofounder.earlier`, the threads of the founder's folder it moved from). A
+     * platform that cannot list them by file yet shows the first chat alone.
      */
-    async load({ biz, me }, { cursor = null, limit = CHAT_PAGE } = {}) {
+    async load({ biz }, { cursor = null, limit = CHAT_PAGE } = {}) {
       const main = biz.cofounder?.threadId ?? null;
       const only = main ? [{ id: main, label: 'Main chat' }] : [];
-      const got = await threads.of(addressOf(me.id, biz.slug), { limit, cursor }).catch(() => null);
+      const earlier = (biz.cofounder?.earlier ?? []).map(t => ({ id: t.id, label: t.title || 'Earlier chat', meta: t.at ? ago(t.at) : '' }));
+      const got = await threads.of(addressOf(biz), { limit, cursor }).catch(() => null);
       // No New chat there either: a chat it made could not be listed.
-      if (!got) return { items: cursor ? [] : only, next: null, fixed: true };
+      if (!got) return { items: cursor ? [] : [...only, ...earlier], next: null, fixed: true };
       const items = got.threads.map(t => ({ id: t.id, label: t.id === main ? 'Main chat' : PLACEHOLDER.has(String(t.title ?? '').trim()) ? 'New chat' : t.title, meta: when(t) ? ago(when(t)) : '' }));
       if (!cursor && main && !items.some(i => i.id === main) && !got.nextCursor) items.push(...only);
+      if (!got.nextCursor) items.push(...earlier.filter(e => !items.some(i => i.id === e.id)));
       return { items, next: got.nextCursor };
     },
   },

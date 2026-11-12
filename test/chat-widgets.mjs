@@ -57,9 +57,8 @@ try {
     await sleep(3000);
     const slug = await b.eval(`new URL(location.href).searchParams.get('b')`);
     const biz = await (async () => {
-      const folder = (await call(`/drive?path=${encodeURIComponent(`Businesses/${slug}`)}`)).body;
-      const file = (folder?.files ?? folder?.items ?? folder?.entries ?? []).find(f => f.name === 'business.json');
-      return file ? (await call(`/drive/${encodeURIComponent(file.id)}/content`)).body : null;
+      // The business is the org org-<slug>; its record is at the root of its Drive.
+      return (await call(`/accounts/org-${encodeURIComponent(slug)}/files/business.json`)).body;
     })();
     const thread = biz?.cofounder?.threadId;
     check(!!thread, 'the business has a co-founder thread');

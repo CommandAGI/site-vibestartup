@@ -168,7 +168,7 @@ next.onclick = () => {
 };
 body.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') { e.preventDefault(); next.click(); } });
 
-const BUILD_STEPS = ['Making the folder', 'Claiming the business email', 'Creating the storefront', "Writing the co-founder's memory", `Waking the co-founder`, 'Scheduling the daily briefing'];
+const BUILD_STEPS = ['Making the business', "Writing the business's files", 'Claiming the business email', 'Creating the storefront', "Writing the co-founder's memory", `Waking the co-founder`, 'Scheduling the daily briefing'];
 async function build() {
   wizard.dataset.step = 'building';
   label.textContent = 'Setting up your business';

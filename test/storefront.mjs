@@ -186,8 +186,8 @@ ok('the console\'s preview is one document that loads nothing of the page but pi
 });
 
 ok('the co-founder is told the file and every choice by name', () => {
-  const rule = storefrontRule({ slug: 'harbour' });
-  assert.ok(rule.includes('Businesses/harbour/storefront.json'));
+  const rule = storefrontRule({ slug: 'harbour', org: 'org-harbour' });
+  assert.ok(rule.includes('storefront.json at the root of the business\'s Drive'));
   for (const x of [...TEMPLATES, ...STYLES]) assert.ok(rule.includes(`"${x.id}"`), x.id);
 });
 

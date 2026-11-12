@@ -1,15 +1,16 @@
-// Products: the catalogue, published into the storefront on every change. A physical product, and a digital one with
-// its file, is also a good on CommandAGI (`/goods`): its buyers pay through the one cart checkout into the founder's
-// own Stripe account (Connect) and return to the storefront. A digital good sells to a guest where the API takes a
+// Products: the catalogue (products/products.json), published into the storefront on every change. A physical product,
+// and a digital one with its file, is also a good of the business's org: its product file (products/<id>.product.tsx),
+// which the Drive indexes. Its buyers pay through the one cart checkout into the business's own Stripe account
+// (Connect) and return to the storefront. A digital good sells to a guest where the API takes a
 // guest's email for it, and any good only where the API's store is open to guests (`guestCheckout`); elsewhere, and for
 // any other kind, the storefront takes orders by email.
 // Pictures come from the Studio's library, the brand folder or an upload; the storefront shows them sized for the web.
-import { publishStorefront } from '/lib/business.js';
-import { folderOf } from '/lib/business.js';
+import { publishStorefront, bizDrive, bizAccount, productFile } from '/lib/business.js';
 import { guestCheckout, sellable, isImage, storefrontUrl } from '/lib/storefront.js';
-import { payments, goods, drive } from '/lib/api.js';
+import { goods } from '/lib/api.js';
+import { PATHS } from '/lib/schema.js';
 import { $, $$, esc, icon, toast, modal, confirm, money, oops, busy, soon } from '/lib/ui.js';
-import { head, section, productsOf, writeProducts, ordersOf, iconBtn, empty, swatch } from './_shared.js';
+import { head, section, productsOf, writeProducts, ordersOf, iconBtn, empty, swatch, payoutsOf, payoutsCard, bindPayouts } from './_shared.js';
 
 const TYPES = ['digital', 'service', 'subscription', 'physical', 'hardware', 'course', 'other'];
 /** The kinds the checkout sells as a shipped good. */
@@ -19,38 +20,38 @@ const DOWNLOADS = new Set(['digital', 'course']);
 /** The kinds whose checkout opens soon; they take orders by email today. A recurring price is a subscription. */
 const CHECKOUT_SOON = new Set(['subscription', 'service']);
 const checkoutSoon = p => CHECKOUT_SOON.has(p.type) || !!p.recurring;
-/** Where the pictures a founder can choose live, in the business's folder. */
+/** Where the pictures a founder can choose live, in the business's Drive. */
 const PICTURE_DIRS = ['studio', 'products/images', 'brand'];
 
 /** A picture's thumbnail (a blob URL: the Drive needs the bearer), kept for the visit. */
 const thumbs = new Map();
-const thumbOf = path => { if (!thumbs.has(path)) thumbs.set(path, drive.readBlobPath(path).then(b => b ? URL.createObjectURL(b) : null).catch(() => null)); return thumbs.get(path); };
+const thumbOf = (biz, path) => { if (!thumbs.has(path)) thumbs.set(path, bizDrive(biz).readBlobPath(path).then(b => b ? URL.createObjectURL(b) : null).catch(() => null)); return thumbs.get(path); };
 
 /**
  * The picture chooser inside a form: the business's pictures as toggles (the order chosen is the order shown; the
  * first is the cover) and an upload. `chosen` is the product's `images` and is changed in place.
  */
 async function pictures(root, biz, chosen) {
-  const base = folderOf(biz.slug);
-  const lists = await Promise.all(PICTURE_DIRS.map(d => drive.list(`${base}/${d}`).then(fs => fs.filter(f => f.type !== 'folder' && isImage(f)).map(f => ({ path: `${base}/${d}/${f.name}`, name: f.name, at: Date.parse(f.updatedAt ?? f.createdAt ?? '') || 0 }))).catch(() => [])));
+  const drive = bizDrive(biz);
+  const lists = await Promise.all(PICTURE_DIRS.map(d => drive.list(d).then(fs => fs.filter(f => f.type !== 'folder' && isImage(f)).map(f => ({ path: `${d}/${f.name}`, name: f.name, at: Date.parse(f.updatedAt ?? f.createdAt ?? '') || 0 }))).catch(() => [])));
   const all = lists.flat().sort((a, b) => b.at - a.at);
   for (const c of chosen) if (!all.some(f => f.path === c.path)) all.unshift({ path: c.path, name: c.path.split('/').pop() });
   const grid = $('.pick-grid', root), count = $('.pick-count', root);
   const paint = () => {
     grid.innerHTML = all.length ? all.slice(0, 48).map(f => { const n = chosen.findIndex(c => c.path === f.path); return `<button type="button" class="pick" data-path="${esc(f.path)}" aria-pressed="${n >= 0}" aria-label="${esc(f.name)}" title="${esc(f.name)}"><img alt="" data-thumb="${esc(f.path)}">${n >= 0 ? `<b>${n + 1}</b>` : ''}</button>`; }).join('') : '<p class="muted">No pictures yet. Make some in Studio, or upload one.</p>';
     count.textContent = chosen.length ? `${chosen.length} chosen; the first is the cover.` : 'None chosen: the storefront shows your brand colours.';
-    $$('[data-thumb]', grid).forEach(async img => { const u = await thumbOf(img.dataset.thumb); if (u) img.src = u; });
+    $$('[data-thumb]', grid).forEach(async img => { const u = await thumbOf(biz, img.dataset.thumb); if (u) img.src = u; });
     $$('.pick', grid).forEach(b => b.onclick = () => { const i = chosen.findIndex(c => c.path === b.dataset.path); if (i >= 0) chosen.splice(i, 1); else chosen.push({ path: b.dataset.path }); paint(); });
   };
   $('.pick-upload', root).onchange = async e => {
     const files = [...e.target.files].filter(f => /^image\//.test(f.type));
     if (!files.length) return;
-    await drive.mkdir(`${base}/products`, 'images').catch(() => null);
+    await drive.mkdir(PATHS.products, 'images').catch(() => null);
     for (const f of files) {
       try {
         const name = f.name.replace(/[^\w.-]+/g, '-');
-        await drive.write(`${base}/products/images`, name, f, f.type);
-        const path = `${base}/products/images/${name}`;
+        await drive.write(PATHS.productImages, name, f, f.type);
+        const path = `${PATHS.productImages}/${name}`;
         thumbs.set(path, Promise.resolve(URL.createObjectURL(f)));
         all.unshift({ path, name, at: Date.now() });
         if (!chosen.some(c => c.path === path)) chosen.push({ path });
@@ -72,18 +73,18 @@ export async function render(ctx) {
     if (!p.goodId) return;
     const status = want === 'active' && !ready ? 'draft' : want;
     if (p.goodStatus === status) return;
-    try { p.goodStatus = (await goods.update(p.goodId, { status })).status ?? status; } catch (e) { toast(`${p.name}: ${oops(e)}`, 'bad'); }
+    try { p.goodStatus = (await goods.update(bizAccount(biz), p.goodId, { status })).status ?? status; } catch (e) { toast(`${p.name}: ${oops(e)}`, 'bad'); }
   };
   // A republish the first paint owes runs after the tab is drawn: the founder sees the products, then the toast.
   let republishLater = false;
   const paint = async () => {
-    const [products, orders, readiness] = await Promise.all([productsOf(biz), ordersOf(biz), payments.readiness().catch(() => ({ ready: false, blocks: ['unreadable'] }))]);
+    const [products, orders, readiness] = await Promise.all([productsOf(biz), ordersOf(biz), payoutsOf(biz)]);
     const ready = !!readiness.ready;
     // A product the co-founder wrote as a product file (`file`) is linked to the good the Drive indexed from it.
     const unlinked = products.filter(p => p.file && !p.goodId);
     if (unlinked.length) {
       const bare = s => String(s ?? '').replace(/^\/+/, '');
-      const all = await goods.list().catch(() => []);
+      const all = await goods.list(bizAccount(biz)).catch(() => []);
       let linked = 0;
       for (const p of unlinked) {
         const g = all.find(g => g.file && bare(g.file) === bare(p.file));
@@ -115,11 +116,12 @@ export async function render(ctx) {
     const shop = storefrontUrl(biz);
     const sells = p => sellable(p, can);
     el.innerHTML = head('Products', 'What your storefront sells. Every change publishes the storefront again.')
-      + (ready ? '' : `<div class="note warn" id="payments-needed"><b>Connect payouts to take payment.</b> Your customers pay through the checkout into your own Stripe account. Until you connect it in <a href="${esc(ctx.tabHref('settings'))}">Settings</a>, the storefront takes orders by email. Nothing is charged.</div>`)
+      + (ready ? '' : `<div id="payments-needed">${payoutsCard(biz, readiness)}</div>`)
       + (products.length ? `<div id="product-list" class="list">${products.map(p => `<div class="product" data-id="${esc(p.id)}">${p.images?.length ? `<img class="thumb" alt="" data-thumb="${esc(p.images[0].path)}">` : swatch(biz.brand)}<div><b>${esc(p.name)}</b> <span class="badge ${p.status === 'active' ? 'ok' : ''}">${esc(p.status)}</span> ${sold(p)}<div class="meta">${[`${p.priceLabel ?? ''}${p.recurring ? ` / ${p.interval}` : ''}`, p.type ?? (p.goodKind === 'digital' ? 'digital' : ''), p.images?.length ? `${p.images.length} ${p.images.length === 1 ? 'picture' : 'pictures'}` : '', p.description ?? p.tagline ?? ''].filter(Boolean).map(esc).join(' · ')}</div></div><div class="acts">${shop && p.status === 'active' ? `<a class="btn icon" data-open-page target="_blank" rel="noopener" href="${esc(`${shop}/product/${encodeURIComponent(p.id)}.html`)}" aria-label="Open its page" data-tip="Open its page">${icon('external')}</a>` : ''}${sells(p) && shop ? `<a class="btn sm quiet" data-open-checkout target="_blank" rel="noopener" href="${esc(`${shop}/checkout.html?p=${encodeURIComponent(p.id)}`)}">Open checkout</a>` : ''}${iconBtn('image', 'Pictures', 'data-images')}${p.status === 'active' ? iconBtn('pause', 'Archive', 'data-archive') : iconBtn('play', 'Activate', 'data-activate')}${iconBtn('trash', 'Remove', 'data-remove')}</div></div>`).join('')}</div>` : `<div id="product-list">${empty('No products yet', 'Add the first offer. The storefront shows it the moment it is active.', '<button type="button" class="btn primary" data-press="#add-product">Add your first product</button>')}</div>`)
       + section('Subscriptions', `<div class="grid-4">${[['Active', subs.length, 'recurring products'], ['Orders', orders.length, 'all time'], ['Needs attention', 0, ''], ['Ending soon', 0, '']].map(([l, v, s]) => `<div class="kpi"><b>${esc(String(v))}</b><span>${esc(l)}</span>${s ? `<small>${esc(s)}</small>` : ''}</div>`).join('')}</div>`)
       + `<p class="hint">A physical product sells through the checkout: the buyer pays on Stripe's page, the money goes to your Stripe account less a 0.5% fee, and the buyer comes back to your storefront. A digital product with its file sells the same way and the buyer gets a download link by email${guestDigital === true ? '' : ', once CommandAGI\'s checkout sells downloads to guests (until then it is ordered by email)'}. Other kinds take orders by email. Each product has its own page on the storefront.</p>`;
-    $$('[data-thumb]', el).forEach(async img => { const u = await thumbOf(img.dataset.thumb); if (u) img.src = u; });
+    $$('[data-thumb]', el).forEach(async img => { const u = await thumbOf(biz, img.dataset.thumb); if (u) img.src = u; });
+    bindPayouts(el, biz);
     const byId = id => products.find(p => p.id === id);
     const setStatus = async (p, status) => { p.status = status; await syncGood(p, status === 'active' ? 'active' : 'archived', ready); await writeProducts(biz, products); await paint(); await republish(); };
     $$('[data-archive]', el).forEach(b => b.onclick = () => setStatus(byId(b.closest('.product').dataset.id), 'archived'));
@@ -165,23 +167,28 @@ export async function render(ctx) {
       await busy($('#create-product', m.el), async () => {
         try {
           if (k === 'physical' || file) {
-            // The good is a draft until the founder's payouts are ready: a good goes live only for a seller who can be paid.
-            const ready = !!(await payments.readiness().catch(() => ({ ready: false }))).ready;
+            // The good is its product file in the business's Drive, which the Drive indexes as a good of the org: a
+            // draft until the business's payouts are ready (a good goes live only for a seller who can be paid).
+            const ready = !!(await payoutsOf(biz)).ready;
             try {
-              const variant = { sku: `${biz.slug}-${p.id}`.toUpperCase().slice(0, 80), name: k === 'physical' ? 'Standard' : 'Download', priceCents: Math.round(price * 100) };
-              const body = { name: p.name, description: p.description || undefined, kind: k, status: ready && p.status === 'active' ? 'active' : 'draft' };
-              if (k === 'physical') Object.assign(body, { shipping: { zones: [{ rule: 'flat', countries: ['US'], amountCents: Math.round((Number(f.shipping.value) || 0) * 100) }] }, variants: [{ ...variant, inventoryQty: -1 }] });
-              else {
-                // The file sold is the founder's own Drive file; the good names it by its path.
-                const dir = `${folderOf(biz.slug)}/products/files`;
-                await drive.mkdir(`${folderOf(biz.slug)}/products`, 'files').catch(() => null);
+              const drive = bizDrive(biz);
+              let sold = null;
+              if (k === 'digital') {
+                await drive.mkdir(PATHS.products, 'files').catch(() => null);
                 const name = file.name.replace(/[^\w.-]+/g, '-');
-                await drive.write(dir, name, file, file.type || 'application/octet-stream');
-                Object.assign(body, { variants: [{ ...variant, file: `${dir}/${name}` }] });
-                p.download = `${dir}/${name}`;
+                await drive.write(PATHS.productFiles, name, file, file.type || 'application/octet-stream');
+                sold = `./files/${name}`;
+                p.download = `${PATHS.productFiles}/${name}`;
               }
-              const good = await goods.create(body);
-              Object.assign(p, { goodId: good.id, variantId: good.variants?.[0]?.id ?? null, goodStatus: good.status, goodKind: good.kind ?? k });
+              const fileName = `${p.id}.product.tsx`;
+              const written = await drive.write(PATHS.products, fileName, productFile({ name: p.name, slug: `${biz.slug}-${p.id}`.slice(0, 80), kind: k, status: ready && p.status === 'active' ? 'active' : 'draft', description: p.description, sku: `${biz.slug}-${p.id}`.toUpperCase().slice(0, 80), priceCents: Math.round(price * 100), shippingCents: Math.round((Number(f.shipping.value) || 0) * 100), file: sold }), 'text/plain');
+              p.file = `${PATHS.products}/${fileName}`;
+              // The index answers with the file's write; a refusal (a slug or a SKU taken, a file it cannot read) leaves
+              // no good, and the product takes orders by email.
+              const bare = s => String(s ?? '').replace(/^\/+/, '');
+              const good = (await goods.list(bizAccount(biz)).catch(() => [])).find(g => bare(g.file) === p.file);
+              if (good) Object.assign(p, { goodId: good.id, variantId: good.variants?.[0]?.id ?? null, goodStatus: good.status, goodKind: good.kind ?? k });
+              else toast(`Saved for orders by email; the checkout did not take it yet${written?.index?.error ? ` (${written.index.error})` : ''}.`, 'bad');
             } catch (err) { toast(`Saved for orders by email; the checkout refused it: ${oops(err)}`, 'bad'); }
           }
           const products = await productsOf(biz); products.push(p); await writeProducts(biz, products); m.close(); toast('Product added.', 'ok'); await paint(); await republish();

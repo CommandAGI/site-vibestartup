@@ -1,8 +1,9 @@
 // Studio: make (pictures from a description, and clips, shorts and launch films, through CommandAGI's generate
 // route), this month's budget, the library, the brand book and the formats with their credit ranges. The video
 // pipeline and its jobs are ./_video.js.
-import { drive, generate } from '/lib/api.js';
-import { folderOf, readBizJson } from '/lib/business.js';
+import { generate } from '/lib/api.js';
+import { bizDrive, readBizJson } from '/lib/business.js';
+import { PATHS } from '/lib/schema.js';
 import { $, $$, esc, icon, toast, oops, busy, ago, bytes } from '/lib/ui.js';
 import { head, section, productsOf, settingsOf, writeSettings, empty, iconBtn, bars } from './_shared.js';
 import { CLIP_SECONDS, CLIP_CREDITS, FRAME_CREDITS, startJob, jobsOf, onJobs, recover, retry, stillsOf, estimate, label } from './_video.js';
@@ -27,7 +28,7 @@ export async function render(ctx) {
   const hp = new URLSearchParams(location.hash.replace(/^#/, ''));
   const qp = new URLSearchParams(location.search);
   const state = { view: hp.get('view') || qp.get('view') || 'make', format: lastFormat, look: LOOKS[0], count: 2 };
-  const studioPath = `${folderOf(biz.slug)}/studio`;
+  const studioPath = PATHS.studio, drive = bizDrive(biz);
   const paint = async () => {
     el.innerHTML = head('Studio', 'Everything your co-founder makes for you, and everything you make yourself.')
       + `<div class="subtabs" id="studio-tabs">${VIEWS.map(([id, l]) => `<button type="button" data-view="${id}" aria-pressed="${state.view === id}">${l}</button>`).join('')}</div><div id="studio-view">${bars(1)}</div>`;
@@ -55,7 +56,7 @@ export async function render(ctx) {
           try {
             const full = `${prompt}. ${state.look !== 'Up to you' ? `Look: ${state.look}. ` : ''}Brand colours ${biz.brand?.primary}, ${biz.brand?.secondary}. ${f.id === 'offer' ? 'An offer image for a storefront, product centred, room for a short line of text.' : ''}`;
             // The route keeps the folders of a name (it has no `path` field), so the full path puts it in studio/.
-            const r = await generate({ modelId: 'text-to-image.flux-schnell', inputs: { prompt: full }, name: `${studioPath}/${f.id}-${Date.now().toString(36)}-${i + 1}.png` });
+            const r = await generate({ modelId: 'text-to-image.flux-schnell', inputs: { prompt: full }, name: `${studioPath}/${f.id}-${Date.now().toString(36)}-${i + 1}.png`, org: biz.org });
             const file = r.file ?? r;
             const url = file?.id ? await drive.blobUrl(file.id) : null;
             out.insertAdjacentHTML('beforeend', `<div class="piece card">${url ? `<img src="${url}" alt="">` : ''}<b>${esc(file?.name ?? 'made')}</b><small class="hint">in your library</small></div>`);
@@ -187,8 +188,8 @@ export async function render(ctx) {
     }
   };
   const brand = async v => {
-    const b = (await readBizJson(biz.slug, 'brand/brand-book.json', null)) ?? biz.brand ?? {};
-    const logo = await drive.find(`${folderOf(biz.slug)}/brand`, 'logo.svg').catch(() => null);
+    const b = (await readBizJson(biz, PATHS.brandBook, null)) ?? biz.brand ?? {};
+    const logo = await drive.find('brand', 'logo.svg').catch(() => null);
     const logoUrl = logo ? await drive.blobUrl(logo.id) : null;
     v.innerHTML = `<div id="brand-book" class="grid-2"><div class="panel stack"><h3>Colours</h3><div class="row">${['primary', 'secondary', 'accent', 'ground', 'ink'].map(k => `<div class="stack" style="gap:4px;text-align:center"><i style="display:block;width:56px;height:56px;border:1px solid var(--line);background:${esc(b[k] ?? '#ccc')}"></i><small class="hint">${k}</small></div>`).join('')}</div><h3>Type</h3><p class="muted">${esc(b.type ?? '')}</p><h3>Voice</h3><p class="muted">${esc((b.voice ?? []).join(', '))}</p><p class="hint">${esc(b.generated ? 'Generated ' + b.generated + '. Ask your co-founder for a designed kit.' : '')}</p></div><div class="panel stack"><h3>Logo</h3>${logoUrl ? `<img src="${logoUrl}" alt="${esc(biz.name)} mark" width="96" height="96">` : '<p class="muted">No logo file yet.</p>'}<p class="hint">brand/logo.svg in your files.</p></div></div>`;
   };

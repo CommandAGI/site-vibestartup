@@ -1,27 +1,30 @@
-// Files: the co-founder's memory and the business's folder as files, grouped; search, upload, preview, copy. A group's
+// Files: the co-founder's memory and the business's Drive as files, grouped; search, upload, preview, copy. A group's
 // view (`#tab=files&view=<key>`, the last field of GROUPS; app/levels.js lists the same keys) shows that group alone.
-import { drive } from '/lib/api.js';
-import { folderOf } from '/lib/business.js';
+// The lens shows the business's own folders only (lib/schema.js `shown`): never .commandagi/, agents/, runs/ or
+// Sites/. The whole org opens in CommandAGI from the one link here.
+import { bizDrive } from '/lib/business.js';
+import { shown, workbenchHref } from '/lib/schema.js';
 import { $, $$, esc, icon, toast, copy, ago, bytes, oops } from '/lib/ui.js';
 import { head, section, empty, iconBtn } from './_shared.js';
 
 const GROUPS = [
-  ['Identity', ['cofounder/SOUL.md', 'cofounder/BUSINESS.md', 'cofounder/OWNER.md'], 'its personality and voice, the business, the owner', 'identity'],
-  ['Operations', ['cofounder/PLAYBOOK.md', 'cofounder/PLATFORM.md'], 'the playbook, the platform', 'operations'],
-  ['Evolving', ['cofounder/MEMORY.md', 'cofounder/CODEMAP.md'], 'working memory, the code map', 'evolving'],
-  ['Other', ['cofounder/SUPPORT.md', 'business.json', 'settings.json'], 'support, the record', 'other'],
+  ['Identity', ['SOUL.md', 'BUSINESS.md', 'OWNER.md'], 'its personality and voice, the business, the owner', 'identity'],
+  ['Operations', ['PLAYBOOK.md', 'SUPPORT.md'], 'the playbook, how customers are answered', 'operations'],
+  ['Evolving', ['MEMORY.md'], 'working memory', 'evolving'],
+  ['Other', ['business.json', 'storefront.json'], 'the record, the storefront', 'other'],
   ['Creative assets', ['studio/', 'brand/'], 'everything made, and the brand', 'assets'],
 ];
 
 export async function render(ctx) {
   const { biz, el, actions } = ctx;
-  const root = folderOf(biz.slug);
+  const drive = bizDrive(biz);
   actions.innerHTML = `<label class="btn icon" for="file-upload" aria-label="Upload" data-tip="Upload">${icon('upload')}<input id="file-upload" type="file" hidden></label>`;
   const all = new Map();
   const walk = async (rel, depth = 0) => {
-    const list = await drive.list(rel ? `${root}/${rel}` : root).catch(() => []);
+    const list = await drive.list(rel).catch(() => []);
     for (const f of list) {
       const path = rel ? `${rel}/${f.name}` : f.name;
+      if (!shown(f.type === 'folder' ? `${path}/` : path)) continue;
       all.set(path, { ...f, rel: path, folder: f.type === 'folder' });
       if (f.type === 'folder' && depth < 2 && f.name !== 'Tasks') await walk(path, depth + 1);
     }
@@ -41,7 +44,7 @@ export async function render(ctx) {
     const view = GROUPS.some(g => g[3] === ctx.view) ? ctx.view : null;
     const grouped = GROUPS.filter(g => !view || g[3] === view).map(([name, paths, about]) => { const items = matches.filter(f => paths.some(p => p.endsWith('/') ? f.rel.startsWith(p) : f.rel === p)); return items.length ? `<div class="group"><h4>${esc(name)} <small class="hint">${esc(about)}</small></h4>${items.map(row).join('')}</div>` : ''; }).join('');
     const rest = matches.filter(f => !GROUPS.some(([, paths]) => paths.some(p => p.endsWith('/') ? f.rel.startsWith(p) : f.rel === p)));
-    el.innerHTML = head('Files', 'Your co-founder\'s memory as plain files you can read, and everything else of the business. Businesses/' + esc(biz.slug) + '/ in your Drive.')
+    el.innerHTML = head('Files', 'Your co-founder\'s memory as plain files you can read, and everything else of the business.', `<a class="btn sm quiet" href="${esc(workbenchHref(biz.org))}" target="_blank" rel="noopener" id="open-in-commandagi">${icon('external', 14)} Open in CommandAGI</a>`)
       + `<label class="field" style="margin-bottom:16px"><span class="sr-only">Search</span><input id="file-search" placeholder="Search names and contents" value="${esc(state.q)}"></label>
         <div class="files-layout"><div id="file-groups">${grouped}${rest.length && !view ? `<div class="group"><h4>Everything else</h4>${rest.map(row).join('')}</div>` : ''}${matches.length && (grouped || !view) ? '' : empty('Nothing here', state.q ? 'Nothing matches.' : view ? 'No files in this group yet.' : 'The folder is empty.')}</div><div class="panel" id="file-preview-wrap"><h4 id="file-preview-name">Preview</h4><div id="file-preview" class="muted">Open a file to read it.</div></div></div>`;
     let t; $('#file-search', el).oninput = e => { clearTimeout(t); t = setTimeout(() => { state.q = e.target.value; paint(); }, 250); };
@@ -60,6 +63,6 @@ export async function render(ctx) {
       else { const text = await drive.readText(f.id); box.textContent = text.slice(0, 100000); }
     } catch (e) { box.textContent = oops(e); }
   };
-  $('#file-upload').onchange = async e => { const file = e.target.files[0]; if (!file) return; try { await drive.write(root, file.name, file, file.type); toast('Uploaded.', 'ok'); await paint(); } catch (err) { toast(oops(err), 'bad'); } };
+  $('#file-upload').onchange = async e => { const file = e.target.files[0]; if (!file) return; try { await drive.write('', file.name, file, file.type); toast('Uploaded.', 'ok'); await paint(); } catch (err) { toast(oops(err), 'bad'); } };
   await paint();
 }

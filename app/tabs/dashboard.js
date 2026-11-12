@@ -1,20 +1,22 @@
 // Dashboard: the launch week, what needs your call, the inbox's last mails, money (real sales only), autopilot, and
 // the cards for the site, the brand kit, the library, tasks, the runtime, the checkout test and the blueprint.
-import { email, threads, drive } from '/lib/api.js';
-import { LAUNCH_WEEK, launchDay, writeBusiness, folderOf } from '/lib/business.js';
+import { email, threads } from '/lib/api.js';
+import { LAUNCH_WEEK, launchDay, writeBusiness, bizDrive } from '/lib/business.js';
+import { PATHS } from '/lib/schema.js';
 import { $, $$, esc, icon, toast, money, ago, oops } from '/lib/ui.js';
-import { head, section, bizTasks, isApproval, ordersOf, realSales, siteState, askLink, empty } from './_shared.js';
+import { head, section, bizTasks, isApproval, ordersOf, realSales, siteState, askLink, empty, payoutsOf, payoutsCard, bindPayouts } from './_shared.js';
 
 export async function render(ctx) {
   const { biz, el } = ctx;
   const day = launchDay(biz);
-  const [tasksAll, orders, st] = await Promise.all([bizTasks(biz), ordersOf(biz), siteState(biz)]);
+  const [tasksAll, orders, st, payouts] = await Promise.all([bizTasks(biz), ordersOf(biz), siteState(biz), payoutsOf(biz)]);
   const needs = tasksAll.filter(t => isApproval(t) && t.status === 'todo');
   const sales = realSales(orders);
   let mails = [];
   if (biz.email?.id) mails = ((await email.threads(biz.email.id, { limit: 3 }).catch(() => ({ threads: [] }))).threads ?? []).slice(0, 3);
-  const studio = (await drive.list(`${folderOf(biz.slug)}/studio`).catch(() => [])).filter(f => f.type !== 'folder');
+  const studio = (await bizDrive(biz).list(PATHS.studio).catch(() => [])).filter(f => f.type !== 'folder');
   el.innerHTML = head(biz.name, day <= 7 ? `Day ${day} of 7: ${LAUNCH_WEEK[day - 1].title}.` : 'Launch week is complete.', `<label class="switch" id="autopilot-wrap"><input type="checkbox" id="autopilot" ${biz.autopilot ? 'checked' : ''}><i></i><span>Autopilot ${biz.autopilot ? 'on' : 'off'}</span></label>`)
+    + payoutsCard(biz, payouts)
     + section('Launch week', `<ol class="week" id="launch-week">${LAUNCH_WEEK.map(d => `<li data-day="${d.day}" class="${d.day === day ? 'today' : d.day < day ? 'done' : ''}"><i>Day ${d.day}</i><b>${esc(d.title)}</b><small class="hint">${esc(d.about)}</small></li>`).join('')}</ol>`)
     + `<div class="grid-2">`
     + section('Needs your call', needs.length ? `<div id="needs-call" class="list">${needs.map(t => `<div class="task"><span class="glyph">${esc(t.glyph ?? '!')}</span><div><b>${esc(t.title)}</b><div class="meta">${esc(ago(t.createdAt ?? Date.now()))}</div></div><div class="acts"><a class="btn sm quiet" href="${esc(ctx.tabHref('chat'))}">Decide in chat</a></div></div>`).join('')}</div>` : `<div id="needs-call" class="note">Nothing waits on you right now.</div>`)
@@ -39,6 +41,7 @@ export async function render(ctx) {
       toast(`Autopilot ${on ? 'on' : 'off'}.`, 'ok');
     } catch (err) { toast(oops(err), 'bad'); e.target.checked = !on; }
   };
+  bindPayouts(el, biz);
   $$('.thread', el).forEach(t => t.onclick = () => { location.hash = `tab=email&thread=${encodeURIComponent(t.dataset.tid)}`; });
 }
 const card = (ico, title, text, href, external = false) => `<a class="card link" href="${esc(href)}" ${external ? 'target="_blank" rel="noopener"' : ''}><div class="row">${icon(ico)}<h4>${esc(title)}</h4></div><p class="meta">${esc(text)}</p></a>`;

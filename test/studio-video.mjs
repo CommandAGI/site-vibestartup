@@ -48,8 +48,9 @@ async function run(b) {
   const before = await b.eval(`(async () => {
     const m = await import('/lib/api.js');
     await m.setProfile({ birthdate: '1990-05-05' }).catch(() => null);
-    await m.drive.ensure('Businesses/${slug}');
-    await m.drive.writeJson('Businesses/${slug}', 'business.json', { slug: '${slug}', name: 'Clip Test Co', tagline: 'Lemonade, made slowly.', brand: { primary: '#d9480f', secondary: '#ffd8a8' }, createdAt: Date.now() });
+    const org = (await m.orgs.create({ name: 'Clip Test Co', handle: '${slug}' })).org;
+    await m.drive.forAccount(org).writeJson('', 'business.json', { slug: '${slug}', tagline: 'Lemonade, made slowly.', createdAt: Date.now() });
+    await m.drive.forAccount(org).writeJson('brand', 'brand-book.json', { primary: '#d9480f', secondary: '#ffd8a8' });
     return m.credits();
   })()`);
   check(typeof before === 'number', `the account has a balance (${before} credits)`);
@@ -71,7 +72,7 @@ async function run(b) {
   check(true, `the render started as job ${id} (${at()})`);
   await sleep(20000);
   check(/elapsed/.test(await b.text('#studio-jobs .job')), `the job shows its step and elapsed time: "${(await b.text('#studio-jobs .job [data-step]').catch(() => '')).trim()}"`);
-  const record = await b.eval(`(async () => { const m = await import('/lib/api.js'); return m.drive.readJsonPath('Businesses/${slug}/studio/jobs', '${id}.json'); })()`);
+  const record = await b.eval(`(async () => { const m = await import('/lib/api.js'); return m.drive.forAccount('org-${slug}').readJsonPath('studio/jobs', '${id}.json'); })()`);
   check(record?.state === 'rendering' && record.parts?.length === 1, `the job is recorded in studio/jobs/${id}.json (state ${record?.state}, step "${record?.step}")`);
   await b.shot('studio-video-rendering');
 
@@ -83,7 +84,7 @@ async function run(b) {
   check(true, `after a tab switch the job is still shown (${await b.eval(`document.querySelector('#studio-jobs .job[data-id="${id}"]').dataset.state`)})`);
 
   await b.waitFor(`['done','failed','interrupted'].includes(document.querySelector('#studio-jobs .job[data-id="${id}"]')?.dataset.state)`, 10 * 60 * 1000);
-  const final = await b.eval(`(async () => { const m = await import('/lib/api.js'); return m.drive.readJsonPath('Businesses/${slug}/studio/jobs', '${id}.json'); })()`);
+  const final = await b.eval(`(async () => { const m = await import('/lib/api.js'); return m.drive.forAccount('org-${slug}').readJsonPath('studio/jobs', '${id}.json'); })()`);
   console.log(`job after ${at()}: ${JSON.stringify({ state: final.state, step: final.step, error: final.error, file: final.file, parts: final.parts, charged: final.charged, creditsBefore: final.creditsBefore, creditsAfter: final.creditsAfter })}`);
   await b.shot('studio-video-done');
   if (!check(final.state === 'done', `the short is done (${final.state}${final.error ? `: ${final.error}` : ''}) in ${Math.round((final.updatedAt - final.startedAt) / 1000)} s`)) return;

@@ -53,12 +53,12 @@ async function run(b) {
   // 2. A business: its co-founder thread and its record, as lib/business.js writes them.
   const slug = `hire-${stamp}`;
   const made = JSON.parse(await b.eval(`(async () => {
-    const { threads, drive, whoami } = await import('/lib/api.js');
+    const { threads, drive, orgs, whoami } = await import('/lib/api.js');
     const me = await whoami();
-    const t = await threads.create({ title: 'Hire test', agentName: 'Mae', systemPrompt: 'You are a test co-founder. Answer in one line.', intent: 'Wait for the founder.', surface: 'vibestartup', reality: 'simulation' });
-    const biz = { slug: '${slug}', name: 'Hire test ${stamp}', idea: 'A test business for hiring the co-founder', cofounder: { name: 'Mae', threadId: t.threadId }, createdAt: Date.now() };
-    await drive.ensure('Businesses/${slug}');
-    await drive.writeJson('Businesses/${slug}', 'business.json', biz);
+    const org = (await orgs.create({ name: 'Hire test ${stamp}', handle: '${slug}' })).org;
+    const t = await threads.create({ ownerScope: org, title: 'Hire test', agentName: 'Mae', systemPrompt: 'You are a test co-founder. Answer in one line.', intent: 'Wait for the founder.', surface: 'vibestartup', reality: 'simulation' });
+    const biz = { slug: '${slug}', idea: 'A test business for hiring the co-founder', cofounder: { name: 'Mae', threadId: t.threadId }, createdAt: Date.now() };
+    await drive.forAccount(org).writeJson('', 'business.json', biz);
     return JSON.stringify({ userId: me.id, threadId: t.threadId });
   })()`));
   check(!!made.threadId, `a business with a co-founder thread (${made.threadId})`);

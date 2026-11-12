@@ -8,8 +8,9 @@
 // switch, a reload or another device shows where it is. A job runs in this page (the module stays loaded across tab
 // switches). After a reload the request is gone with the page: the job waits for the clip it asked for (the platform
 // may still save it), then says it was interrupted. A paid step is never sent again without the founder asking.
-import { drive, generate, credits } from '/lib/api.js';
-import { folderOf } from '/lib/business.js';
+import { drive as founderDrive, generate, credits } from '/lib/api.js';
+import { bizDrive } from '/lib/business.js';
+import { PATHS } from '/lib/schema.js';
 import { toast, oops } from '/lib/ui.js';
 
 export const CLIP_SECONDS = 5;
@@ -22,7 +23,7 @@ const CLIP_DEADLINE = 7 * 60 * 1000;
 const FRAME_SIZE = { '9:16': 'portrait_16_9', '1:1': 'square_hd', '16:9': 'landscape_16_9' };
 const RATIO = { '9:16': 9 / 16, '1:1': 1, '16:9': 16 / 9 };
 
-export const studioDir = biz => `${folderOf(biz.slug)}/studio`;
+export const studioDir = () => PATHS.studio;
 const jobsDir = biz => `${studioDir(biz)}/jobs`;
 
 // ---------- the jobs this page runs, and who wants to hear about them ----------
@@ -37,6 +38,7 @@ const stamp = () => new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '').
 const newId = format => `${format}-${stamp()}-${Math.random().toString(36).slice(2, 6)}`;
 
 async function record(biz, job, patch = {}) {
+  const drive = bizDrive(biz);
   Object.assign(job, patch, { updatedAt: Date.now() });
   emit(job);
   await drive.writeJson(jobsDir(biz), `${job.id}.json`, job).catch(() => null);
@@ -45,6 +47,7 @@ async function record(biz, job, patch = {}) {
 
 /** The business's recent jobs: this page's running ones as they are now, the rest as their files say. */
 export async function jobsOf(biz, limit = 12) {
+  const drive = bizDrive(biz);
   const files = (await drive.list(jobsDir(biz)).catch(() => [])).filter(f => f.name.endsWith('.json'))
     .sort((a, b) => (b.updatedAt ?? b.createdAt ?? 0) - (a.updatedAt ?? a.createdAt ?? 0)).slice(0, limit);
   const jobs = (await Promise.all(files.map(f => drive.readJson(f.id).catch(() => null)))).filter(Boolean);
@@ -55,8 +58,8 @@ export async function jobsOf(biz, limit = 12) {
 
 /** The images a clip or a film can start from: the studio's and the business's own pictures (not SVG). */
 export async function stillsOf(biz) {
-  const root = folderOf(biz.slug);
-  const lists = await Promise.all([studioDir(biz), `${root}/products`, root].map(p => drive.list(p).then(fs => fs.map(f => ({ ...f, at: p }))).catch(() => [])));
+  const drive = bizDrive(biz);
+  const lists = await Promise.all([studioDir(biz), PATHS.products, ''].map(p => drive.list(p).then(fs => fs.map(f => ({ ...f, at: p }))).catch(() => [])));
   const seen = new Set();
   return lists.flat().filter(f => f.type !== 'folder' && /^image\/(png|jpe?g|webp|gif)/.test(f.contentType ?? '') && !seen.has(f.id) && seen.add(f.id));
 }
@@ -76,14 +79,14 @@ async function framed(blob, aspect) {
 }
 
 async function blobOf(fileId) {
-  const r = await drive.read(fileId);
+  const r = await founderDrive.read(fileId);
   if (!r.ok) throw new Error('Could not read the picture from your files.');
   return r.blob();
 }
 
 /** Ask for a generated file by its full Drive path: the route keeps a name's folders (Drive `splitName`). */
-async function made(modelId, inputs, dir, name) {
-  const r = await generate({ modelId, inputs, name: `${dir}/${name}` });
+async function made(biz, modelId, inputs, dir, name) {
+  const r = await generate({ modelId, inputs, name: `${dir}/${name}`, org: biz.org });
   const file = r.file ?? r;
   if (!file?.id) throw new Error('The model answered without a file.');
   return { id: file.id, name: file.name, contentType: file.contentType, size: file.size };
@@ -192,6 +195,7 @@ export function startJob(biz, spec) {
 }
 
 async function run(biz, job) {
+  const drive = bizDrive(biz);
   const dir = studioDir(biz);
   try {
     await drive.ensure(jobsDir(biz));
@@ -204,13 +208,13 @@ async function run(biz, job) {
       let image;
       if (job.stills[i]) image = await framed(await blobOf(job.stills[i].id), job.aspect);
       else {
-        const frame = await made('text-to-image.flux-schnell', { prompt: `${job.direction}. A single photographic frame, no text.`, image_size: FRAME_SIZE[job.aspect] ?? 'portrait_16_9' }, dir, `${job.id}-frame.png`);
+        const frame = await made(biz, 'text-to-image.flux-schnell', { prompt: `${job.direction}. A single photographic frame, no text.`, image_size: FRAME_SIZE[job.aspect] ?? 'portrait_16_9' }, dir, `${job.id}-frame.png`);
         await record(biz, job, { frame });
         image = await framed(await blobOf(frame.id), job.aspect);
       }
       part.state = 'rendering'; part.startedAt = Date.now();
       await record(biz, job, { step: job.parts.length > 1 ? `Animating clip ${i + 1} of ${job.parts.length}` : 'Animating the clip' });
-      part.file = await made('image-to-video.kling', { image_url: image, prompt: job.direction }, dir, part.name);
+      part.file = await made(biz, 'image-to-video.kling', { image_url: image, prompt: job.direction }, dir, part.name);
       part.state = 'done';
       await record(biz, job);
     };
@@ -224,6 +228,7 @@ async function run(biz, job) {
 
 /** The steps after every clip is back: the caption or the stitch (in this page), then the credits it took. */
 async function finish(biz, job) {
+  const drive = bizDrive(biz);
   const dir = studioDir(biz);
   let file = job.parts[0].file;
   if (job.format === 'short' || job.format === 'film') {
@@ -246,6 +251,7 @@ export const label = job => ({ clip: 'clip', short: 'short video', film: 'launch
  * still come back, wait for it; past that, say it was interrupted. Never sends a paid step again.
  */
 export async function recover(biz, job) {
+  const drive = bizDrive(biz);
   if (job.state !== 'rendering' || running.has(job.id)) return job;
   running.set(job.id, job);
   try {

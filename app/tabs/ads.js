@@ -4,10 +4,10 @@
 // account meta/vibestartup-ads). Then: connect the ad account (Facebook Login for Business in a popup), choose it and
 // the Page, launch a PAUSED campaign whose daily budget is at most the plan's, approve going live, read the insights.
 // The bounds are the API's (CommandAGI routes/meta-ads.ts); this page only asks for them.
-import { api, drive, integrations, payments } from '/lib/api.js';
-import { readBizJson, writeBizJson, folderOf } from '/lib/business.js';
+import { api, integrations } from '/lib/api.js';
+import { readBizJson, writeBizJson, bizDrive, addressOf } from '/lib/business.js';
 import { $, $$, esc, icon, toast, money, when, oops, soonButton, modal, confirm, busy } from '/lib/ui.js';
-import { head, section, siteState, productsOf, ordersOf, realSales, settingsOf, notifyChip, bindNotify } from './_shared.js';
+import { head, section, siteState, productsOf, ordersOf, realSales, settingsOf, notifyChip, bindNotify, payoutsOf } from './_shared.js';
 
 const DEFAULT = { daily: 10, weeklyMax: 50, windowDays: 14, targetCps: 25, why: '', history: [], launched: false };
 const META = 'meta-ads';
@@ -35,8 +35,8 @@ export async function render(ctx) {
   const { biz, el, actions } = ctx;
   actions.innerHTML = `<button type="button" class="btn icon" id="ads-recheck" aria-label="Recheck plan" data-tip="Recheck plan">${icon('refresh')}</button>`;
   const paint = async () => {
-    const plan = { ...DEFAULT, ...(await readBizJson(biz.slug, 'ads/campaign.json', {})) };
-    const [st, products, orders, pay, ints, settings] = await Promise.all([siteState(biz), productsOf(biz), ordersOf(biz), payments.readiness().catch(() => ({ ready: false })), integrations.list().catch(() => ({ integrations: [] })), settingsOf(biz).catch(() => ({}))]);
+    const plan = { ...DEFAULT, ...(await readBizJson(biz, 'ads/campaign.json', {})) };
+    const [st, products, orders, pay, ints, settings] = await Promise.all([siteState(biz), productsOf(biz), ordersOf(biz), payoutsOf(biz), integrations.list().catch(() => ({ integrations: [] })), settingsOf(biz).catch(() => ({}))]);
     const sales = realSales(orders);
     const meta = (ints.integrations ?? []).find(i => i.id === META);
     // Ads open only where the platform says so. Anywhere else (production today) Launch is the Soon control.
@@ -71,11 +71,11 @@ export async function render(ctx) {
       + section('What each assumption rests on', `<table class="table"><tbody><tr><td>Daily budget</td><td>${esc(money(plan.daily))}</td><td><span class="badge">best guess</span> until the first week runs</td></tr><tr><td>Cost per sale</td><td>${esc(money(plan.targetCps))}</td><td><span class="badge">${sales.count ? 'good estimate' : 'best guess'}</span> ${sales.count ? 'from real sales' : 'no sales yet'}</td></tr><tr><td>Verified outcomes</td><td>0 sales traced to an ad</td><td><span class="badge">solid</span> only sales traced to an ad count</td></tr></tbody></table>`)
       + section('Decision history', plan.history.length ? `<div class="list">${plan.history.slice().reverse().map(h => `<div><b>${esc(h.what)}</b><div class="meta">${esc(when(h.at))}</div></div>`).join('')}</div>` : '<p class="muted">No decisions yet. The next review is after the first saved plan.</p>');
 
-    const decided = async what => { const p = { ...plan, ...(await readBizJson(biz.slug, 'ads/campaign.json', {})) }; p.history = [...(p.history ?? []), { at: Date.now(), what }]; await writeBizJson(biz.slug, 'ads/campaign.json', p); };
+    const decided = async what => { const p = { ...plan, ...(await readBizJson(biz, 'ads/campaign.json', {})) }; p.history = [...(p.history ?? []), { at: Date.now(), what }]; await writeBizJson(biz, 'ads/campaign.json', p); };
     $('#ads-plan', el).onsubmit = async e => {
       e.preventDefault(); const f = e.target;
       const next = { ...plan, daily: Number(f.daily.value) || 0, weeklyMax: Number(f.weeklyMax.value) || 0, windowDays: Number(f.windowDays.value) || 14, targetCps: Number(f.targetCps.value) || 0, why: f.why.value.trim(), history: [...plan.history, { at: Date.now(), what: `Plan saved: ${money(Number(f.daily.value) || 0)} a day, ${money(Number(f.weeklyMax.value) || 0)} a week at most` }], nextReview: Date.now() + 7 * 86400000 };
-      try { await writeBizJson(biz.slug, 'ads/campaign.json', next); toast('Plan saved.', 'ok'); await paint(); } catch (err) { toast(oops(err), 'bad'); }
+      try { await writeBizJson(biz, 'ads/campaign.json', next); toast('Plan saved.', 'ok'); await paint(); } catch (err) { toast(oops(err), 'bad'); }
     };
     bindNotify(el, biz);
     if (!open) return;
@@ -156,11 +156,11 @@ function bindCampaign(card, c, { decided, paint }) {
 }
 
 async function launchDialog({ biz, plan, st, onDone }) {
-  const studio = `${folderOf(biz.slug)}/studio`;
+  const studio = 'studio', drive = bizDrive(biz);
   const images = (await drive.list(studio).catch(() => [])).filter(f => IMAGE.test(f.name)).sort((a, b) => (b.updatedAt ?? b.createdAt ?? 0) - (a.updatedAt ?? a.createdAt ?? 0)).slice(0, 12);
   const m = modal(`<h2>Launch the campaign</h2><form id="launch-form" class="stack">`
     + `<p class="muted">It is made paused: nothing spends until you approve going live.</p>`
-    + `<div class="field"><span>Picture</span>${images.length ? `<div class="grid-auto" id="launch-images">${images.map((f, i) => `<label class="pick"><input type="radio" name="image" value="${esc(f.path ? `${f.path}/${f.name}` : f.name)}" ${i === 0 ? 'checked' : ''}><img alt="${esc(f.name)}" data-file="${esc(f.id)}" width="120" height="120"></label>`).join('')}</div>` : '<p class="note warn">No picture in the Studio yet. Make one in Studio, then come back.</p>'}</div>`
+    + `<div class="field"><span>Picture</span>${images.length ? `<div class="grid-auto" id="launch-images">${images.map((f, i) => `<label class="pick"><input type="radio" name="image" value="${esc(addressOf(biz, f.path ? `${f.path}/${f.name}` : f.name))}" ${i === 0 ? 'checked' : ''}><img alt="${esc(f.name)}" data-file="${esc(f.id)}" width="120" height="120"></label>`).join('')}</div>` : '<p class="note warn">No picture in the Studio yet. Make one in Studio, then come back.</p>'}</div>`
     + `<label class="field"><span>Caption</span><textarea name="caption" rows="3" required maxlength="2000">${esc(plan.why || `${biz.name}: see what is new.`)}</textarea></label>`
     + `<div class="grid-2"><label class="field"><span>Where it goes</span><input name="link" type="url" required value="${esc(st.url && /^https:/.test(st.url) ? st.url : '')}" placeholder="https://"></label><label class="field"><span>Daily budget (USD)</span><input name="daily" type="number" min="1" step="0.01" max="${esc(String(plan.daily))}" value="${esc(String(plan.daily))}"><small>At most the plan's ${esc(money(plan.daily))}.</small></label></div>`
     + `<div class="modal-actions"><button type="button" class="btn quiet" id="launch-cancel">Cancel</button><button class="btn primary" type="submit" id="launch-go" ${images.length ? '' : 'disabled'}>Make it, paused</button></div></form>`, { label: 'Launch the campaign' });
@@ -171,7 +171,7 @@ async function launchDialog({ biz, plan, st, onDone }) {
     const f = e.target, go = $('#launch-go', m.el);
     await busy(go, async () => {
       try {
-        const r = await api('/meta-ads/campaigns', { method: 'POST', body: { name: `${biz.name}: ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, dailyBudgetCents: Math.round(Number(f.daily.value) * 100), plan: `${folderOf(biz.slug)}/ads/campaign.json`, image: f.image.value, link: f.link.value.trim(), caption: f.caption.value.trim() } });
+        const r = await api('/meta-ads/campaigns', { method: 'POST', body: { name: `${biz.name}: ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, dailyBudgetCents: Math.round(Number(f.daily.value) * 100), plan: addressOf(biz, 'ads/campaign.json'), image: f.image.value, link: f.link.value.trim(), caption: f.caption.value.trim() } });
         m.close();
         toast(r.campaign.incomplete ? 'Meta stopped partway. See the campaign card.' : 'Made, paused. Approve it to go live.', r.campaign.incomplete ? 'bad' : 'ok');
         await onDone(r.campaign);

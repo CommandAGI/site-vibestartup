@@ -1,8 +1,8 @@
 // Email: the business's address (a CommandAGI mailbox), its folders and threads, reply, hand to the co-founder, compose.
-import { email, threads } from '/lib/api.js';
+import { email, threads, orgs } from '/lib/api.js';
 import { writeBusiness } from '/lib/business.js';
 import { $, $$, esc, icon, toast, modal, ago, when, oops, busy, slugify, soon, soonButton } from '/lib/ui.js';
-import { head, section, empty, iconBtn, bars, settingsOf, notifyChip, bindNotify } from './_shared.js';
+import { head, section, empty, iconBtn, bars } from './_shared.js';
 
 const FOLDERS = [['all', 'All'], ['inbox', 'Inbox'], ['unread', 'Unread'], ['sent', 'Sent'], ['drafts', 'Drafts']];
 
@@ -16,19 +16,10 @@ export async function render(ctx) {
   actions.innerHTML = `${iconBtn('edit', 'Compose', 'id="mail-compose"')}${iconBtn('refresh', 'Refresh', 'id="mail-refresh"')}`;
 
   if (!biz.email?.id) {
-    // An account has one CommandAGI address and its first business uses it: an address for each business opens soon.
-    const first = (ctx.businesses ?? []).find(b => b.slug !== biz.slug && b.email?.address);
-    if (first || /one CommandAGI address/.test(biz.gaps?.find(g => g.what === 'email')?.why ?? '')) {
-      const settings = await settingsOf(biz).catch(() => ({}));
-      el.innerHTML = head('Email', 'A business address of your own, where customers and the co-founder write.')
-        + `<div class="empty" id="mail-soon"><h3>An address for ${esc(biz.name)} ${soon()}</h3><p>Every business gets its own address. Today your mail runs from ${first ? `<b>${esc(first.address)}</b>` : 'your first business\'s address'}, or from your own domain in <a href="${esc(ctx.tabHref('settings'))}">Settings</a>.</p><div class="row">${soonButton('Claim an address', 'btn primary')}${notifyChip('email-address', settings.notify?.['email-address'])}</div></div>`;
-      bindNotify(el, biz);
-      return;
-    }
     el.innerHTML = head('Email', 'A business address of your own, where customers and the co-founder write.') + empty('No business address yet', esc(biz.gaps?.find(g => g.what === 'email')?.why ?? 'The address was not claimed.'), `<form id="claim" class="row"><label class="field"><span class="sr-only">Address</span><input name="local" value="${esc(slugify(biz.name))}" placeholder="name"></label><span class="muted">@${esc(window.BRAND?.mailDomain ?? 'commandagi.email')}</span><button class="btn primary" type="submit">Claim an address</button></form>`);
     $('#claim', el).onsubmit = async e => {
       e.preventDefault(); const local = e.target.local.value.trim().toLowerCase();
-      try { const addr = await email.claim(local, `${biz.name} (VibeStartup)`); biz.email = { id: addr.id, address: addr.address ?? `${local}@${window.BRAND?.mailDomain ?? 'commandagi.email'}` }; biz.gaps = (biz.gaps ?? []).filter(g => g.what !== 'email'); await writeBusiness(biz); ctx.setBiz(biz); toast(`${biz.email.address} is yours.`, 'ok'); ctx.refresh(); }
+      try { const addr = await orgs.claimAddress(biz.org, local, `${biz.name} (VibeStartup)`); biz.email = { id: addr.id, address: addr.address ?? `${local}@${window.BRAND?.mailDomain ?? 'commandagi.email'}` }; biz.gaps = (biz.gaps ?? []).filter(g => g.what !== 'email'); await writeBusiness(biz); ctx.setBiz(biz); toast(`${biz.email.address} is yours.`, 'ok'); ctx.refresh(); }
       catch (err) { toast(oops(err), 'bad'); }
     };
     return;

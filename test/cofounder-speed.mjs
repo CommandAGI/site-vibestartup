@@ -89,16 +89,15 @@ try {
       await sleep(4000);
     }
     const slug = new URL(await b.eval('location.href')).searchParams.get('b');
-    const folder = (await call(`/drive?path=${encodeURIComponent(`Businesses/${slug}`)}`)).body;
-    const file = (folder?.files ?? folder?.items ?? folder?.entries ?? []).find(f => f.name === 'business.json');
-    const biz = file ? (await call(`/drive/${encodeURIComponent(file.id)}/content`)).body : null;
+    // The business is the org org-<slug>: its record at its Drive's root, its tasks in its Tasks/.
+    const biz = (await call(`/accounts/org-${encodeURIComponent(slug)}/files/business.json`)).body;
     // The business's tasks after the replies: a repeated task_create with a card's taskKey answers that card, so each
     // title and each key is there once (production, 2026-11-11: each founder message made one to three more cards).
-    const listed = (await call('/me/tasks/query', { method: 'POST', body: JSON.stringify({ labels: [`biz:${slug}`], includeClosed: true }) })).body?.tasks ?? [];
+    const listed = (await call(`/me/tasks/query?owner=org&ownerScope=org-${encodeURIComponent(slug)}`, { method: 'POST', body: JSON.stringify({ labels: [`biz:${slug}`], includeClosed: true }) })).body?.tasks ?? [];
     const twice = list => [...new Set(list.filter((v, i) => v && list.indexOf(v) !== i))];
     out.tasks = { count: listed.length, titles: listed.map(t => t.title), keys: listed.map(t => t.taskKey ?? null), duplicateTitles: twice(listed.map(t => t.title)), duplicateKeys: twice(listed.map(t => t.taskKey)) };
     out.welcome = biz?.cofounder?.welcome ? { template: biz.cofounder.welcome.template, kept: biz.cofounder.welcome.kept } : null;
-    const agentId = biz?.cofounder?.forkId ?? biz?.cofounder?.agentId;
+    const agentId = biz?.cofounder?.agentId;
     // Model calls settle into their rows a moment after the turn.
     await sleep(5000);
     const cost = agentId ? (await call(`/agents/${encodeURIComponent(agentId)}/cost`)).body : null;

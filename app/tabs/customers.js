@@ -1,20 +1,19 @@
-// Customers: everyone who signed up (the business's own file, customers/customers.json), everyone who asked for updates
-// on the storefront (its "Get updates" form, kept by the site's server module and copied into that file here, with
-// the consent they gave), and everyone who bought through the checkout.
+// Customers: the business's contacts (`contacts/*.vcf`, one vCard each), everyone who asked for updates on the
+// storefront (its "Get updates" form, kept by the site's server module and copied into contacts/ here, with the consent
+// they gave), and everyone who bought through the checkout.
 import { esc, when } from '/lib/ui.js';
 import { readSignups } from '/lib/storefront.js';
-import { writeBizJson } from '/lib/business.js';
-import { head, customersOf, ordersOf, empty, askLink } from './_shared.js';
+import { head, customersOf, writeContact, ordersOf, empty, askLink } from './_shared.js';
 
 export async function render(ctx) {
   const { biz, el } = ctx;
   const [listed, orders, fromSite] = await Promise.all([customersOf(biz), ordersOf(biz), readSignups(biz).catch(e => ({ signups: [], why: e.message }))]);
-  // A storefront sign-up joins the file once, with its consent; the file is what the co-founder reads.
+  // A storefront sign-up becomes a contact once, with its consent; the contacts are what the co-founder reads.
   const known = new Set(listed.map(c => String(c.email ?? '').toLowerCase()));
   const added = fromSite.signups.filter(s => s?.email && !known.has(s.email)).map(s => ({ email: s.email, name: s.name ?? '', since: s.at, source: 'storefront', updates: true, consent: s.consent ?? null, country: s.country ?? null }));
   if (added.length) {
     listed.push(...added);
-    await writeBizJson(biz.slug, 'customers/customers.json', { customers: listed }).catch(() => null);
+    await Promise.all(added.map(c => writeContact(biz, c).catch(() => null)));
   }
   const byEmail = new Map(listed.map(c => [String(c.email ?? '').toLowerCase(), { ...c }]));
   for (const o of orders.filter(o => o.checkout && o.email)) {

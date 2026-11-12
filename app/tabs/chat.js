@@ -1,7 +1,7 @@
 // Chat: the conversation with the co-founder (the thread's transcript), approval cards (the business's needs-approval
 // tasks), milestones, the daily briefing, and the right panel of what is being built.
-import { threads, drive } from '/lib/api.js';
-import { wakeCofounder, moveCofounderModel } from '/lib/business.js';
+import { threads } from '/lib/api.js';
+import { wakeCofounder } from '/lib/business.js';
 import { $, $$, esc, icon, toast, initial, time, ago, oops, busy } from '/lib/ui.js';
 import { md } from '/lib/md.js';
 import { widget, toolUi, stripAsk } from '/lib/widgets.js';
@@ -326,8 +326,6 @@ export async function render(ctx) {
   $('#chat-refresh').onclick = load;
   if (messages.length) paint();
   connect();
-  // An existing business moves its co-founder to the fast model once (lib/business.js moveCofounderModel).
-  moveCofounderModel(biz).then(b => b && ctx.setBiz?.(b)).catch(() => null);
   await load();
   poll();
   renderPanel(ctx, panel, approvalsList).catch(() => null);

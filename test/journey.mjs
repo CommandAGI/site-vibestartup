@@ -137,6 +137,29 @@ async function run(browser, width) {
   const readGaps = () => b.eval(`(async () => { const { readBusiness } = await import('/lib/business.js'); const biz = await readBusiness(${JSON.stringify(slug)}); return (biz.gaps ?? []).map(g => g.what + ': ' + g.why); })()`);
   let gaps = await readGaps();
   if (gaps.length) console.log(`${label}: creation gaps on this stack: ${gaps.join(' | ')}`);
+  // 4°. The business is an org, org-<slug>, founded through VibeStartup, whose Drive's root holds the schema's files and
+  // no stray (docs/schema.md); its storefront answers at <slug>.vibestartup.pro.
+  const org = JSON.parse(await b.eval(`(async () => {
+    const { orgs, drive } = await import('/lib/api.js'); const { lint, orgOf } = await import('/lib/schema.js');
+    const id = orgOf(${JSON.stringify(slug)});
+    const mine = await orgs.list();
+    const files = (await drive.forAccount(id).files('')).map(f => f.path);
+    const rec = await drive.forAccount(id).readJsonPath('', 'business.json');
+    return JSON.stringify({ id, listed: mine.some(o => o.id === id), brand: mine.find(o => o.id === id)?.brand ?? null, files, strays: lint(files), agent: rec?.cofounder?.agentId ?? null, site: rec?.site ?? null });
+  })()`));
+  check(org.listed, `${label}: the business is the org ${org.id}, listed by GET /me/orgs?brand=vibestartup`);
+  check(org.brand === 'vibestartup' || org.brand === null, `${label}: the org's brand is vibestartup (got ${org.brand})`);
+  for (const f of ['BUSINESS.md', 'SOUL.md', 'OWNER.md', 'PLAYBOOK.md', 'MEMORY.md', 'SUPPORT.md', 'business.json', 'storefront.json', '.commandagi/settings.json', 'brand/brand-book.json', 'products/products.json']) check(org.files.includes(f), `${label}: the org's Drive has ${f}`);
+  check(!org.files.some(f => /^cofounder\/|^Businesses\/|CODEMAP|PLATFORM\.md/.test(f)), `${label}: no per-business copy of the code map or the platform, and no Businesses/ folder`);
+  check(!org.strays.length, `${label}: the lint finds no stray in a new business (${org.strays.join(', ')})`);
+  check(org.files.some(f => /^agents\/.+\/agent\.tsx$/.test(f)) || !org.agent, `${label}: the co-founder's agent.tsx is in the org's Drive`);
+  check(/^Sites\//.test(org.site?.folder ?? ''), `${label}: the storefront's folder is in the org's Drive (${org.site?.folder})`);
+  if (org.site?.slug) {
+    check(org.site.slug === slug, `${label}: the storefront's slug is the business's (${org.site.slug})`);
+    let live = null;
+    for (let i = 0; i < 12 && live !== 200; i++) { if (i) await sleep(5000); live = (await fetch(`https://${org.site.slug}.vibestartup.pro/`).catch(() => null))?.status ?? null; }
+    check(live === 200, `${label}: the storefront answers at https://${org.site.slug}.vibestartup.pro/ (${live})`);
+  }
   // 4-. The co-founder's model needs the founder's date of birth: set it in Profile, then wake the co-founder in Chat.
   if (gaps.some(g => /^cofounder/.test(g) && /date of birth/i.test(g))) {
     check(/not awake/i.test(await b.text('.chat')), `${label}: chat says the co-founder is not awake, and why`);
@@ -182,7 +205,7 @@ async function run(browser, width) {
   // 4b. An approval: the one the co-founder made, else one made through the tasks API; approve it.
   let card = await b.waitFor('!!document.querySelector(".approval [data-approve]")', hasThread && !flag('no-chat') ? 45000 : 2000).catch(() => false);
   if (!card) {
-    const made = await b.eval(`(async () => { const { tasks } = await import('/lib/api.js'); const r = await tasks.create({ dir: 'Businesses/${slug}/Tasks', doc: { title: 'Send personal notes to the warm list', status: 'todo', labels: ['biz:${slug}', 'needs-approval'] }, body: 'Twelve people from your warm list get a short personal note each. Nothing is sent before you approve.' }); return r?.task?.id ?? r?.fileId ?? null; })()`).catch(e => `error: ${e.message}`);
+    const made = await b.eval(`(async () => { const { tasks } = await import('/lib/api.js'); const r = await tasks.forAccount('org-${slug}').create({ dir: 'Tasks', doc: { title: 'Send personal notes to the warm list', status: 'todo', labels: ['biz:${slug}', 'needs-approval'] }, body: 'Twelve people from your warm list get a short personal note each. Nothing is sent before you approve.' }); return r?.task?.id ?? r?.fileId ?? null; })()`).catch(e => `error: ${e.message}`);
     check(made && !String(made).startsWith('error'), `${label}: an approval task could be created through the tasks API (${made})`);
     await b.click('#chat-refresh');
     card = await b.waitFor('!!document.querySelector(".approval [data-approve]")', 20000).catch(() => false);
@@ -193,6 +216,9 @@ async function run(browser, width) {
     await b.click('.approval [data-approve]');
     await b.waitFor(`![...document.querySelectorAll(".approval b")].some(e => e.textContent === ${JSON.stringify(title)})`, 20000).catch(() => null);
     check(!await b.eval(`[...document.querySelectorAll(".approval b")].some(e => e.textContent === ${JSON.stringify(title)})`), `${label}: the approved card left the chat`);
+    // The card is a task file in the org's Tasks/, not the founder's.
+    const inOrg = await b.eval(`(async () => { const { drive } = await import('/lib/api.js'); const [o, mine] = await Promise.all([drive.forAccount('org-${slug}').list('Tasks'), drive.list('Tasks').catch(() => [])]); return JSON.stringify([o.some(f => f.name === ${JSON.stringify(title + '.task.tsx')}), mine.some(f => f.name === ${JSON.stringify(title + '.task.tsx')})]); })()`).then(JSON.parse).catch(() => [false, false]);
+    check(inOrg[0] && !inOrg[1], `${label}: the approval is a file of the org's Tasks/ (org: ${inOrg[0]}, founder's: ${inOrg[1]})`);
   }
 
   // 5. Files: the co-founder's memory. Dashboard: the launch week.
@@ -200,6 +226,9 @@ async function run(browser, width) {
   await b.waitFor('[...document.querySelectorAll(".file-row")].some(e => /SOUL\\.md/.test(e.innerText))', 30000).catch(() => null);
   const files = await tabText();
   for (const name of ['SOUL.md', 'BUSINESS.md', 'MEMORY.md', 'PLAYBOOK.md']) check(files.includes(name), `${label}: Files shows ${name}`);
+  check(!/\.commandagi|agents\/|runs\/|Sites\//.test(files), `${label}: Files never shows .commandagi/, agents/, runs/ or Sites/`);
+  check(!/org-|[0-9a-f]{8}-[0-9a-f]{4}-/.test(await b.text('#file-groups')), `${label}: Files shows no raw id`);
+  check(await b.eval(`(document.querySelector("#open-in-commandagi")?.href ?? "").includes(encodeURIComponent("cloud://home/org-${slug}/"))`), `${label}: Files has one Open in CommandAGI link to the org's folder`);
   await b.click('.file-row [data-open]');
   await b.waitFor('(document.querySelector("#file-preview")?.innerText ?? "").length > 20', 10000).catch(() => null);
   await b.shot(`console-files-${width}`);
@@ -252,7 +281,8 @@ async function run(browser, width) {
   // 8. Settings: payments through Connect (no payment key field), a secret listed by name only, a domain record, members.
   await hash('settings');
   await b.waitFor('!!document.querySelector("#secrets")', 20000);
-  check(await b.eval('!!document.querySelector("#payments #connect-payouts, #payments .badge.ok")'), `${label}: payments connect through Stripe (a button, or connected)`);
+  check(await b.eval('!!document.querySelector("#payments [data-finish-payouts], #payments .badge.ok")'), `${label}: Settings shows the Finish payouts card (or payouts connected)`);
+  check(await b.eval(`(document.querySelector("#in-commandagi #open-in-commandagi")?.href ?? "").includes(encodeURIComponent("cloud://home/org-${slug}/"))`), `${label}: Settings has the Open in CommandAGI link to the org`);
   check(!/STRIPE_SECRET_KEY/.test(await tabText()), `${label}: no payment key is asked for`);
   const siteGap = !await b.eval('!!document.querySelector("#secret-form")');
   if (!siteGap) {
@@ -371,6 +401,21 @@ async function run(browser, width) {
   await b.goto(`${base}/home/`);
   await b.waitFor('document.querySelectorAll(".biz-card[data-slug]").length >= 2', 30000);
   check(await b.eval('document.querySelectorAll(".biz-card[data-slug]").length') >= 2, `${label}: home shows two businesses`);
+  // The switcher lists both, from GET /me/orgs?brand=vibestartup.
+  await b.goto(`${base}/app/?b=${encodeURIComponent(slug)}#tab=dashboard`);
+  await b.waitFor('!!document.querySelector("#launch-week")', 30000).catch(() => null);
+  await b.waitFor('!!document.querySelector("#biz-switch")', 10000).catch(() => null);
+  if (width < 900) { await b.click('#rail-toggle'); await sleep(350); }
+  await sleep(1500);
+  await b.click('#biz-switch');
+  await b.waitFor('!!document.querySelector(".menu")', 5000).catch(() => null);
+  const switcher = await b.text('.menu').catch(() => '');
+  check(/Kiln/.test(switcher) && (switcher.match(/\n/g) ?? []).length >= 3, `${label}: the switcher lists both businesses (${switcher.replace(/\n/g, ' | ').slice(0, 120)})`);
+  await b.shot(`switcher-${width}`);
+  await b.eval('document.querySelector(".menu")?.remove()');
+  await b.goto(`${base}/home/`);
+  await b.waitFor('document.querySelectorAll(".biz-card[data-slug]").length >= 2', 30000);
+  const orgsBefore = JSON.parse(await b.eval(`(async () => { const { orgs } = await import('/lib/api.js'); return JSON.stringify((await orgs.list()).map(o => o.id)); })()`));
 
   // 13. Delete the account: the modal on a deep shadow, then the landing, and the password no longer signs in. A run
   // against a cloud API leaves nothing behind (`--keep` keeps the account to look at).
@@ -389,6 +434,10 @@ async function run(browser, width) {
       await b.waitFor('location.pathname === "/"', 90000);
     }
     erased.add(email);
+    // The founder's own businesses went with the account (no 409 orgs_held): their storefronts no longer answer as theirs.
+    check(orgsBefore.length >= 2, `${label}: the account held its two business orgs before the erase (${orgsBefore.join(', ')})`);
+    const brandSite = await fetch(`${arg('api') ?? 'https://api.commandagi.com'}/sites/brand/${encodeURIComponent(slug)}`).then(r => r.status).catch(() => null);
+    console.log(`${label}: after the erase, GET /sites/brand/${slug} answers ${brandSite}`);
     await b.goto(`${base}/auth/`);
     await b.waitFor('!!document.querySelector("#signin")');
     await b.fill('#signin [name=email]', email);

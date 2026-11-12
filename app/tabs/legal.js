@@ -2,8 +2,7 @@
 // terms and privacy pages, and the document library: starter templates filled from the business record, previewed
 // live, downloaded as a PDF made in the browser (lib/pdf.js), saved into the business's legal/ folder, and for the
 // storefront's three, written there as HTML pages the storefront's publish picks up (lib/legal-docs.js).
-import { drive } from '/lib/api.js';
-import { folderOf, markSvg } from '/lib/business.js';
+import { bizDrive, markSvg } from '/lib/business.js';
 import { $, $$, esc, icon, money, toast, oops, busy, soonButton } from '/lib/ui.js';
 import { head, section, ordersOf, realSales, askLink, settingsOf, notifyChip, bindNotify } from './_shared.js';
 import { renderPdf } from '/lib/pdf.js';
@@ -62,11 +61,11 @@ let chosen = 'terms';
 
 export async function render(ctx) {
   const { biz, el, founder } = ctx;
-  const legalDir = `${folderOf(biz.slug)}/legal`;
+  const legalDir = 'legal', drive = bizDrive(biz);
   const [orders, saved, logoText] = await Promise.all([
     ordersOf(biz),
     drive.readPath(legalDir, 'fields.json').then(t => (t ? JSON.parse(t) : {})).catch(() => ({})),
-    drive.readPath(`${folderOf(biz.slug)}/brand`, 'logo.svg').catch(() => null),
+    drive.readPath('brand', 'logo.svg').catch(() => null),
   ]);
   const s = realSales(orders);
   const settings = await settingsOf(biz).catch(() => ({}));
@@ -120,13 +119,13 @@ export async function render(ctx) {
         const a = document.createElement('a'); a.href = url; a.download = `${biz.slug}-${doc.file}`; document.body.append(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 30000);
         status(`Downloaded ${biz.slug}-${doc.file}.`);
-        await ensureDir(legalDir); remember();
+        await ensureDir(drive, legalDir); remember();
       } catch (err) { toast(oops(err), 'bad'); }
     });
     $('#legal-save', el).onclick = e => busy(e.currentTarget, async () => {
       try {
         const { doc, blob } = await pdf();
-        await ensureDir(legalDir);
+        await ensureDir(drive, legalDir);
         await drive.write(legalDir, doc.file, blob, 'application/pdf');
         remember();
         status(`Saved to Files: legal/${doc.file}.`); toast('Saved to Files.', 'ok');
@@ -135,7 +134,7 @@ export async function render(ctx) {
     if (t.storefront) $('#legal-use', el).onclick = e => busy(e.currentTarget, async () => {
       try {
         const doc = preview();
-        await ensureDir(legalDir);
+        await ensureDir(drive, legalDir);
         await drive.write(legalDir, t.storefront, storefrontPage(doc, values.business || biz.name), 'text/html');
         remember();
         status(`Written to legal/${t.storefront}. Your storefront shows it from its next publish.`); toast('Ready for your storefront.', 'ok');
@@ -160,7 +159,7 @@ const fieldHtml = values => k => {
 };
 
 const made = new Set();
-async function ensureDir(path) { if (made.has(path)) return; await drive.ensure(path); made.add(path); }
+async function ensureDir(drive, path) { const key = `${drive.org}:${path}`; if (made.has(key)) return; await drive.ensure(path); made.add(key); }
 
 /** A founder's own SVG logo as a JPEG for the PDF (a PDF draws no SVG). */
 async function rasterize(src, size = 240) {

@@ -1,7 +1,8 @@
 // Tasks: approvals, in progress, done, and the routines (the thread's triggers). A view (`#tab=tasks&view=needs|doing|
 // done|routines`, app/levels.js) shows that group alone; with none it shows all four.
-import { threads, tasks } from '/lib/api.js';
-import { folderOf } from '/lib/business.js';
+import { threads } from '/lib/api.js';
+import { bizTasksApi } from '/lib/business.js';
+import { PATHS } from '/lib/schema.js';
 import { $, $$, esc, icon, toast, modal, confirm, ago, when, oops, busy } from '/lib/ui.js';
 import { head, section, bizTasks, isApproval, approve, reject, everyWords, INTERVALS, iconBtn, empty } from './_shared.js';
 
@@ -25,8 +26,8 @@ export async function render(ctx) {
     const find = id => all.find(t => t.id === id);
     $$('[data-approve]', el).forEach(b => b.onclick = () => busy(b, async () => { try { await approve(biz, find(b.closest('.task').dataset.id)); toast('Approved.', 'ok'); ctx.refreshNeeds(); await paint(); } catch (e) { toast(oops(e), 'bad'); } }));
     $$('[data-reject]', el).forEach(b => b.onclick = () => busy(b, async () => { try { await reject(biz, find(b.closest('.task').dataset.id)); toast('Rejected.', 'ok'); ctx.refreshNeeds(); await paint(); } catch (e) { toast(oops(e), 'bad'); } }));
-    $$('[data-done]', el).forEach(b => b.onclick = async () => { try { await tasks.update(b.closest('.task').dataset.id, { status: 'done' }); await paint(); } catch (e) { toast(oops(e), 'bad'); } });
-    $$('[data-cancel-task]', el).forEach(b => b.onclick = async () => { if (!await confirm('Cancel this task?', { ok: 'Cancel the task', danger: true })) return; try { await tasks.update(b.closest('.task').dataset.id, { status: 'cancelled' }); await paint(); } catch (e) { toast(oops(e), 'bad'); } });
+    $$('[data-done]', el).forEach(b => b.onclick = async () => { try { await bizTasksApi(biz).update(b.closest('.task').dataset.id, { status: 'done' }); await paint(); } catch (e) { toast(oops(e), 'bad'); } });
+    $$('[data-cancel-task]', el).forEach(b => b.onclick = async () => { if (!await confirm('Cancel this task?', { ok: 'Cancel the task', danger: true })) return; try { await bizTasksApi(biz).update(b.closest('.task').dataset.id, { status: 'cancelled' }); await paint(); } catch (e) { toast(oops(e), 'bad'); } });
     const tid = biz.cofounder?.threadId;
     const rid = b => b.closest('.routine').dataset.id;
     $$('[data-run]', el).forEach(b => b.onclick = () => busy(b, async () => { const r = routines.find(x => x.id === rid(b)); try { await threads.inject(tid, r.effect?.prompt ?? '', r.label); toast(`${r.label} is running.`, 'ok'); } catch (e) { toast(oops(e), 'bad'); } }));
@@ -58,7 +59,7 @@ export async function render(ctx) {
     $('#tf', m.el).onsubmit = async e => {
       e.preventDefault(); const f = e.target;
       const assignees = f.forme.checked ? [`user:${ctx.me.id}`] : biz.cofounder?.agentId ? [`agent:${biz.cofounder.agentId}`] : [];
-      try { await tasks.create({ dir: `${folderOf(biz.slug)}/Tasks`, doc: { title: f.title.value.trim(), status: 'todo', labels: [`biz:${biz.slug}`], assignees }, body: f.body.value }); m.close(); toast('Task created.', 'ok'); await paint(); }
+      try { await bizTasksApi(biz).create({ dir: PATHS.tasks, doc: { title: f.title.value.trim(), status: 'todo', labels: [`biz:${biz.slug}`], assignees }, body: f.body.value }); m.close(); toast('Task created.', 'ok'); await paint(); }
       catch (err) { toast(oops(err), 'bad'); }
     };
   };

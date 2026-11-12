@@ -1,8 +1,9 @@
-// The console's shell: one business (`?b=<slug>`), its tabs (`#tab=<name>`) and the account's pages
-// (`#page=billing|profile|share`). Every tab is a module in ./tabs/ that renders into #main with the API client. The
-// founder's own CommandAGI token does everything (docs/ARCHITECTURE.md).
+// The console's shell: one business (`?b=<slug>`, the org `org-<slug>`), its tabs (`#tab=<name>`) and the account's
+// pages (`#page=billing|profile|share`). Every tab is a module in ./tabs/ that renders into #main with the API client
+// and reads and writes the business's org through lib/business.js (docs/schema.md § the lens). The founder's own
+// CommandAGI token does everything (docs/ARCHITECTURE.md).
 import { signedIn, whoami, user, credits, signOut, auth, BRAND, brandAdmin } from '/lib/api.js';
-import { listBusinesses, readBusiness, approvals, writeBusiness, teachStorefront, startChat } from '/lib/business.js';
+import { listBusinesses, readBusiness, approvals, startChat, lintBusiness } from '/lib/business.js';
 import { publishIfEdited } from '/lib/storefront.js';
 import { $, $$, esc, icon, toast, menu, modal, initial, oops } from '/lib/ui.js';
 import { startGuides, replayGuides } from '/lib/guides.js';
@@ -99,7 +100,7 @@ async function newChat(button) {
   if (!state.biz?.cofounder?.threadId) return toast('Wake the co-founder first.', 'bad');
   button.disabled = true; button.setAttribute('aria-busy', 'true');
   try {
-    const id = await startChat(state.biz, state.founder, state.me.id);
+    const id = await startChat(state.biz);
     state.level = null;
     location.hash = `tab=chat&thread=${encodeURIComponent(id)}`;
   } catch (e) { toast(oops(e), 'bad'); button.disabled = false; button.removeAttribute('aria-busy'); }
@@ -327,12 +328,10 @@ async function route() {
 
 /**
  * The live storefront follows storefront.json: when the co-founder changed the file, or the business has none yet (it
- * gets the default for its kind), the console publishes it, and says so. A co-founder that does not know the file yet
- * is taught it once.
+ * gets the default for its kind), the console publishes it, and says so.
  */
 async function syncStorefront(biz) {
   try {
-    if (await teachStorefront(biz)) await writeBusiness(biz);
     if (await publishIfEdited(biz)) { if (state.biz === biz) renderIdentity(); toast('Your storefront was published with its latest layout, style and words.', 'ok'); }
   } catch (e) { console.warn('storefront sync', e); }
 }
@@ -380,6 +379,8 @@ async function init() {
   await route();
   startGuides(state.me.id);
   syncStorefront(state.biz);
+  // Once a week, the files outside the schema in one task (never a refusal: they are the founder's).
+  lintBusiness(state.biz).catch(() => null);
 }
 
 init().catch(e => { console.error(e); toast(oops(e), 'bad'); });
