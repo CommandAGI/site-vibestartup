@@ -187,6 +187,7 @@ export async function render(ctx) {
   // answer route takes it. The controls stay off while it is on its way; a failure says so and turns them on again.
   // The thread the chat shows: the widget code reads it here, never the co-founder's first thread by name.
   const threadOf = () => cof.threadId;
+  const refusals = new Map();
   const lockedNow = id => id.startsWith('prompt:') ? waits.get(id.slice(7))?.answer != null : !!messages.find(x => x.id === id)?.ui?.answered;
   const waitLocked = (id, ms) => new Promise(resolve => {
     const done = v => { clearTimeout(t); waiters.delete(id); resolve(v); };
@@ -208,8 +209,11 @@ export async function render(ctx) {
     if (!m?.ui || m.ui.answered || !value || !threadOf()) return;
     return settle(id, async () => {
       if (socket && socketOpen && socket.readyState === 1) {
+        refusals.delete(id);
         socket.send(JSON.stringify({ t: 'widget.respond', id, value }));
         if (await waitLocked(id, 8000)) return;
+        // The thread refused this answer and said why: the controls come back with its words, nothing else is tried.
+        if (refusals.has(id)) { const why = refusals.get(id); refusals.delete(id); throw Error(why); }
       }
       await load();
       if (lockedNow(id)) return;
@@ -289,6 +293,11 @@ export async function render(ctx) {
       if (at >= 0) messages[at] = { ...messages[at], ...(m.text != null ? { text: m.text } : {}), ...(m.ui ? { ui: m.ui } : {}) };
       if (m.ui?.answered) { asks.delete(m.id); waiters.get(m.id)?.(true); }
       paint();
+    } else if (m.t === 'error' && m.code === 'WIDGET_ANSWER_REFUSED' && m.id) {
+      // The message is "<reason code>: <words>"; the founder reads the words on the widget the id names.
+      const why = String(m.message ?? '').replace(/^[a-z_]+:\s*/, '').trim() || 'Your co-founder could not take that answer';
+      refusals.set(m.id, /[.!?]$/.test(why) ? why : `${why}.`);
+      waiters.get(m.id)?.(false);
     } else if (m.t === 'prompt' && m.id && m.question) {
       waits.set(m.id, { id: m.id, kind: m.kind, question: m.question, options: m.options, at: Date.now() });
       paint();

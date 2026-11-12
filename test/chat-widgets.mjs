@@ -6,7 +6,7 @@
 // taken at --width and at 390 px. The account is erased at the end, also when the run fails.
 //
 //   node test/chat-widgets.mjs [--url https://vibestartup.commandagi.app] [--api https://api.commandagi.com|local]
-//                              [--out <dir>] [--width 1440] [--no-slider]
+//                              [--out <dir>] [--width 1440] [--no-slider] [--refused]
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withBrowser, sleep } from './browser.mjs';
@@ -17,6 +17,8 @@ const apiArg = arg('api') ?? 'https://api.commandagi.com';
 const width = Number(arg('width') ?? 1440);
 const out = arg('out') ?? path.join(here, '..', '.test-results', 'chat-widgets');
 const slider = !process.argv.includes('--no-slider');
+// The thread refuses a slider answer out of its range (WIDGET_ANSWER_REFUSED); the page shows why on that widget.
+const refused = process.argv.includes('--refused');
 const email = `widgets-${Date.now().toString(36)}@example.com`;
 const password = 'correct horse battery';
 const ASK_SELECT = 'Which starting price should we use for one mug? Give me three prices to choose from as buttons in the chat.';
@@ -128,6 +130,17 @@ try {
     check(result.select.widget.options.length >= 2, 'select: the co-founder offered two or more options');
     if (slider) {
       result.slider = await round('slider', ASK_SLIDER, 'slider', async sel => {
+        if (refused) {
+          // Past its max, as a changed page could send: the widget shows the thread's reason, stays open, and answers next.
+          const max = Number(await b.eval(`document.querySelector('${sel} input[type=range]').max`));
+          await b.eval(`(() => { const r = document.querySelector('${sel} input[type=range]'); r.max = ${max * 10}; r.value = ${max * 10}; r.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+          const at = Date.now();
+          await b.click(`${sel} button[type=submit]`);
+          await b.waitFor(`!!document.querySelector('${sel} .ask-error')`, 12000);
+          result.refusal = { s: (Date.now() - at) / 1000, text: await b.eval(`document.querySelector('${sel} .ask-error').textContent`) };
+          check(result.refusal.s < 7, `slider: a refused answer shows its reason before the 8 s fallback (${result.refusal.s} s: ${result.refusal.text})`);
+          await b.shot(`slider-refused-${width}`);
+        }
         // The keyboard sets it: focus the range, step it up three times, then send with the form's button.
         await b.eval(`document.querySelector('${sel} input[type=range]').focus()`);
         for (let i = 0; i < 3; i++) {
