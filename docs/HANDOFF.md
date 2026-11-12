@@ -11,6 +11,13 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   `https://api.commandagi.com` (`/brand.js`).
 - 2026-11-11, at 55b16e5: the journey passes against production's API at 1440 and 390 px (`node test/journey.mjs --api
   https://api.commandagi.com`), every step, with one problem left: the co-founder's first answer can take over 90 s.
+- Chat controls (2026-11-12): a co-founder message's `ui` renders as options, a multiselect, a slider, yes or no, got
+  it, a text box, a file picker, and lens and graph charts (`lib/widgets.js`, `test/widgets.mjs`). `node
+  test/chat-widgets.mjs` (against production's API, a throwaway account, erased): the co-founder sent a select 13.0 s
+  after the question, the click locked it on the server in 0.38 s and the reply came 11.4 s after the click; a slider
+  16.5 s, locked 0.28 s, reply 15.0 s; no sideways scroll at 390. The charter teaches the cagi-ask shapes
+  (`WIDGETS_RULE`); without a whole example message the model said the chat could not show a slider. The agent loop's
+  `confirm` prompt shows Approve and Deny only while the page is open (the platform keeps no pending prompt).
 - The look is CommandAGI's shape language (2026-11-11, owner): square controls, wall-to-wall selection bands, only
   floats rounded, a phone drawer and bottom bar (`docs/DESIGN.md`; `test/edges.mjs` checks it at every screenshot).
 - Payments: a founder's customers pay through CommandAGI's Connect checkout (Settings → Payments onboards a Stripe
