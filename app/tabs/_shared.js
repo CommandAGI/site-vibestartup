@@ -123,7 +123,7 @@ export const payoutsOf = biz => payments.readiness(bizAccount(biz)).catch(() => 
 export function payoutsCard(biz, readiness) {
   if (readiness?.ready) return '';
   const started = !!biz.payouts?.startedAt;
-  const more = (readiness?.blocks ?? []).filter(b => !['not_onboarded', 'unreadable'].includes(b));
+  const more = (readiness?.blocks ?? []).filter(b => !['not_onboarded', 'unreadable', 'pending'].includes(b));
   return `<div class="note warn payouts-card" id="finish-payouts" style="margin-bottom:16px"><div class="grow"><b>Finish payouts</b> to take payment. ${started ? 'Your business\'s Stripe account is made.' : 'Your business gets its own Stripe account.'} Stripe asks for your identity, your bank and your tax details on its own page; ${esc(biz.name)} never sees them. Until then the storefront takes orders by email and nothing is charged.${more.length ? ` Stripe still needs: ${esc(more.join(', '))}.` : ''}</div><button type="button" class="btn primary" data-finish-payouts>${started ? 'Finish payouts' : 'Set up payouts'}</button></div>`;
 }
 export function bindPayouts(root, biz) {
