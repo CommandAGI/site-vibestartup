@@ -34,9 +34,13 @@ are done: every business is an org, the console reads it through `lib/schema.js`
   trigger on the first chat (`business.json` `cofounder.threadId`, `routines.briefing`). A business moved from a
   founder's folder lists its chat from before the move too (`cofounder.earlier`): a run cannot change hands, so that
   chat stays the founder's thread.
-- **Who pays.** A thread of the org is billed to the org's owner, the founder: the founder's credits pay for the
-  business, the free ones first, so the revenue-funded free credits keep working. The org's own purse is not used yet
-  (CommandAGI `docs/next/vibestartup-what-is-left…md` § a business as an org).
+- **Who pays.** A thread of the org is billed to the org's owner, the founder (CommandAGI `Access.billingTarget`). A
+  model call draws the founder's free `ai` allowance first (the free plan's 30 credits each 8 hours, `GET /quota`),
+  then the free credits earned at sign-up and at the milestones (`GET /me/free-credits`), then the bought credits. The
+  allowance's part is no ledger row, so Billing shows the allowance and each co-founder's calls (`GET /agents/:id/cost`)
+  beside the ledger. Each call settles as it ends (CommandAGI 3bd4e4ec2ef; before, a chat-only thread's spend waited for
+  an alarm that never came). Past the allowance and the credits, CommandAGI refuses the call, and Chat shows a notice
+  with the way to Billing. The org's own purse is not used yet.
 - **Who sells.** The org is the seller of the goods in its Drive (`acct:org:<id>`). Its owner onboards it to Stripe
   Connect Express (`POST /connect/onboard` with `x-cagi-account: acct:org:<id>`). The legal seller is the founder's
   business: the founder as a sole proprietor until they form a company, then the company (`legal/<Name>.company.tsx`
@@ -179,8 +183,10 @@ Landed in this repository on 2026-11-12, on CommandAGI production 03e577dded1. N
   be paid (`POST /connect/refresh { account }` as the org). Its button makes the account if there is none (`POST
   /connect/onboard` with `x-cagi-account: acct:org:<id>`) and opens Stripe's form: identity, bank and tax are the
   founder's to fill in, on Stripe's page.
-- **Who pays**: the org's chats are billed to the founder (CommandAGI's `Access.billingTarget`: an org's thread bills its
-  owner), so the founder's credits pay, the free ones first. `test/chat-widgets.mjs` checks it.
+- **Who pays**: the founder, through the org's owner (§ who pays above). `test/chat-widgets.mjs` checks that the
+  allowance or the credits moved and that Billing lists the co-founder's calls.
+- **The charter**: the co-founder agent's `systemPrompt`, read by every chat at each turn. The console writes it again
+  when `charterFor` changed (`refreshCharter`: the record's `cofounder.charter` is the digest it wrote).
 - **The lint** runs when the console opens a business, at most once a week, and makes one task (`schema.strays`).
 - **Tests**: `test/schema.mjs` (plain node: the paths, the lens, the lint, the record, the settings, a contact's
   vCard); `test/journey.mjs` checks the org, its files and no stray, the storefront at `<slug>.vibestartup.pro`, the

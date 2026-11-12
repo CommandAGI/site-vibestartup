@@ -3,7 +3,7 @@
 // and reads and writes the business's org through lib/business.js (docs/schema.md § the lens). The founder's own
 // CommandAGI token does everything (docs/ARCHITECTURE.md).
 import { signedIn, whoami, user, credits, signOut, auth, BRAND, brandAdmin } from '/lib/api.js';
-import { listBusinesses, readBusiness, approvals, startChat, lintBusiness } from '/lib/business.js';
+import { listBusinesses, readBusiness, approvals, startChat, lintBusiness, refreshCharter } from '/lib/business.js';
 import { publishIfEdited } from '/lib/storefront.js';
 import { $, $$, esc, icon, toast, menu, modal, initial, oops } from '/lib/ui.js';
 import { startGuides, replayGuides } from '/lib/guides.js';
@@ -380,7 +380,8 @@ async function init() {
   startGuides(state.me.id);
   syncStorefront(state.biz);
   // Once a week, the files outside the schema in one task (never a refusal: they are the founder's).
-  lintBusiness(state.biz).catch(() => null);
+  // One after the other: both write business.json.
+  refreshCharter(state.biz, state.founder).catch(() => null).then(() => lintBusiness(state.biz)).catch(() => null);
 }
 
 init().catch(e => { console.error(e); toast(oops(e), 'bad'); });

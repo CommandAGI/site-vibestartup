@@ -108,6 +108,12 @@ export async function render(ctx) {
         parts.push(`<div class="msg system" data-id="${esc(m.id ?? '')}"><div class="body"><div class="text">You started ${esc(biz.name)} with ${esc(cof.name ?? 'your co-founder')} · ${esc(time(m.at))}</div></div></div>`);
         continue;
       }
+      // CommandAGI's refusal of a model call the founder's free allowance and credits cannot cover (data/model-admission.ts,
+      // a fixed machine sentence, not a model's words): a notice with the way on, never the platform's numbers alone.
+      if (who === 'cofounder' && /^agent error: the account's credits do not cover/.test(m.text ?? '')) {
+        parts.push(`<div class="msg system" data-id="${esc(m.id ?? '')}" data-out-of-credits><div class="body"><div class="note warn">${esc(cof.name ?? 'Your co-founder')} stopped: your free allowance and credits do not cover the next step. The free allowance fills up again every 8 hours. <a href="#page=billing">Buy credits in Billing</a> to go on now, then write again. · ${esc(time(m.at))}</div></div></div>`);
+        continue;
+      }
       const writing = typing?.id === m.id;
       const shown = writing ? typing.words.slice(0, typing.shown).join('') : m.text;
       parts.push(`<div class="msg ${who}${writing ? ' streaming' : ''}" data-id="${esc(m.id ?? '')}"${writing ? ' aria-busy="true"' : ''}>${who === 'me' ? '' : `<span class="avatar ${who === 'cofounder' ? 'cofounder' : ''}">${who === 'cofounder' ? initial(cof.name) : '·'}</span>`}<div class="body"><div class="who"><b>${esc(who === 'me' ? (founder?.name || 'You') : who === 'cofounder' ? (m.senderName || cof.name || 'Co-founder') : 'System')}</b><span>${esc(time(m.at))}</span></div>${who === 'me' ? `<div class="text">${esc(shown)}</div>` : shown?.trim() ? `<div class="text md">${md(shown)}</div>` : ''}${who !== 'me' && m.ui && !writing ? widget(m, asks.get(m.id)) : ''}</div>${who === 'me' ? `<span class="avatar">${initial(founder?.name || founder?.email)}</span>` : ''}</div>`);

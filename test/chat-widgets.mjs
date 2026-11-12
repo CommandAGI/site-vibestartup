@@ -39,6 +39,8 @@ try {
   await call('/integrations/*/model-floor', { method: 'PUT', body: JSON.stringify({ floor: [{ model: 'anthropic/claude-sonnet-5-5' }, { model: 'openai/gpt-6-luna' }] }) });
   // Who pays for the org's chats: the founder's own credits, the free ones first (docs/schema.md § who pays).
   const creditsBefore = (await call('/me/credits')).body;
+  const aiUsed = async () => ((await call('/quota')).body?.categories ?? []).find(c => c.category === 'ai')?.used ?? null;
+  const allowanceBefore = await aiUsed();
   const stored = JSON.stringify({ access: tok.access_token, refresh: tok.refresh_token ?? null, expiresAt: Date.now() + (Number(tok.expires_in) || 3600) * 1000, userId: me.id });
   await withBrowser(async b => {
     const problemsAt = () => b.problems.filter(p => !/favicon|ws-token|WebSocket/.test(p));
@@ -140,6 +142,13 @@ try {
     const look = await b.shot('answered-390');
     result.sideways390 = look.sideways;
     check(look.sideways <= 0, 'at 390 px nothing scrolls sideways');
+    // Billing shows the free allowance and this business's co-founder's calls (the allowance pays before the ledger).
+    await b.eval('location.hash = "page=billing"');
+    await b.waitFor('!!document.querySelector("#allowance [data-allowance]") && !!document.querySelector("#usage")', 30000);
+    result.billing = await b.eval(`({ allowance: document.querySelector('#allowance [data-allowance]').textContent, usage: document.querySelector('#usage')?.innerText?.replace(/\\s+/g, ' ').slice(0, 200) ?? null })`);
+    check(/\d+ of \d+/.test(result.billing.allowance), `Billing shows the free allowance (${result.billing.allowance})`);
+    check(/Model calls/.test(result.billing.usage ?? '') && /for Kiln/.test(result.billing.usage ?? ''), `Billing lists the co-founder's calls (${result.billing.usage})`);
+    await b.shot(`billing-${width}`);
     result.problems = problemsAt();
   }, { out, width, height: 900 });
   // Model calls settle into the ledger a moment after the turn.
@@ -149,7 +158,11 @@ try {
   result.credits = { before: creditsBefore, after: creditsAfter, history: (history?.entries ?? history?.history ?? history?.items ?? []).slice(0, 8) };
   result.thread.ownerScope = (await call(`/threads/${encodeURIComponent(result.thread?.id ?? '')}`)).body?.ownerScope ?? null;
   check(/^org-/.test(result.thread.ownerScope ?? ''), `the co-founder's chat is the org's (${result.thread.ownerScope})`);
-  check(JSON.stringify(creditsBefore) !== JSON.stringify(creditsAfter), `the org's chats were billed to the founder (credits ${JSON.stringify(creditsBefore?.credits ?? creditsBefore)} → ${JSON.stringify(creditsAfter?.credits ?? creditsAfter)})`);
+  const allowanceAfter = await aiUsed();
+  result.credits.allowance = { before: allowanceBefore, after: allowanceAfter };
+  // The founder pays: the free ai allowance first (GET /quota), then the credits (the ledger). A part under one credit
+  // waits for the next call, so the run is long enough to settle at least one.
+  check(allowanceAfter > allowanceBefore || Number(creditsAfter?.credits) < Number(creditsBefore?.credits), `the org's chats were billed to the founder (allowance used ${allowanceBefore} → ${allowanceAfter}, credits ${creditsBefore?.credits} → ${creditsAfter?.credits})`);
 } catch (e) { failure = e; } finally {
   const tok = await (await fetch(`${api}/oauth/token`, { method: 'POST', body: new URLSearchParams({ grant_type: 'password', client_id: 'vibestartup', username: email, password, scope: '*' }) })).json().catch(() => ({}));
   result.erased = tok.access_token ? (await fetch(`${api}/me/erase`, { method: 'POST', headers: { authorization: `Bearer ${tok.access_token}`, 'content-type': 'application/json' }, body: '{"confirm":true}' })).status : 'no token';

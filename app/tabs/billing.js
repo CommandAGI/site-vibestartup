@@ -3,7 +3,10 @@
 // VibeStartup: prices, providers and launch, 2026-11-08). A listing is hired through a service contract
 // (docs/ARCHITECTURE.md § hiring): the founder proposes it from the business's co-founder thread and signs; VibeStartup's
 // agent signs; escrow holds the price on the founder's credits; the work is delivered and the founder accepts it.
-import { credits, creditsHistory, checkout, services, BRAND } from '/lib/api.js';
+// Every business is an org whose chats bill the founder (CommandAGI Access.billingTarget): a model call draws the plan's
+// free allowance first, then the free credits, then the paid ones. The allowance's part is no ledger row, so the page
+// shows the allowance and each co-founder's calls beside the ledger.
+import { credits, creditsHistory, allowance, freeCredits, agentCost, checkout, services, BRAND } from '/lib/api.js';
 import * as ui from '/lib/ui.js';
 import { head, section, iconBtn } from './_shared.js';
 
@@ -98,14 +101,27 @@ function contractRow(c, listing, biz) {
     + (actions.length ? `<div class="row-actions">${actions.join('')}</div>` : '') + '</article>';
 }
 
+/** The co-founders whose calls the page counts: this business's and every other business's the console knows. */
+const cofoundersOf = (biz, businesses = []) => {
+  const seen = new Set();
+  return [biz, ...businesses].filter(b => b?.cofounder?.agentId && !seen.has(b.cofounder.agentId) && seen.add(b.cofounder.agentId));
+};
+
 export async function render(ctx) {
   const { el, founder, biz } = ctx;
-  const [balance, history, rows, contracts] = await Promise.all([
+  const working = cofoundersOf(biz, ctx.businesses);
+  const [balance, history, rows, contracts, free, promo, costs] = await Promise.all([
     credits().catch(() => null),
     creditsHistory().catch(() => ({ entries: [] })),
     Promise.all(LISTINGS.map(l => services.listing(l.id).catch(() => null))),
     services.contracts().catch(() => null),
+    allowance().catch(() => null),
+    freeCredits().catch(() => null),
+    Promise.all(working.map(b => agentCost(b.cofounder.agentId).catch(() => null))),
   ]);
+  const usageRows = working.map((b, i) => ({ biz: b, cost: costs[i] })).filter(r => r.cost);
+  const promoLeft = Number(promo?.promoLeft ?? 0);
+  const open = (promo?.grants ?? []).filter(g => g.state === 'open');
   const listings = LISTINGS.map((l, i) => merge(l, rows[i]));
   const byId = new Map(listings.map(l => [l.id, l]));
   const anyOpen = listings.some(l => l.open);
@@ -122,7 +138,9 @@ export async function render(ctx) {
 
   el.innerHTML = head('Billing', `Signed in as ${esc(founder?.email ?? '')}. Your customers pay you through your own Stripe account; this page is what you pay for your co-founder's work.`)
     + (back.get('checkout') ? `<div class="note ok">Thank you. Your credits arrive as soon as Stripe confirms the payment.</div>` : '')
-    + section('Credits', `<div class="grid-2"><div class="kpi"><b id="credits-balance">${balance == null ? '—' : esc(num(Math.round(balance)))}</b><span>credits</span><small>about ${balance == null ? '—' : esc(dollars(balance))} of work at list price</small></div><div class="kpi"><b>${esc(String(entries.length))}</b><span>entries</span><small>in the recent ledger</small></div></div>`
+    + section('Credits', `<div class="grid-2"><div class="kpi"><b id="credits-balance">${balance == null ? '—' : esc(num(Math.round(balance)))}</b><span>credits</span><small>about ${balance == null ? '—' : esc(dollars(balance))} of work at list price${promoLeft > 0 ? `, ${esc(num(Math.round(promoLeft)))} of them free credits` : ''}</small></div>`
+      + `<div class="kpi" id="allowance"><b data-allowance>${free ? `${esc(num(free.remaining))} of ${esc(num(free.allotment))}` : '—'}</b><span>free allowance</span><small>${free ? `credits your co-founder can use before your credits${free.resetAt ? `; full again ${esc(when(free.resetAt))}` : ''}` : 'could not be read just now'}</small></div></div>`
+      + `<p class="hint" id="pays-first">Your co-founder's work is paid from your free allowance first, then your free credits, then the credits you buy.${open.length ? ` You earn more free credits when you ${esc(open.map(g => promo.rule?.needs?.[g.kind]).filter(Boolean).join(', ') || 'reach a milestone')}.` : ''}</p>`
       + `<div class="plans packs" id="packs">${PACKS.map(p => `<article class="card${p.popular ? ' popular' : ''}" data-pack="${esc(p.id)}"><h3>${esc(p.name)}${p.popular ? ' <span class="badge ok">best value</span>' : ''}</h3><p class="price">${esc(usd(p.usd))}</p><p class="muted">${esc(num(p.credits))} credits${p.credits > p.usd * 100 ? ` · ${esc(num(p.credits - p.usd * 100))} free` : ''}</p><button type="button" class="btn ${p.popular ? 'primary' : 'quiet'}" data-buy="${esc(p.id)}">Buy ${esc(p.name)}</button></article>`).join('')}</div>`
       + `<p class="hint">Stripe's secure page takes the payment. Your co-founder's model calls, images, video and mail draw on your credits at cost.</p>`)
     + section(anyOpen ? 'Hire your co-founder' : `Hire your co-founder · opens ${launchDay()}`, `<div class="plans" id="plans">${listings.map(l => {
@@ -138,7 +156,10 @@ export async function render(ctx) {
       + (live.length ? `<div class="list" id="contracts">${live.map(c => contractRow(c, byId.get(c.listingId), biz)).join('')}</div>` : `<p class="muted">Free now: a storefront with checkout into your own Stripe account, a business email, a brand kit, the launch week and a daily briefing, on your credits. Not included: sourcing, stock or shipping (you bring the supplier), and edits to a site you already have.</p>`)
       + (past.length ? `<details class="past"><summary>Past contracts (${esc(String(past.length))})</summary><div class="list" id="contracts-past">${past.map(c => contractRow(c, byId.get(c.listingId), biz)).join('')}</div></details>` : '')
       + '</div>')
-    + section('Ledger', entries.length ? `<table class="table"><thead><tr><th>When</th><th>What</th><th class="num">Credits</th></tr></thead><tbody id="credits-history">${entries.slice(0, 50).map(e => `<tr><td>${esc(when(e.at ?? e.createdAt ?? e.timestamp ?? Date.now()))}</td><td>${esc(e.reason ?? e.description ?? e.kind ?? e.type ?? '')}</td><td class="num">${esc(num(e.amount ?? e.delta ?? e.credits ?? 0))}</td></tr>`).join('')}</tbody></table>` : '<table hidden><tbody id="credits-history"></tbody></table><p class="hint">No ledger entries yet. Every credit your co-founder spends shows here, with what it was for.</p>')
+    + section('Your co-founders\' work', usageRows.length
+      ? `<table class="table" id="usage"><thead><tr><th>Business</th><th class="num">Model calls</th><th class="num">Credits</th></tr></thead><tbody>${usageRows.map(({ biz: b, cost }) => `<tr data-usage-biz="${esc(b.slug)}"><td>${esc(b.cofounder.name ?? 'Co-founder')} for ${esc(b.name)}</td><td class="num">${esc(num(cost.calls ?? 0))}</td><td class="num" data-credits>${esc(cost.pricedCostUsd ? (cost.pricedCostUsd * 100 < 1 ? 'under 1' : num(Math.round(cost.pricedCostUsd * 100))) : '0')}</td></tr>`).join('')}</tbody></table><p class="hint">The last 30 days, at cost. The free allowance pays first, so this work shows here before it shows in the ledger.</p>`
+      : '<p class="hint" id="usage">No co-founder work yet.</p>')
+    + section('Ledger', entries.length ? `<table class="table"><thead><tr><th>When</th><th>What</th><th class="num">Credits</th></tr></thead><tbody id="credits-history">${entries.slice(0, 50).map(e => `<tr><td>${esc(when(e.at ?? e.createdAt ?? e.timestamp ?? Date.now()))}</td><td>${esc(e.reason ?? e.description ?? e.kind ?? e.type ?? '')}</td><td class="num">${esc(num(e.amount ?? e.delta ?? e.credits ?? 0))}</td></tr>`).join('')}</tbody></table>` : '<table hidden><tbody id="credits-history"></tbody></table><p class="hint">No ledger entries yet. Each credit your co-founder spends past the free allowance shows here, with what it was for.</p>')
     + section('Disputes', `<div class="panel stack"><p class="muted">Billed work that was not what you asked for can be disputed for its credits back.</p><a class="btn quiet" id="dispute" href="mailto:${esc(BRAND.support)}?subject=${encodeURIComponent('Dispute a charge')}&body=${encodeURIComponent(`Account: ${founder?.email ?? ''}\nWhat was billed: \nWhat I asked for: \n`)}">Dispute a charge</a></div>`);
 
   const returnPath = `/app/${location.search}#page=billing`;
