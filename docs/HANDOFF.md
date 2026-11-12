@@ -96,6 +96,11 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   `task_create` calls before the answer, so the first reply took 22 to 46 s. The local run did not do it. Check the
   Tasks folder of a new business for duplicate day-one cards; if they are there, the charter should say the two cards
   exist (or the opening ask should name the turn it belongs to).
+  Fixed 2026-11-11: CommandAGI's `task_create` takes `taskKey` (de1a156159c, for every agent), and a repeat with a key
+  a task has answers that task with `existing: true` and makes nothing. The opening ask gives the two cards their keys
+  (`day1.storefront`, `day1.offer`: `dayOneTasks`), says to make them once, and the charter and PLAYBOOK.md say every
+  approval task has a key of its day and step and that the co-founder reads its open tasks before it makes one.
+  `test/cofounder-speed.mjs` now lists the business's tasks and reports a title or a key that is there twice.
 - **The co-founder's first answer** (2026-11-11, `node test/cofounder-speed.mjs --api https://api.commandagi.com`):
   before, the first words 17.8 s after the console opened and no day-one card within 150 s (15 file reads, 8
   failed); after (GPT-6 Luna, the thread started during the deploy, a greeting before any tool, the brief in the

@@ -3,7 +3,8 @@
 // visible words, to its first full message, and to the first approval card (the day-one proposal). Then the founder
 // writes `--replies` times (default 2) and each reply's first words and whole message are timed. Last, the co-founder
 // agent's model calls (`GET /agents/:id/cost`): input tokens and the share the provider read from its prompt cache.
-// The account's own model floor (lib/business.js FOUNDER_FLOOR, set at sign-up) is read back. The account is erased at
+// The account's own model floor (lib/business.js FOUNDER_FLOOR, set at sign-up) is read back. The business's tasks are
+// listed with their keys, and a title or a key that is there twice is reported (`tasks.duplicateTitles`, `duplicateKeys`). The account is erased at
 // the end, also when the run fails.
 //
 //   node test/cofounder-speed.mjs --api https://api.commandagi.com|local [--width 1440] [--wait 120] [--replies 2]
@@ -90,6 +91,11 @@ try {
     const folder = (await call(`/drive?path=${encodeURIComponent(`Businesses/${slug}`)}`)).body;
     const file = (folder?.files ?? folder?.items ?? folder?.entries ?? []).find(f => f.name === 'business.json');
     const biz = file ? (await call(`/drive/${encodeURIComponent(file.id)}/content`)).body : null;
+    // The business's tasks after the replies: a repeated task_create with a card's taskKey answers that card, so each
+    // title and each key is there once (production, 2026-11-11: each founder message made one to three more cards).
+    const listed = (await call('/me/tasks/query', { method: 'POST', body: JSON.stringify({ labels: [`biz:${slug}`], includeClosed: true }) })).body?.tasks ?? [];
+    const twice = list => [...new Set(list.filter((v, i) => v && list.indexOf(v) !== i))];
+    out.tasks = { count: listed.length, titles: listed.map(t => t.title), keys: listed.map(t => t.taskKey ?? null), duplicateTitles: twice(listed.map(t => t.title)), duplicateKeys: twice(listed.map(t => t.taskKey)) };
     out.welcome = biz?.cofounder?.welcome ? { template: biz.cofounder.welcome.template, kept: biz.cofounder.welcome.kept } : null;
     const agentId = biz?.cofounder?.forkId ?? biz?.cofounder?.agentId;
     // Model calls settle into their rows a moment after the turn.
