@@ -263,7 +263,10 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   is the founder's, so DigitalProduct's needs the owner once.
 - **Prices, the paid providers and the launch.** The pages say "set at launch". Payments, ads, social posting and
   outbound mail stop at "connect your provider".
-- **`hello@vibestartup.pro`.** Where it forwards: an Email Routing rule in the vibestartup.pro zone.
+- **`hello@vibestartup.pro`.** Since 2026-11-12 19:40 UTC vibestartup.pro's mail is CommandAGI's (Postmark), moved by
+  the CommandAGI session: hello@ (the catch-all), help@, info@, legal@, press@ and abuse@ are org-vibestartup's
+  mailboxes; jacob@ and security@ are the owner's. jacob@ and hello@ forward to the owner's Gmail, as Email Routing did.
+  The previous app's catch-all worker (`vibestartup-api-production`) no longer receives mail.
 - **commandagi.com's gloss highlight.** It is a design call on CommandAGI's own site, not this one: a one-edge line on
   every rounded control (CommandAGI `docs/verification.md`, 2026-11-03).
 
