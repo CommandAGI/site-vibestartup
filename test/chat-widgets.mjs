@@ -3,10 +3,11 @@
 // option in the page; the server locks it (message.update) and the co-founder replies to the answer. Then the same with
 // a slider (a budget) set with the keyboard. Each step is timed from the founder's act, the transcript is read back
 // through the API (the answer on the widget, the founder's line, the co-founder's reply after it), and screenshots are
-// taken at --width and at 390 px. The account is erased at the end, also when the run fails.
+// taken at --width and at 390 px. The day's founder account is kept for the day's runs (below); --erase-founder ends it.
 //
 //   node test/chat-widgets.mjs [--url https://vibestartup.commandagi.app] [--api https://api.commandagi.com|local]
-//                              [--out <dir>] [--width 1440] [--no-slider] [--refused] [--keep]
+//                              [--out <dir>] [--width 1440] [--no-slider] [--refused] [--keep] [--fresh] [--erase-founder]
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withBrowser, sleep } from './browser.mjs';
@@ -21,7 +22,15 @@ const slider = !process.argv.includes('--no-slider');
 const refused = process.argv.includes('--refused');
 // Keep the account and its threads, so CommandAGI can read the thread's events afterwards; the report names the account.
 const keep = process.argv.includes('--keep');
-const email = `widgets-${Date.now().toString(36)}@example.com`;
+// One founder a UTC day: the rounds test the controls, not sign-up, so they do not spend the day's test-address sign-ups
+// (cap 100). The first run of the day signs up through the brand's door (founded_by, the brand and the floor are real)
+// and keeps the account in .test-results/; each run then makes its own business, so its rounds are in a fresh org and
+// thread. --fresh signs up an account of its own and erases it at the end; --erase-founder erases the day's founder.
+const fresh = process.argv.includes('--fresh');
+const founderFile = path.join(here, '..', '.test-results', `chat-widgets-founder-${new Date().toISOString().slice(0, 10)}.json`);
+const kept = !fresh && fs.existsSync(founderFile) ? JSON.parse(fs.readFileSync(founderFile, 'utf8')) : null;
+if (process.argv.includes('--erase-founder') && !kept) { console.log(`no founder kept today (${founderFile})`); process.exit(0); }
+const email = kept?.email ?? `widgets-${Date.now().toString(36)}@example.com`;
 const password = 'correct horse battery';
 const ASK_SELECT = 'Which starting price should we use for one mug? Give me three prices to choose from as buttons in the chat.';
 const ASK_SLIDER = 'How much should we spend on ads in the first month? Let me pick the amount with a slider in the chat.';
@@ -33,9 +42,14 @@ const result = { site, api, email, checks: [] };
 let failure = null;
 const check = (ok, what) => { result.checks.push(`${ok ? 'ok' : 'FAIL'} ${what}`); if (!ok) throw Error(what); };
 try {
-  const r = await fetch(`${api}/oauth/signup`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ client_id: 'vibestartup', name: 'Widget Person', email, password, scope: '*' }) });
+  const r = kept
+    ? await fetch(`${api}/oauth/token`, { method: 'POST', body: new URLSearchParams({ grant_type: 'password', client_id: 'vibestartup', username: email, password, scope: '*' }) })
+    : await fetch(`${api}/oauth/signup`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ client_id: 'vibestartup', name: 'Widget Person', email, password, scope: '*' }) });
   const tok = await r.json();
-  if (!r.ok) throw Error(`sign-up: ${r.status} ${JSON.stringify(tok)}`);
+  if (!r.ok) throw Error(`${kept ? 'sign-in of the day\'s founder' : 'sign-up'}: ${r.status} ${JSON.stringify(tok)}`);
+  if (!kept && !fresh) { fs.mkdirSync(path.dirname(founderFile), { recursive: true }); fs.writeFileSync(founderFile, JSON.stringify({ email, at: Date.now() })); }
+  result.founder = fresh ? 'fresh' : kept ? 'the day\'s, signed in' : 'the day\'s, signed up now';
+  if (process.argv.includes('--erase-founder')) throw Object.assign(Error('erase only'), { eraseOnly: true });
   const call = async (p, init = {}) => { const res = await fetch(`${api}${p}`, { ...init, headers: { authorization: `Bearer ${tok.access_token}`, 'content-type': 'application/json', ...(init.headers ?? {}) } }); return { status: res.status, body: await res.json().catch(() => null) }; };
   await call('/me/profile', { method: 'POST', body: '{"birthdate":"1990-01-01"}' });
   const me = (await call('/me')).body;
@@ -186,9 +200,11 @@ try {
   // The founder pays: the free ai allowance first (GET /quota), then the credits (the ledger). A part under one credit
   // waits for the next call, so the run is long enough to settle at least one.
   check(allowanceAfter > allowanceBefore || Number(creditsAfter?.credits) < Number(creditsBefore?.credits), `the org's chats were billed to the founder (allowance used ${allowanceBefore} → ${allowanceAfter}, credits ${creditsBefore?.credits} → ${creditsAfter?.credits})`);
-} catch (e) { failure = e; } finally {
+} catch (e) { if (!e.eraseOnly) failure = e; } finally {
+  const erase = fresh ? !keep : process.argv.includes('--erase-founder');
   const tok = await (await fetch(`${api}/oauth/token`, { method: 'POST', body: new URLSearchParams({ grant_type: 'password', client_id: 'vibestartup', username: email, password, scope: '*' }) })).json().catch(() => ({}));
-  result.erased = keep ? 'kept (--keep)' : tok.access_token ? (await fetch(`${api}/me/erase`, { method: 'POST', headers: { authorization: `Bearer ${tok.access_token}`, 'content-type': 'application/json' }, body: '{"confirm":true}' })).status : 'no token';
+  result.erased = !erase ? 'kept' : tok.access_token ? (await fetch(`${api}/me/erase`, { method: 'POST', headers: { authorization: `Bearer ${tok.access_token}`, 'content-type': 'application/json' }, body: '{"confirm":true}' })).status : 'no token';
+  if (erase && !fresh) fs.rmSync(founderFile, { force: true });
   await local?.stop();
 }
 console.log(JSON.stringify(result, null, 2));
