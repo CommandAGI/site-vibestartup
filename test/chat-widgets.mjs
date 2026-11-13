@@ -41,6 +41,14 @@ const ASK_SLIDER = 'How much should we spend on ads in the first month? Let me p
 let site = arg('url'), local = null;
 if (!site) { const { startLocal } = await import('./local.mjs'); local = await startLocal({ port: 0, api: apiArg === 'local' ? null : apiArg }); site = local.url; }
 const api = local?.api ?? apiArg;
+// About 5 minutes after an api version goes live, Cloudflare ends every thread object still on the version before it, all
+// at once (a 1006 and a turn.resumed). A run waits until 6 minutes after the running version went live, so it does not
+// record the deploy's own reset as a restart (CommandAGI scripts/release/wait-settled.mjs; COMMANDAGI_ROOT names the checkout).
+if (/^https:/.test(api) && !process.argv.includes('--erase-founder')) {
+  const root = process.env.COMMANDAGI_ROOT ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../../..');
+  const { waitSettled } = await import(path.join(root, 'scripts/release/wait-settled.mjs'));
+  await waitSettled(api);
+}
 const result = { site, api, email, checks: [] };
 let failure = null;
 const check = (ok, what) => { result.checks.push(`${ok ? 'ok' : 'FAIL'} ${what}`); if (!ok) throw Error(what); };
