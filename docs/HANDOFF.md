@@ -56,6 +56,17 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
     buttons", then a single message, "Which starting price should we use for one mug?", with no block. Its route was
     `deliberate`. Run 2 drew both controls, but the server did not hold the slider as answered. The test now saves the
     raw events and the messages around a control, so the next failure shows its cause.
+  - **Where the controls stand (2026-11-13 03:30 UTC, CommandAGI fed8564165a): 6 of 6 browser runs passed whole.**
+    The co-founder asks with CommandAGI's typed `control` on its `done` (the charter, d5be958); a chart stays a
+    cagi-ask block. gpt-6-luna filled `control` 12 of 12, with no blocks. A select's answer is its value ("18"). What
+    fixed it, all in CommandAGI, each measured by this test on production: the model's raw answer is recorded
+    (`agent_output`); events are held across an object loss (bf6efb4); an answer survives a rebuild (9027b35); a turn
+    killed by an object restart runs again with the lines that came during it (161d387, cfdf25e, fed8564); a turn that
+    still dies says so in the chat (d12a0ae; this console draws that line as a notice, f9ecdf1). Still open in
+    CommandAGI: the thread object restarts in about 4 of 6 runs (a 1006 socket close, about 15 s of delay, recovered by
+    the resume); the cause is being looked for. `test/chat-widgets.mjs` signs up one founder a UTC day, reports the
+    page's sockets with their close codes, any `turn.*`/`wake.*` event, and the stopped line; `--erase-founder` ends
+    the day's founder.
   - Who pays: the founder (an org's thread bills its owner). A call draws the free plan's `ai` allowance first (30
     credits each 8 hours, `GET /quota`), then the free credits, then the bought ones. A chat-only thread's spend was never
     settled: the ledger flushed only at an alarm, and a chat arms none. CommandAGI 3bd4e4ec2ef settles each call as it
