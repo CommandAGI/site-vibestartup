@@ -79,6 +79,16 @@ async function run(b) {
   await b.waitFor('!!document.querySelector("#composer") && !!document.querySelector("#tabs .sub")', 30000);
   const main = await b.eval(`(async () => { const { readBusiness } = await import('/lib/business.js'); return (await readBusiness(${JSON.stringify(slug)})).cofounder?.threadId ?? null; })()`);
   check(!!main, 'the business has its co-founder thread');
+  // Email: a folder button marks itself at the click (no fetch between), and the search box keeps its focus while typed in.
+  await b.eval('location.hash = "tab=email"');
+  if (await b.waitFor('!!document.querySelector("#mail-folders [data-folder=sent]")', 30000).then(() => true, () => false)) {
+    const marked = await b.eval(`(() => { document.querySelector('#mail-folders [data-folder=sent]').click(); return document.querySelector('#mail-folders [data-folder=sent]').getAttribute('aria-pressed') === 'true' && document.querySelectorAll('#mail-folders [aria-pressed=true]').length === 1; })()`);
+    check(marked, 'Email: a folder button moves the highlight at the click');
+    await b.eval(`(() => { const i = document.querySelector('#mail-search'); i.focus(); i.value = 'zz'; i.dispatchEvent(new Event('input')); })()`);
+    check(await b.eval(`document.activeElement?.id === 'mail-search' && document.querySelector('#mail-search').value === 'zz' && document.querySelector('#mail-folders [data-folder=sent]').getAttribute('aria-pressed') === 'true'`), 'Email: the search box keeps its focus and text, and the folder stays marked');
+  } else check(false, 'Email: the folders are drawn (the business has an address)');
+  await b.eval('location.hash = "tab=chat"');
+  await b.waitFor('!!document.querySelector("#composer")', 30000);
   await b.waitFor('document.querySelectorAll("#tabs .sub a.sub-item").length >= 1', 15000).catch(() => null);
   check(await b.eval('document.querySelector("#tabs a[data-tab=chat]").getAttribute("aria-expanded") === "true"'), 'Chat is open in the rail while it is shown');
   check(await hashThread(b) === main, 'Chat with no thread named opens the most recent one (the first chat), and the address names it');

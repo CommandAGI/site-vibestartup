@@ -25,22 +25,28 @@ export async function render(ctx) {
     return;
   }
 
-  const paint = async () => {
-    const r = await email.threads(biz.email.id, { limit: 100 }).catch(e => ({ threads: [], error: e }));
-    state.list = r.threads ?? [];
+  // The mailbox is fetched by load(); a folder or a search only draws again from what was fetched, so the highlight moves
+  // at the click and the search box keeps its focus and cursor while the list follows it.
+  let r = { threads: [] };
+  const load = async () => { r = await email.threads(biz.email.id, { limit: 100 }).catch(e => ({ threads: [], error: e })); state.list = r.threads ?? []; };
+  const draw = (listOnly = false) => {
     const unread = t => t.unread || t.unreadCount > 0 || t.isUnread;
     const inFolder = t => state.folder === 'all' ? true : state.folder === 'unread' ? unread(t) : state.folder === 'sent' ? (t.folder === 'sent' || t.direction === 'outbound' || t.lastDirection === 'outbound') : state.folder === 'drafts' ? t.folder === 'drafts' : !(t.folder === 'sent' || t.direction === 'outbound') && !t.archived;
     const shown = state.list.filter(inFolder).filter(t => !state.q || `${t.subject ?? ''} ${t.from ?? ''} ${t.snippet ?? ''}`.toLowerCase().includes(state.q.toLowerCase()));
+    const listHtml = shown.length ? shown.map(t => `<div class="thread ${unread(t) ? 'unread' : ''}" data-tid="${esc(t.id)}"><b>${esc(t.subject || '(no subject)')}</b><div class="meta">${esc(t.from ?? t.participants?.join(', ') ?? '')} · ${esc(ago(t.lastAt ?? t.updatedAt ?? t.at ?? Date.now()))}</div><div class="small muted">${esc((t.snippet ?? '').slice(0, 120))}</div></div>`).join('') : `<div class="empty"><h3>Nothing here</h3><p>${r.error ? esc(oops(r.error)) : `No mail in ${state.folder}.`}</p></div>`;
+    const bindThreads = () => $$('.thread', el).forEach(t => t.onclick = () => openThread(t.dataset.tid));
+    if (listOnly) { $('#mail-list', el).innerHTML = listHtml; bindThreads(); return; }
     el.innerHTML = head('Email', '', `<p class="muted" id="mail-address">${esc(biz.email.address)}${iconBtn('copy', 'Copy address', 'data-copy-address')}</p>`)
       + `<div class="mail-layout"><div class="mail-folders" id="mail-folders">${FOLDERS.map(([id, l]) => `<button type="button" data-folder="${id}" aria-pressed="${state.folder === id}">${l}</button>`).join('')}<label class="field" style="margin-top:12px"><span class="sr-only">Search</span><input id="mail-search" placeholder="Search" value="${esc(state.q)}"></label></div>
-        <div id="mail-list">${shown.length ? shown.map(t => `<div class="thread ${unread(t) ? 'unread' : ''}" data-tid="${esc(t.id)}"><b>${esc(t.subject || '(no subject)')}</b><div class="meta">${esc(t.from ?? t.participants?.join(', ') ?? '')} · ${esc(ago(t.lastAt ?? t.updatedAt ?? t.at ?? Date.now()))}</div><div class="small muted">${esc((t.snippet ?? '').slice(0, 120))}</div></div>`).join('') : `<div class="empty"><h3>Nothing here</h3><p>${r.error ? esc(oops(r.error)) : `No mail in ${state.folder}.`}</p></div>`}</div>
+        <div id="mail-list">${listHtml}</div>
         <div id="mail-thread"><div class="empty"><p>Open a thread to read it.</p></div></div></div>`;
-    $$('[data-folder]', el).forEach(b => b.onclick = () => { state.folder = b.dataset.folder; paint(); });
-    $('#mail-search', el).oninput = e => { state.q = e.target.value; paint(); };
+    $$('[data-folder]', el).forEach(b => b.onclick = () => { state.folder = b.dataset.folder; draw(); });
+    $('#mail-search', el).oninput = e => { state.q = e.target.value; draw(true); };
     $('[data-copy-address]', el).onclick = () => navigator.clipboard?.writeText(biz.email.address).then(() => toast('Address copied', 'ok'));
-    $$('.thread', el).forEach(t => t.onclick = () => openThread(t.dataset.tid));
+    bindThreads();
     if (state.open) openThread(state.open);
   };
+  const paint = async () => { await load(); draw(); };
   const openThread = async tid => {
     state.open = tid;
     const box = $('#mail-thread', el);
