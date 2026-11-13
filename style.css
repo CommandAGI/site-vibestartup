@@ -124,6 +124,14 @@ img, svg, video { display: block; max-width: 100%; }
 .field { display: grid; gap: 6px; font-size: 14px; }
 .field > span, .field > label { font-weight: 500; color: var(--ink); }
 .field small { color: var(--ink-3); font-weight: 400; }
+/* A password field and its show/hide button: the button sits inside the field's right edge. */
+.pw { position: relative; display: block; }
+.pw input { padding-right: 44px; }
+.pw-toggle { position: absolute; top: 0; right: 0; bottom: 0; width: 40px; display: grid; place-items: center; border: 0; background: transparent; color: var(--ink-3); cursor: pointer; }
+.pw-toggle:hover { color: var(--ink); }
+.pw-toggle:focus-visible { outline: 2px solid var(--focus); outline-offset: -4px; }
+.pw-toggle .i-hide, .pw-toggle[aria-pressed="true"] .i-show { display: none; }
+.pw-toggle[aria-pressed="true"] .i-hide { display: block; }
 .input, .field input, .field select, .field textarea { width: 100%; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); transition: border-color .16s var(--ease), box-shadow .16s var(--ease); }
 .field textarea { min-height: 88px; resize: vertical; line-height: 1.45; }
 .input:focus, .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 18%, transparent); }

@@ -98,6 +98,18 @@ signup.addEventListener('submit', e => { e.preventDefault(); submit(signup, asyn
   await allowCofounderAccounts({ atSignUp: true }).catch(() => null);
 }); });
 signin.addEventListener('submit', e => { e.preventDefault(); submit(signin, d => signIn({ email: d.email, password: d.password })); });
+// Show or hide a password: the field's type changes, the cursor stays where it was, and the button says what it will do.
+$$('[data-pw-toggle]').forEach(btn => btn.addEventListener('click', () => {
+  const input = btn.parentElement.querySelector('input');
+  const show = input.type === 'password';
+  const at = [input.selectionStart, input.selectionEnd];
+  input.type = show ? 'text' : 'password';
+  btn.setAttribute('aria-pressed', String(show));
+  btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+  input.focus(); try { input.setSelectionRange(...at); } catch { /* a field that has no selection */ }
+}));
+// A sent form hides its password again, so a page the browser keeps never shows it later.
+for (const f of [signup, signin]) f.addEventListener('submit', () => $$('[data-pw-toggle][aria-pressed="true"]', f).forEach(b => b.click()), true);
 // The forms send nothing until this module has bound them (auth/index.html stops a native submit, which would put the
 // password in the address while the page's modules are still on their way); a driven browser waits for this mark.
 document.documentElement.dataset.auth = 'ready';

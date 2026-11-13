@@ -28,7 +28,7 @@
       <p class="muted">Free credits to start. No card.</p>
       <label class="field"><span>Your name</span><input name="name" autocomplete="name" required maxlength="80" placeholder="Ada Lovelace"></label>
       <label class="field"><span>Email</span><input name="email" type="email" autocomplete="email" required placeholder="you@example.com"></label>
-      <label class="field"><span>Password <small>at least 8 characters</small></span><input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+      <label class="field"><span>Password <small>at least 8 characters</small></span><span class="pw"><input name="password" type="password" autocomplete="new-password" minlength="8" required><button type="button" class="pw-toggle" data-pw-toggle aria-label="Show password" aria-pressed="false"><svg class="i-show" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="i-hide" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7c1.7 0 3.2-.5 4.5-1.2"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button></span></label>
       <label class="field"><span>Date of birth <small>the models your co-founder runs on need it</small></span><input name="birthdate" type="date" autocomplete="bday" required max="2020-12-31" min="1900-01-01"></label>
       <div id="turnstile" class="turnstile"></div>
       <p class="error" role="alert" data-error></p>
@@ -39,7 +39,7 @@
       <h1>Sign in</h1>
       <p class="muted">With your VibeStartup account, or any CommandAGI account.</p>
       <label class="field"><span>Email</span><input name="email" type="email" autocomplete="email" required></label>
-      <label class="field"><span>Password</span><input name="password" type="password" autocomplete="current-password" required></label>
+      <label class="field"><span>Password</span><span class="pw"><input name="password" type="password" autocomplete="current-password" required><button type="button" class="pw-toggle" data-pw-toggle aria-label="Show password" aria-pressed="false"><svg class="i-show" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="i-hide" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7c1.7 0 3.2-.5 4.5-1.2"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></button></span></label>
       <p class="error" role="alert" data-error></p>
       <button class="btn primary lg full" type="submit">Sign in</button>
       <p class="auth-switch">New here? <button type="button" data-auth-switch="signup">Create an account</button></p>
