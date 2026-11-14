@@ -87,6 +87,22 @@ async function run(b) {
     await b.eval(`(() => { const i = document.querySelector('#mail-search'); i.focus(); i.value = 'zz'; i.dispatchEvent(new Event('input')); })()`);
     check(await b.eval(`document.activeElement?.id === 'mail-search' && document.querySelector('#mail-search').value === 'zz' && document.querySelector('#mail-folders [data-folder=sent]').getAttribute('aria-pressed') === 'true'`), 'Email: the search box keeps its focus and text, and the folder stays marked');
   } else check(false, 'Email: the folders are drawn (the business has an address)');
+  // Billing's "Unlock more credits": one row a milestone the API names (GET /me/free-credits), drawn when one is open
+  // with credits to earn; its storefront link opens the Storefront tab.
+  await b.eval('location.hash = "page=billing"');
+  await b.waitFor('!!document.querySelector("#pays-first")', 30000).catch(() => null);
+  const fc = await b.eval(`(async () => { const { freeCredits } = await import('/lib/api.js'); return freeCredits().catch(e => ({ error: String(e) })); })()`);
+  const openKinds = (fc?.grants ?? []).filter(g => g.state === 'open' && g.credits > 0).map(g => g.kind);
+  const drawn = await b.eval(`[...document.querySelectorAll('#unlock [data-milestone]')].map(r => r.dataset.milestone + ':' + r.dataset.state)`);
+  const want = (fc?.grants ?? []).filter(g => g.state !== 'none').map(g => `${g.kind}:${g.state}`);
+  check(openKinds.length ? JSON.stringify(drawn) === JSON.stringify(want) : drawn.length === 0, `Billing: "Unlock more credits" shows the API's milestones (${JSON.stringify(drawn)}; the API: ${JSON.stringify(want)})`);
+  await b.eval('document.querySelector("#unlock")?.scrollIntoView({ block: "center" })');
+  await shot('billing-unlock-1440', 1440);
+  if (await b.eval('!!document.querySelector("#unlock [data-milestone=build] a[href=\'#tab=storefront\']")')) {
+    await b.click('#unlock [data-milestone=build] a');
+    await b.waitFor('location.hash.includes("tab=storefront")', 15000).catch(() => null);
+    check(await b.eval('location.hash.includes("tab=storefront") && !location.hash.includes("page=") && document.querySelector("#tabs a[data-tab=storefront]")?.getAttribute("aria-current") === "page" && /Storefront/.test(document.querySelector("#topbar").innerText)'), 'Billing: the site milestone opens the Storefront tab');
+  }
   await b.eval('location.hash = "tab=chat"');
   await b.waitFor('!!document.querySelector("#composer")', 30000);
   await b.waitFor('document.querySelectorAll("#tabs .sub a.sub-item").length >= 1', 15000).catch(() => null);

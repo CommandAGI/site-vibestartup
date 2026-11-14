@@ -242,9 +242,9 @@ item when it is done; history stays in the git log and in CommandAGI's `docs/ver
   to tick shows; a failed check says to press Troubleshoot or reload), and CommandAGI 8b598177df3 sets
   `signup.turnstile.require.oauth` to true (shipped by the CommandAGI session; it confirms with a real sign-up).
   Test addresses (example.com) are not checked, so the tests are unaffected.
-- **Launch follow-ups not done yet:** an "Unlock more credits" card from `GET /me/free-credits`; drop Billing's origin fallback (the brand origin is on
+- **Launch follow-ups not done yet:** drop Billing's origin fallback (the brand origin is on
   production); seed the listing terms to production (`org-specs`, above).
-- **The Email tab's own folder buttons** don't move the address or the rail's highlight; the rail's links do.
+- Billing's "Unlock more credits" card (`GET /me/free-credits`): each milestone earned, refused (in words) or open with its credits and where it is done (an email code, the storefront, the packs); `test/sidebar.mjs` checks it against the API.
 - **Existing businesses keep the co-founder instructions they were made with** until step 2 puts the charter in the
   agent (`docs/schema.md`).
 - `lib/api.js` has no fetch timeout; a hung call shows the tab's "still loading, Try again" banner after 10 s.

@@ -6,7 +6,7 @@
 // Every business is an org whose chats bill the founder (CommandAGI Access.billingTarget): a model call draws the plan's
 // free allowance first, then the free credits, then the paid ones. The allowance's part is no ledger row, so the page
 // shows the allowance and each co-founder's calls beside the ledger.
-import { credits, creditsHistory, allowance, freeCredits, agentCost, checkout, services, BRAND } from '/lib/api.js';
+import { credits, creditsHistory, allowance, freeCredits, agentCost, checkout, services, emails, BRAND } from '/lib/api.js';
 import * as ui from '/lib/ui.js';
 import { head, section, iconBtn } from './_shared.js';
 
@@ -35,6 +35,37 @@ const dollars = creditsN => usd(Math.round(creditsN) / 100);
 const launchDay = () => new Date(`${LAUNCH}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 /** The pill a feature that is not open yet wears: lib/ui.js `soon()` where it exists. */
 const soonPill = () => (typeof ui.soon === 'function' ? ui.soon() : '<span class="pill soon">Soon</span>');
+
+// Free credits a founder earns once each (CommandAGI GET /me/free-credits; docs/billing.md § free credits): what each
+// milestone asks and where it is done. A refusal's code is said in words; one this page does not know is shown as it is.
+const MILESTONES = {
+  signup: { title: 'Joining', todo: '' },
+  email: { title: 'Confirm your email', todo: '<button type="button" class="btn quiet" data-unlock-email>Send a code</button>' },
+  build: { title: 'Put your first site live', todo: '<a class="btn quiet" href="#tab=storefront">Open the storefront</a>' },
+  paid: { title: 'Make a first payment', todo: '<a class="btn quiet" href="#packs" data-unlock-packs>See the packs</a>' },
+};
+const REFUSED = {
+  surge: 'not given during a rush of sign-ups',
+  disposable_domain: 'not given to a throwaway address',
+  made_for_an_org: 'not given to an account made for an organisation',
+  nothing_today: 'none left to give that day',
+  budget_spent: "the month's free credits were all given",
+};
+function unlockCard(promo) {
+  const grants = (promo?.grants ?? []).filter(g => MILESTONES[g.kind] && g.state !== 'none');
+  if (!grants.length || !grants.some(g => g.state === 'open' && g.credits > 0)) return '';
+  const row = g => {
+    const m = MILESTONES[g.kind];
+    const [badge, text, act] = g.state === 'earned'
+      ? ['<span class="badge ok">Earned</span>', `${num(g.credits)} credits${g.expiresAt ? `, to use by ${day(g.expiresAt)}` : ''}`, '']
+      : g.state === 'refused'
+        ? ['<span class="badge">Not given</span>', REFUSED[g.why] ?? g.why, '']
+        : ['<span class="badge warn">Open</span>', g.credits > 0 ? `${num(g.credits)} credits` : 'nothing to earn today', g.credits > 0 ? m.todo : ''];
+    return `<div class="row" data-milestone="${esc(g.kind)}" data-state="${esc(g.state)}"><div class="grow"><b>${esc(m.title)}</b> ${badge}<div class="small muted">${esc(text)}</div></div>${act}</div>`;
+  };
+  const rule = promo.rule ?? {};
+  return `<div class="panel stack" id="unlock"><h3>Unlock more credits</h3>${grants.map(row).join('')}<p class="hint">Each is earned once.${rule.expiryDays ? ` Free credits last ${esc(num(rule.expiryDays))} days` : ''}${rule.dailySpendCredits ? `, and your co-founder uses up to ${esc(num(rule.dailySpendCredits))} of them a day` : ''}${rule.expiryDays ? '.' : ''}</p></div>`;
+}
 
 /** A plan's amount in credits (a flat posted plan: `amount.amount` is a decimal `{ u, s }`). */
 function planCredits(plan) {
@@ -121,7 +152,6 @@ export async function render(ctx) {
   ]);
   const usageRows = working.map((b, i) => ({ biz: b, cost: costs[i] })).filter(r => r.cost);
   const promoLeft = Number(promo?.promoLeft ?? 0);
-  const open = (promo?.grants ?? []).filter(g => g.state === 'open');
   const listings = LISTINGS.map((l, i) => merge(l, rows[i]));
   const byId = new Map(listings.map(l => [l.id, l]));
   const anyOpen = listings.some(l => l.open);
@@ -140,7 +170,8 @@ export async function render(ctx) {
     + (back.get('checkout') ? `<div class="note ok">Thank you. Your credits arrive as soon as Stripe confirms the payment.</div>` : '')
     + section('Credits', `<div class="grid-2"><div class="kpi"><b id="credits-balance">${balance == null ? '—' : esc(num(Math.round(balance)))}</b><span>credits</span><small>about ${balance == null ? '—' : esc(dollars(balance))} of work at list price${promoLeft > 0 ? `, ${esc(num(Math.round(promoLeft)))} of them free credits` : ''}</small></div>`
       + `<div class="kpi" id="allowance"><b data-allowance>${free ? `${esc(num(free.remaining))} of ${esc(num(free.allotment))}` : '—'}</b><span>free allowance</span><small>${free ? `credits your co-founder can use before your credits${free.resetAt ? `; full again ${esc(when(free.resetAt))}` : ''}` : 'could not be read just now'}</small></div></div>`
-      + `<p class="hint" id="pays-first">Your co-founder's work is paid from your free allowance first, then your free credits, then the credits you buy.${open.length ? ` You earn more free credits when you ${esc(open.map(g => promo.rule?.needs?.[g.kind]).filter(Boolean).join(', ') || 'reach a milestone')}.` : ''}</p>`
+      + `<p class="hint" id="pays-first">Your co-founder's work is paid from your free allowance first, then your free credits, then the credits you buy.</p>`
+      + unlockCard(promo)
       + `<div class="plans packs" id="packs">${PACKS.map(p => `<article class="card${p.popular ? ' popular' : ''}" data-pack="${esc(p.id)}"><h3>${esc(p.name)}${p.popular ? ' <span class="badge ok">best value</span>' : ''}</h3><p class="price">${esc(usd(p.usd))}</p><p class="muted">${esc(num(p.credits))} credits${p.credits > p.usd * 100 ? ` · ${esc(num(p.credits - p.usd * 100))} free` : ''}</p><button type="button" class="btn ${p.popular ? 'primary' : 'quiet'}" data-buy="${esc(p.id)}">Buy ${esc(p.name)}</button></article>`).join('')}</div>`
       + `<p class="hint">Stripe's secure page takes the payment. Your co-founder's model calls, images, video and mail draw on your credits at cost.</p>`)
     + section(anyOpen ? 'Hire your co-founder' : `Hire your co-founder · opens ${launchDay()}`, `<div class="plans" id="plans">${listings.map(l => {
@@ -169,6 +200,24 @@ export async function render(ctx) {
       if (r?.url) location.href = r.url; else toast('The checkout did not open. Try again.', 'bad');
     } catch (err) { toast(oops(err), 'bad'); }
   });
+  // The email milestone: a code mailed to the sign-in address, entered here; the card is drawn again with the grant.
+  const unlockEmail = $('[data-unlock-email]', el);
+  if (unlockEmail) unlockEmail.onclick = () => busy(unlockEmail, async () => {
+    try {
+      const login = (await emails.list()).find(e => e.login);
+      if (!login) return toast('We could not find your sign-in email.', 'bad');
+      if (!login.verified) {
+        await emails.sendCode(login.id);
+        const entered = await prompt(`We sent a 6-digit code to ${login.email}.`, { title: 'Confirm your email', ok: 'Confirm', placeholder: '123456' });
+        if (!entered) return;
+        await emails.confirm(login.id, entered);
+      }
+      toast('Email confirmed. Your free credits are on their way.', 'ok');
+      ctx.refresh();
+    } catch (err) { toast(oops(err), 'bad'); }
+  });
+  const toPacks = $('[data-unlock-packs]', el);
+  if (toPacks) toPacks.onclick = e => { e.preventDefault(); $('#packs', el).scrollIntoView({ behavior: 'smooth', block: 'center' }); };
   $('#packs', el).addEventListener('click', e => { const b = e.target.closest('[data-buy]'); if (b) buy(b, b.dataset.buy); });
   $('#plans', el).addEventListener('click', e => {
     const b = e.target.closest('[data-hire]'); if (!b || b.disabled) return;
